@@ -13,7 +13,7 @@ function App() {
   const [habits, setHabits] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch habits from Supabase on mount
+  // Fetch habits from Supabase or Local Storage on mount
   useEffect(() => {
     fetchHabits();
   }, []);
@@ -21,17 +21,27 @@ function App() {
   async function fetchHabits() {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('habits')
-        .select('*')
-        .order('id', { ascending: true });
 
-      if (error) throw error;
+      // Try to load from Supabase if client exists
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('habits')
+          .select('*')
+          .order('id', { ascending: true });
 
-      if (data && data.length > 0) {
-        setHabits(data);
+        if (!error && data && data.length > 0) {
+          setHabits(data);
+          localStorage.setItem('habits_backup', JSON.stringify(data));
+          return;
+        }
+      }
+
+      // Fallback: Check local storage
+      const localData = localStorage.getItem('habits_backup');
+      if (localData) {
+        setHabits(JSON.parse(localData));
       } else {
-        // Initialize if empty
+        // Ultimate Fallback: Initial habits
         const initialData = INITIAL_HABITS.map((name, index) => ({
           name,
           completed: false,
@@ -57,23 +67,24 @@ function App() {
     habit.completed = newCompleted;
     habit.streak = newStreak;
     setHabits(updatedHabits);
+    localStorage.setItem('habits_backup', JSON.stringify(updatedHabits));
 
-    // Sync to Supabase (using name as unique identifier for now)
-    try {
-      const { error } = await supabase
-        .from('habits')
-        .upsert({
-          name: habit.name,
-          completed: newCompleted,
-          streak: newStreak,
-          last_updated: new Date().toISOString()
-        }, { onConflict: 'name' });
+    // Sync to Supabase if available
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('habits')
+          .upsert({
+            name: habit.name,
+            completed: newCompleted,
+            streak: newStreak,
+            last_updated: new Date().toISOString()
+          }, { onConflict: 'name' });
 
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error updating habit:', error.message);
-      // Rollback on error
-      fetchHabits();
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error updating habit in cloud:', error.message);
+      }
     }
   };
 
