@@ -1,15 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+// For security, use environment variables in production.
+// During development on Windows, if .env.local isn't loading, 
+// you can temporarily hardcode these, but NEVER push them to public GitHub.
 
-// Fail-safe initialization: Check if keys are actually present and look valid
-const isValidConfig = supabaseUrl && supabaseKey && supabaseUrl.startsWith('https://');
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = isValidConfig
-    ? createClient(supabaseUrl, supabaseKey)
-    : null;
-
-if (!isValidConfig) {
-    console.warn('Supabase configuration is missing or invalid. Falling back to local mode.');
+if (!supabaseUrl || !supabaseKey) {
+    console.error('Supabase credentials missing! Ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in your .env file or deployment settings.');
 }
+
+export const supabase = createClient(
+    supabaseUrl || 'https://your-project.supabase.co',
+    supabaseKey || 'your-anon-key'
+);

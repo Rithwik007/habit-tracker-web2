@@ -1,16 +1,61 @@
-# React + Vite
+# Habit Mastery - Premium Habit Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A high-performance, dark-themed habit tracking application built with React, Vite, and Supabase. Features a glassmorphic design, real-time weather integration, and detailed analytics.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Personalized Header**: Greets you as "Hi, Rithwik Racharla" with real-time weather and date/time.
+- **Daily Checklist**: Interactive habit tracking with instant progress updates.
+- **Monthly Grid**: Comprehensive overview of your consistency across the month.
+- **Analytics**: Visualized progress using Line, Bar, and Donut charts (Recharts).
+- **Streaks & Momentum**: Automated streak calculation to keep you motivated.
+- **Manage Habits**: Easily add, delete, or seed 16 default habits.
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend**: React (Vite)
+- **Styling**: Vanilla CSS (Custom Glassmorphic System)
+- **Backend**: Supabase (PostgreSQL, Auth-ready)
+- **Charts**: Recharts
+- **Icons**: SVG & Unicode
 
-## Expanding the ESLint configuration
+## 📦 Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. **Clone the repository**:
+   ```bash
+   git clone <your-repo-url>
+   cd habit-tracker-web
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Environment Setup**:
+   - Create a `.env.local` file in the root.
+   - Add your Supabase credentials:
+     ```env
+     VITE_SUPABASE_URL=your_supabase_url
+     VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+     ```
+
+4. **Run development server**:
+   ```bash
+   npm run dev
+   ```
+
+## 🌐 Deployment (Vercel/Netlify)
+
+1. Push your code to GitHub.
+2. Link your repository to Vercel or Netlify.
+3. **Critical**: Add the `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to your deployment's **Environment Variables** settings.
+
+## 🗄️ Database Schema
+
+Ensure your Supabase project has the following tables:
+- `habits` (id, name, created_at)
+- `daily_logs` (id, habit_id, log_date, completed)
+- `daily_notes` (id, note_date, note)
+
+*Note: Disable RLS for these tables or set up appropriate policies for production.*
