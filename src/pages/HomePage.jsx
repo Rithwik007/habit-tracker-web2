@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import Greeting from '../components/Greeting';
-
-const today = new Date().toISOString().split('T')[0];
+import useMidnightRefresh from '../hooks/useMidnightRefresh';
 
 const DEFAULT_HABITS = [
     "Wake up at 8:00 AM", "Oat Meal", "Gym", "Dsa", "web development",
@@ -21,7 +20,11 @@ export default function HomePage() {
     const [error, setError] = useState(null);
     const [seeding, setSeeding] = useState(false);
 
-    const fetchData = useCallback(async () => {
+    // Reactive date that auto-updates at midnight
+    const today = useMidnightRefresh();
+
+    const fetchData = useCallback(async (dateOverride) => {
+        const dateToFetch = dateOverride || today;
         setLoading(true);
         setError(null);
         try {
@@ -39,7 +42,7 @@ export default function HomePage() {
                 const { data: logsData, error: logsError } = await supabase
                     .from('daily_logs')
                     .select('*')
-                    .eq('log_date', today);
+                    .eq('log_date', dateToFetch);
 
                 if (logsError) throw logsError;
                 const logsMap = {};
@@ -51,11 +54,11 @@ export default function HomePage() {
             const { data: noteData, error: noteError } = await supabase
                 .from('daily_notes')
                 .select('note')
-                .eq('note_date', today)
+                .eq('note_date', dateToFetch)
                 .maybeSingle();
 
             if (noteError) throw noteError;
-            if (noteData) setNote(noteData.note || '');
+            setNote(noteData?.note || '');
 
         } catch (e) {
             console.error('HomePage Fetch Error:', e);
@@ -63,8 +66,9 @@ export default function HomePage() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [today]);
 
+    // Re-fetch whenever `today` changes (including at midnight)
     useEffect(() => { fetchData(); }, [fetchData]);
 
     const toggleHabit = async (habit) => {

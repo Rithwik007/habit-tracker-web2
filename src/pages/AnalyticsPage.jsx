@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import useMidnightRefresh, { formatLocalDate } from '../hooks/useMidnightRefresh';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 
 export default function AnalyticsPage() {
     const [stats, setStats] = useState({ daily: [], habitWise: [], today: 0 });
+    const todayStr = useMidnightRefresh();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -17,7 +19,7 @@ export default function AnalyticsPage() {
                 const { data: logs } = await supabase
                     .from('daily_logs')
                     .select('*')
-                    .gte('log_date', last30Days.toISOString().split('T')[0]);
+                    .gte('log_date', formatLocalDate(last30Days));
 
                 if (!habits || !logs) return;
 
@@ -26,7 +28,7 @@ export default function AnalyticsPage() {
                 for (let i = 29; i >= 0; i--) {
                     const d = new Date();
                     d.setDate(d.getDate() - i);
-                    const dateStr = d.toISOString().split('T')[0];
+                    const dateStr = formatLocalDate(d);
                     const dayLogs = logs.filter(l => l.log_date === dateStr && l.completed);
                     const pct = Math.round((dayLogs.length / habits.length) * 100) || 0;
                     dailyData.push({ name: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), pct });
@@ -40,7 +42,6 @@ export default function AnalyticsPage() {
                 }).sort((a, b) => b.pct - a.pct);
 
                 // 3. Today's Progress (Donut)
-                const todayStr = new Date().toISOString().split('T')[0];
                 const todayLogs = logs.filter(l => l.log_date === todayStr && l.completed);
                 const todayPct = Math.round((todayLogs.length / habits.length) * 100);
 
@@ -52,7 +53,7 @@ export default function AnalyticsPage() {
             }
         }
         fetchStats();
-    }, []);
+    }, [todayStr]);
 
     if (loading) return <div className="loading-screen">📊 Calculating Analytics...</div>;
 

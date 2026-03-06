@@ -30,7 +30,7 @@ export default function Greeting() {
     const [dateTime, setDateTime] = useState(formatDateTime());
 
     useEffect(() => {
-        // Update time every minute
+        // Update time every minute; also catches day change
         const interval = setInterval(() => {
             setDateTime(formatDateTime());
         }, 60000);

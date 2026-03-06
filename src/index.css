@@ -707,3 +707,49 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- Monthly Notes Tooltip ---- */
+.monthly-grid-wrapper {
+  overflow-x: auto;
+  padding-bottom: 60px;
+  /* Prevents overflow clipping of bottom tooltips */
+}
+
+.monthly-grid th.has-note {
+  position: relative;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 4px;
+  color: var(--primary-light);
+}
+
+.day-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: 8px;
+  transform: translateX(-50%) translateY(-5px);
+  background: var(--bg-2);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: normal;
+  max-width: 300px;
+  width: max-content;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+.monthly-grid th.has-note:hover .day-tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

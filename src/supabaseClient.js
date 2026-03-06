@@ -1,17 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-// For security, use environment variables in production.
-// During development on Windows, if .env.local isn't loading, 
-// you can temporarily hardcode these, but NEVER push them to public GitHub.
+// Hardcoded for absolute reliability to bypass Vite env injection issues
+const supabaseUrl = 'https://bdybveaekogmdwsibbju.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkeWJ2ZWFla29nbWR3c2liYmp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MTQwNjksImV4cCI6MjA4ODE5MDA2OX0.zfpUzaRgttzimylZvGIGrAOXXUiy9EofFt1qEcEIPow';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-    console.error('Supabase credentials missing! Ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in your .env file or deployment settings.');
-}
-
-export const supabase = createClient(
-    supabaseUrl || 'https://your-project.supabase.co',
-    supabaseKey || 'your-anon-key'
-);
+export const supabase = createClient(supabaseUrl, supabaseKey);
