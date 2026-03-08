@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { useToast } from '../context/ToastContext';
 
 const DEFAULT_HABITS = [
     "Wake up at 8:00 AM", "Oat Meal", "Gym", "Dsa", "web development",
@@ -14,6 +15,7 @@ export default function ManageHabitsPage() {
     const [newHabit, setNewHabit] = useState('');
     const [loading, setLoading] = useState(true);
     const [seeding, setSeeding] = useState(false);
+    const { addToast } = useToast();
 
     async function fetchHabits() {
         setLoading(true);
@@ -33,11 +35,14 @@ export default function ManageHabitsPage() {
         const name = newHabit.trim();
         if (!name) return;
         try {
-            await supabase.from('habits').insert({ name });
+            await supabase.from('habits').insert({
+                name
+            });
             setNewHabit('');
+            addToast('Habit added successfully!');
             fetchHabits();
         } catch (e) {
-            alert('Error adding habit: ' + e.message);
+            addToast('Error adding habit', 'error');
         }
     };
 
@@ -45,9 +50,10 @@ export default function ManageHabitsPage() {
         if (!confirm('Delete this habit? All its historical progress will be lost.')) return;
         try {
             await supabase.from('habits').delete().eq('id', id);
+            addToast('Habit deleted');
             fetchHabits();
         } catch (e) {
-            alert('Error deleting habit: ' + e.message);
+            addToast('Error deleting habit', 'error');
         }
     };
 
@@ -58,9 +64,9 @@ export default function ManageHabitsPage() {
                 await supabase.from('habits').upsert({ name }, { onConflict: 'name' });
             }
             fetchHabits();
-            alert('Default habits loaded successfully!');
+            addToast('Default habits loaded successfully!');
         } catch (e) {
-            alert('Error seeding habits: ' + e.message);
+            addToast('Error seeding habits', 'error');
         } finally {
             setSeeding(false);
         }
@@ -70,17 +76,18 @@ export default function ManageHabitsPage() {
 
     return (
         <div className="fade-in">
-            <h1 className="page-title">⚙️ Manage Habits</h1>
+            <h1 className="page-title">⚙️ Manage Disciplines</h1>
 
             <div className="card">
                 <div className="card-header">
                     <span className="card-title">Add New Discipline</span>
                 </div>
-                <div className="manage-form">
+                <div className="manage-form" style={{ flexWrap: 'wrap' }}>
                     <input
                         className="manage-input"
+                        style={{ minWidth: '200px' }}
                         type="text"
-                        placeholder="e.g. Read 10 pages, Meditation..."
+                        placeholder="e.g. Read 10 pages..."
                         value={newHabit}
                         onChange={e => setNewHabit(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && addHabit()}
@@ -102,7 +109,9 @@ export default function ManageHabitsPage() {
                 <div className="habit-list">
                     {habits.map(habit => (
                         <div key={habit.id} className="habit-manage-item">
-                            <span style={{ fontWeight: 600 }}>{habit.name}</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <span style={{ fontWeight: 600 }}>{habit.name}</span>
+                            </div>
                             <button className="delete-btn" onClick={() => deleteHabit(habit.id)}>Remove</button>
                         </div>
                     ))}

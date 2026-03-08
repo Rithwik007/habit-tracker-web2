@@ -63,7 +63,7 @@ export default function ProgressPage() {
 
     return (
         <div className="fade-in">
-            <h1 className="page-title">🏆 Your Progress</h1>
+            <h1 className="page-title">🏆 Progress & Streaks</h1>
 
             <div className="kpi-grid">
                 <div className="kpi-card">

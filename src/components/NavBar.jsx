@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 
+
 const links = [
     { to: '/', icon: '✅', label: "Today's Habits" },
     { to: '/monthly', icon: '📅', label: 'Monthly Tracker' },
@@ -8,7 +9,9 @@ const links = [
     { to: '/manage', icon: '⚙️', label: 'Manage Habits' },
 ];
 
+
 export default function NavBar() {
+
     return (
         <nav className="navbar">
             <div className="nav-brand">

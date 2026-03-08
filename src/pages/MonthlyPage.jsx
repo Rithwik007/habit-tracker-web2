@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import useMidnightRefresh, { formatLocalDate } from '../hooks/useMidnightRefresh';
+import LeetCodeGraph from '../components/LeetCodeGraph';
+import { motion } from 'framer-motion';
 
 export default function MonthlyPage() {
     const [habits, setHabits] = useState([]);
@@ -82,7 +84,9 @@ export default function MonthlyPage() {
 
     return (
         <div className="fade-in">
-            <h1 className="page-title">📅 Monthly Tracker</h1>
+            <h1 className="page-title">📅 Monthly History</h1>
+
+            <LeetCodeGraph />
 
             <div className="card">
                 <div className="card-header">
@@ -113,9 +117,24 @@ export default function MonthlyPage() {
                                 })}
                             </tr>
                         </thead>
-                        <tbody>
+                        <motion.tbody
+                            initial="hidden"
+                            animate="show"
+                            variants={{
+                                hidden: {},
+                                show: {
+                                    transition: { staggerChildren: 0.05 }
+                                }
+                            }}
+                        >
                             {habits.map(habit => (
-                                <tr key={habit.id}>
+                                <motion.tr
+                                    key={habit.id}
+                                    variants={{
+                                        hidden: { opacity: 0, x: -15, filter: 'blur(4px)' },
+                                        show: { opacity: 1, x: 0, filter: 'blur(0px)' }
+                                    }}
+                                >
                                     <td>{habit.name}</td>
                                     {daysArr.map(d => {
                                         const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
@@ -139,9 +158,9 @@ export default function MonthlyPage() {
                                             </td>
                                         );
                                     })}
-                                </tr>
+                                </motion.tr>
                             ))}
-                        </tbody>
+                        </motion.tbody>
                     </table>
                 </div>
             </div>

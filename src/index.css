@@ -1,27 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
-  --bg: #0d0f1a;
-  --bg-2: #13162a;
-  --bg-card: rgba(255, 255, 255, 0.04);
-  --bg-card-hover: rgba(255, 255, 255, 0.07);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(99, 102, 241, 0.5);
-  --primary: #6366f1;
-  --primary-light: #818cf8;
-  --primary-glow: rgba(99, 102, 241, 0.3);
-  --success: #10b981;
-  --success-bg: rgba(16, 185, 129, 0.12);
-  --success-border: rgba(16, 185, 129, 0.4);
-  --danger: #ef4444;
-  --warning: #f59e0b;
+  --bg: #090b10;
+  --bg-2: #12151f;
+  --bg-card: rgba(18, 21, 31, 0.7);
+  --bg-card-hover: rgba(37, 192, 244, 0.05);
+  --border: rgba(37, 192, 244, 0.2);
+  --border-hover: rgba(37, 192, 244, 0.6);
+  --primary: #e23636;
+  --primary-light: #25c0f4;
+  --primary-glow: rgba(226, 54, 54, 0.3);
+  --success: #25c0f4;
+  --success-bg: rgba(37, 192, 244, 0.1);
+  --success-border: rgba(37, 192, 244, 0.5);
+  --danger: #e23636;
+  --warning: #ffcc00;
   --text-main: #e2e8f0;
-  --text-dim: #64748b;
+  --text-dim: #8b9bb4;
   --text-muted: #475569;
-  --radius: 16px;
-  --radius-sm: 10px;
+  --radius: 4px;
+  --radius-sm: 2px;
   --nav-width: 240px;
-  --transition: 0.2s ease;
+  --transition: 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
 }
 
 * {
@@ -62,6 +62,9 @@ body {
 .navbar {
   width: var(--nav-width);
   background: var(--bg-2);
+  background-image: linear-gradient(rgba(18, 21, 31, 0.85), rgba(18, 21, 31, 0.95)), url("/marvel/spider-man-captain-americas-shield-marvel-superheroes-4000x3609-6178.jpg");
+  background-size: cover;
+  background-position: center bottom;
   border-right: 1px solid var(--border);
   position: fixed;
   left: 0;
@@ -81,9 +84,10 @@ body {
 .nav-brand h2 {
   font-size: 1.1rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #6366f1, #a78bfa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px var(--primary-glow);
 }
 
 .nav-brand p {
@@ -131,23 +135,27 @@ body {
 
 /* ---- Greeting Banner ---- */
 .greeting-banner {
-  background: linear-gradient(135deg, #1e1b4b 0%, #1a1040 50%, #0d0f1a 100%);
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  background: linear-gradient(135deg, rgba(18, 0, 0, 0.85) 0%, rgba(21, 21, 21, 0.9) 50%, rgba(9, 11, 16, 0.95) 100%), url("/marvel/avengers-endgame-thor-captain-america-iron-man-thanos-2560x1440-2037.png");
+  background-size: cover;
+  background-position: top center;
+  border: 1px solid rgba(226, 54, 54, 0.4);
+  border-left: 4px solid var(--primary);
   border-radius: var(--radius);
   padding: 28px 32px;
   margin-bottom: 28px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 0 20px rgba(226, 54, 54, 0.1);
 }
 
 .greeting-banner::before {
   content: '';
   position: absolute;
-  top: -50%;
-  right: -10%;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+  top: 0;
+  right: 0;
+  width: 150px;
+  height: 100%;
+  background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(226, 54, 54, 0.03) 10px, rgba(226, 54, 54, 0.03) 20px);
   pointer-events: none;
 }
 
@@ -185,10 +193,24 @@ body {
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
+  border-top: 2px solid var(--border-hover);
   border-radius: var(--radius);
   padding: 24px;
   margin-bottom: 24px;
   transition: var(--transition);
+  position: relative;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  border-bottom: 2px solid var(--primary-light);
+  border-right: 2px solid var(--primary-light);
+  opacity: 0.5;
 }
 
 .card-header {
@@ -196,12 +218,16 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 12px;
 }
 
 .card-title {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--text-main);
+  color: var(--primary-light);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 /* ---- KPI Grid ---- */
@@ -214,18 +240,37 @@ body {
 
 .kpi-card {
   background: var(--bg-card);
+  background-size: cover;
+  background-position: center;
   border: 1px solid var(--border);
+  border-left: 3px solid var(--primary-light);
   border-radius: var(--radius);
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(37, 192, 244, 0.05), transparent);
+  pointer-events: none;
 }
 
 .kpi-card:hover {
-  border-color: var(--primary);
-  background: var(--bg-card-hover);
+  border-color: var(--primary-light);
+  box-shadow: 0 0 15px rgba(37, 192, 244, 0.15);
+  transform: translateY(-2px);
 }
 
 .kpi-label {
@@ -260,18 +305,33 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 16px 18px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
+  background: rgba(18, 21, 31, 0.8);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   cursor: pointer;
   transition: all var(--transition);
   user-select: none;
+  position: relative;
+}
+
+.habit-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--text-muted);
+  transition: var(--transition);
 }
 
 .habit-item:hover {
   background: var(--bg-card-hover);
   border-color: var(--border-hover);
-  transform: translateX(3px);
+}
+
+.habit-item:hover::before {
+  background: var(--primary-light);
 }
 
 .habit-item.completed {
@@ -302,28 +362,34 @@ body {
 }
 
 .check-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 2px solid var(--border-hover);
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 2px solid var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  background: transparent;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.8);
+}
+
+.habit-item:hover .check-circle {
+  border-color: var(--primary-light);
 }
 
 .habit-item.completed .check-circle {
-  background: var(--success);
+  background: rgba(37, 192, 244, 0.1);
   border-color: var(--success);
-  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(37, 192, 244, 0.4);
 }
 
 .check-icon {
-  width: 16px;
-  height: 16px;
-  color: white;
+  width: 18px;
+  height: 18px;
+  color: var(--success);
+  filter: drop-shadow(0 0 4px var(--success));
 }
 
 /* ---- Daily Note ---- */
@@ -418,7 +484,7 @@ body {
 .grid-cell {
   width: 26px;
   height: 26px;
-  border-radius: 6px;
+  border-radius: 3px;
   border: 1px solid var(--border);
   background: transparent;
   cursor: pointer;
@@ -430,14 +496,16 @@ body {
 }
 
 .grid-cell:hover {
-  border-color: var(--primary);
-  background: rgba(99, 102, 241, 0.1);
+  border-color: var(--primary-light);
+  background: rgba(37, 192, 244, 0.1);
+  box-shadow: 0 0 10px rgba(37, 192, 244, 0.2);
 }
 
 .grid-cell.done {
-  background: var(--success);
+  background: rgba(37, 192, 244, 0.2);
   border-color: var(--success);
-  color: white;
+  color: var(--success);
+  box-shadow: inset 0 0 5px rgba(37, 192, 244, 0.5);
 }
 
 .grid-cell.today {
@@ -752,4 +820,385 @@ body {
   visibility: visible;
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* ---- LeetCode Graph ---- */
+.leetcode-graph-container {
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.leetcode-grid-scroll {
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.leetcode-grid {
+  display: flex;
+  gap: 4px;
+}
+
+.leetcode-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.leetcode-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.leetcode-stats-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 1.1rem;
+  color: var(--text-main);
+}
+
+.leetcode-year-select,
+.manage-input {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 8px 16px;
+  border-radius: 8px;
+  outline: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2325c0f4%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 0.7em auto;
+  padding-right: 2.5rem;
+  transition: all 0.2s ease;
+}
+
+.leetcode-year-select:hover,
+.manage-input:hover {
+  border-color: var(--primary-light);
+  background-color: rgba(37, 192, 244, 0.05);
+  box-shadow: 0 0 10px rgba(37, 192, 244, 0.1);
+}
+
+.leetcode-col.month-start:not(:first-child) {
+  margin-left: 12px;
+}
+
+.leetcode-months {
+  display: flex;
+  margin-top: 12px;
+  padding-left: 2px;
+  gap: 12px;
+  /* Add gap between month label spans to match grid */
+}
+
+.leetcode-month-col-span {
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.leetcode-month-label-centered {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.leetcode-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: #2a2a2a;
+  /* level-0 empty dark */
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.leetcode-cell.empty {
+  background: transparent;
+  pointer-events: none;
+}
+
+.leetcode-cell:hover {
+  outline: 1px solid #fff;
+  transform: scale(1.2);
+  z-index: 10;
+}
+
+/* GitHub/Leetcode style green scales for Dark Mode */
+.leetcode-cell.level-0 {
+  background: #21262d;
+}
+
+.leetcode-cell.level-1 {
+  background: #0e4429;
+}
+
+.leetcode-cell.level-2 {
+  background: #006d32;
+}
+
+.leetcode-cell.level-3 {
+  background: #26a641;
+}
+
+.leetcode-cell.level-4 {
+  background: #39d353;
+}
+
+.leetcode-tooltip {
+  position: fixed;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -100%);
+  margin-top: -10px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.leetcode-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: var(--border) transparent transparent transparent;
+}
+
+/* ---- Toast Notifications ---- */
+.toast-container {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  padding: 14px 20px;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.toast-success {
+  border-left: 4px solid var(--success);
+}
+
+.toast-error {
+  border-left: 4px solid var(--danger);
+}
+
+/* ---- Dynamic Background ---- */
+.bg-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.orb-1 {
+  width: 400px;
+  height: 400px;
+  background: var(--primary);
+  top: 10%;
+  left: 20%;
+  animation: floatOrb 20s infinite alternate ease-in-out;
+}
+
+.orb-2 {
+  width: 500px;
+  height: 500px;
+  background: var(--success);
+  bottom: 10%;
+  right: 15%;
+  animation: floatOrb 25s infinite alternate-reverse ease-in-out;
+}
+
+@keyframes floatOrb {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  100% {
+    transform: translate(50px, 50px) scale(1.1);
+  }
+}
+
+/* ---- Loading Skeleton Pulse ---- */
+.skeleton-pulse {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 75%);
+  background-size: 200% 100%;
+  animation: skeletonLoad 1.5s infinite;
+  border-radius: var(--radius-sm);
+  min-height: 200px;
+}
+
+@keyframes skeletonLoad {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ---- Custom Scrollbar for inner components ---- */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(37, 192, 244, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(37, 192, 244, 0.4);
+}
+
+.greeting-banner {
+  padding: 30px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  margin-bottom: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ---- Premium Mood Selector (Stitch Style) ---- */
+.mood-glass-card {
+  background: transparent !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: none;
+}
+
+.mood-glow-bg {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(37, 192, 244, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  animation: rotateGlow 20s linear infinite;
+}
+
+@keyframes rotateGlow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mood-dock {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 24px;
+  border-radius: 24px;
+  width: fit-content;
+  margin: 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+  z-index: 1;
+}
+
+.mood-emoji-btn {
+  background: none;
+  border: none;
+  font-size: 2.2rem;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  transition: all 0.2s ease;
+  filter: grayscale(0.4) opacity(0.5);
+}
+
+.mood-emoji-btn:hover {
+  filter: grayscale(0) opacity(1);
+}
+
+.mood-emoji-btn.active {
+  filter: grayscale(0) opacity(1);
+  transform: scale(1.1);
+}
+
+.mood-active-glow {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(37, 192, 244, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+  filter: blur(5px);
+}
+
+.mood-emoji-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  width: 6px;
+  height: 6px;
+  background: var(--primary-light);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--primary-light);
+}
+
+.emoji-icon {
+  z-index: 2;
+  display: block;
 }

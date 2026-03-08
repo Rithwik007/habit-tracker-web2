@@ -1,18 +1,27 @@
 import { useState, useEffect } from 'react';
 
-function getGreetingText() {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
-}
-
-function getEmoji() {
-    const hour = new Date().getHours();
-    if (hour < 12) return '🌅';
-    if (hour < 17) return '☀️';
-    return '🌙';
-}
+const GREETINGS = [
+    "Ready to conquer the day?",
+    "Let's make today count!",
+    "Time to level up your life.",
+    "Small steps lead to big changes.",
+    "Your future self is watching.",
+    "Stay focused and never give up.",
+    "Another day, another opportunity.",
+    "Discipline equals freedom.",
+    "Embrace the grind.",
+    "You are capable of amazing things.",
+    "Consistency is the key to success.",
+    "Keep pushing your limits.",
+    "Every habit builds your empire.",
+    "Own your day, elevate your life.",
+    "Greatness is built piece by piece.",
+    "Focus on the process, not the outcome.",
+    "You're one step closer to your goals.",
+    "Turn your potential into reality.",
+    "Make your actions reflect your goals.",
+    "Master your habits, master your life."
+];
 
 function formatDateTime() {
     const now = new Date();
@@ -28,6 +37,7 @@ function formatDateTime() {
 export default function Greeting() {
     const [weather, setWeather] = useState(null);
     const [dateTime, setDateTime] = useState(formatDateTime());
+    const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
 
     useEffect(() => {
         // Update time every minute; also catches day change
@@ -62,7 +72,7 @@ export default function Greeting() {
 
     return (
         <div className="greeting-banner">
-            <div className="greeting-time">{getEmoji()} {getGreetingText()}</div>
+            <div className="greeting-time">{greeting}</div>
             <div className="greeting-name">Hi, Rithwik Racharla</div>
             <div className="greeting-meta">
                 <span>📅 {dateTime.date}</span>
