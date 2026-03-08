@@ -115,6 +115,7 @@ export default function MonthlyPage() {
                                         </th>
                                     );
                                 })}
+                                <th style={{ textAlign: 'center', paddingLeft: '10px', minWidth: '60px', color: 'var(--primary-light)' }}>Count</th>
                             </tr>
                         </thead>
                         <motion.tbody
@@ -127,39 +128,45 @@ export default function MonthlyPage() {
                                 }
                             }}
                         >
-                            {habits.map(habit => (
-                                <motion.tr
-                                    key={habit.id}
-                                    variants={{
-                                        hidden: { opacity: 0, x: -15, filter: 'blur(4px)' },
-                                        show: { opacity: 1, x: 0, filter: 'blur(0px)' }
-                                    }}
-                                >
-                                    <td>{habit.name}</td>
-                                    {daysArr.map(d => {
-                                        const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
-                                        const dateStr = formatLocalDate(date);
-                                        const log = logs.find(l => l.habit_id === habit.id && l.log_date === dateStr);
-                                        const isToday = dateStr === todayStr;
-                                        const isFuture = date > new Date();
+                            {habits.map(habit => {
+                                const habitMonthCount = logs.filter(l => l.habit_id === habit.id && l.completed).length;
+                                return (
+                                    <motion.tr
+                                        key={habit.id}
+                                        variants={{
+                                            hidden: { opacity: 0, x: -15, filter: 'blur(4px)' },
+                                            show: { opacity: 1, x: 0, filter: 'blur(0px)' }
+                                        }}
+                                    >
+                                        <td>{habit.name}</td>
+                                        {daysArr.map(d => {
+                                            const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
+                                            const dateStr = formatLocalDate(date);
+                                            const log = logs.find(l => l.habit_id === habit.id && l.log_date === dateStr);
+                                            const isToday = dateStr === todayStr;
+                                            const isFuture = date > new Date();
 
-                                        return (
-                                            <td key={d}>
-                                                <div
-                                                    className={`grid-cell${log?.completed ? ' done' : ''}${isToday ? ' today' : ''}${isFuture ? ' future' : ''}`}
-                                                    onClick={() => !isFuture && toggleCell(habit.id, dateStr)}
-                                                >
-                                                    {log?.completed && (
-                                                        <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
-                                                            <polyline points="20 6 9 17 4 12" />
-                                                        </svg>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        );
-                                    })}
-                                </motion.tr>
-                            ))}
+                                            return (
+                                                <td key={d}>
+                                                    <div
+                                                        className={`grid-cell${log?.completed ? ' done' : ''}${isToday ? ' today' : ''}${isFuture ? ' future' : ''}`}
+                                                        onClick={() => !isFuture && toggleCell(habit.id, dateStr)}
+                                                    >
+                                                        {log?.completed && (
+                                                            <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
+                                                                <polyline points="20 6 9 17 4 12" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            );
+                                        })}
+                                        <td style={{ textAlign: 'center', fontWeight: '800', fontSize: '0.9rem', color: 'var(--primary-light)', paddingLeft: '10px' }}>
+                                            {habitMonthCount}
+                                        </td>
+                                    </motion.tr>
+                                );
+                            })}
                         </motion.tbody>
                     </table>
                 </div>
