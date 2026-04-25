@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 import Greeting from '../components/Greeting';
 import useMidnightRefresh from '../hooks/useMidnightRefresh';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 
 const DEFAULT_HABITS = [
@@ -14,6 +15,7 @@ const DEFAULT_HABITS = [
 ];
 
 export default function HomePage() {
+    const { user } = useAuth();
     const [habits, setHabits] = useState([]);
     const [logs, setLogs] = useState({});
     const [note, setNote] = useState('');
@@ -31,14 +33,30 @@ export default function HomePage() {
         const dateToFetch = dateOverride || today;
         setLoading(true);
         setError(null);
+        console.log('--- FETCH DATA START ---');
+        console.log('Target Date:', dateToFetch);
+        console.log('User ID:', user?.id);
+        console.log('Supabase URL:', supabase.supabaseUrl);
+        
         try {
+            // Check if user is actually authenticated
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                console.warn('No active session found during fetch');
+            }
+
             // 1. Fetch habits
             const { data: habitsData, error: habitsError } = await supabase
                 .from('habits')
                 .select('*')
+                .eq('user_id', user.id)
                 .order('created_at', { ascending: true });
 
-            if (habitsError) throw habitsError;
+            if (habitsError) {
+                console.error('Habits fetch error:', habitsError);
+                throw habitsError;
+            }
+            console.log('Habits fetched:', habitsData?.length || 0);
             setHabits(habitsData || []);
 
             // 2. Fetch today's logs
@@ -46,18 +64,21 @@ export default function HomePage() {
                 const { data: logsData, error: logsError } = await supabase
                     .from('daily_logs')
                     .select('*')
+                    .eq('user_id', user.id)
                     .eq('log_date', dateToFetch);
 
                 if (logsError) throw logsError;
                 const logsMap = {};
                 (logsData || []).forEach(l => { logsMap[l.habit_id] = l.completed; });
                 setLogs(logsMap);
+                console.log('Logs fetched:', logsData?.length || 0);
             }
 
             // 3. Fetch today's note
             const { data: noteData, error: noteError } = await supabase
                 .from('daily_notes')
                 .select('note')
+                .eq('user_id', user.id)
                 .eq('note_date', dateToFetch)
                 .maybeSingle();
 
@@ -68,17 +89,23 @@ export default function HomePage() {
             const { data: moodData } = await supabase
                 .from('mood_logs')
                 .select('mood_score')
+                .eq('user_id', user.id)
                 .eq('log_date', dateToFetch)
                 .maybeSingle();
             setMood(moodData?.mood_score || null);
+            console.log('--- FETCH DATA SUCCESS ---');
 
         } catch (e) {
-            console.error('HomePage Fetch Error:', e);
-            setError(e.message || 'Failed to connect to Supabase. Check your internet or ad-blocker.');
+            console.error('HomePage Fetch Error FULL:', e);
+            let detail = e.message || 'Failed to connect to Supabase.';
+            if (e instanceof TypeError && e.message.includes('fetch')) {
+                detail = 'Network Error: Failed to fetch. Your browser is blocking the request (Ad-blocker) or the URL is wrong.';
+            }
+            setError(detail);
         } finally {
             setLoading(false);
         }
-    }, [today]);
+    }, [today, user?.id]);
 
     // Re-fetch whenever `today` changes (including at midnight)
     useEffect(() => { fetchData(); }, [fetchData]);
@@ -90,7 +117,7 @@ export default function HomePage() {
 
         try {
             const { error: err } = await supabase.from('daily_logs').upsert(
-                { habit_id: habit.id, log_date: today, completed: next },
+                { habit_id: habit.id, log_date: today, completed: next, user_id: user.id },
                 { onConflict: 'habit_id,log_date' }
             );
             if (err) throw err;
@@ -107,7 +134,7 @@ export default function HomePage() {
         setNoteSaved(true);
         try {
             const { error: err } = await supabase.from('daily_notes').upsert(
-                { note_date: today, note },
+                { note_date: today, note, user_id: user.id },
                 { onConflict: 'note_date' }
             );
             if (err) throw err;
@@ -124,7 +151,7 @@ export default function HomePage() {
         setSeeding(true);
         try {
             for (const name of DEFAULT_HABITS) {
-                await supabase.from('habits').upsert({ name }, { onConflict: 'name' });
+                await supabase.from('habits').upsert({ name, user_id: user.id }, { onConflict: 'name' });
             }
             await fetchData();
             addToast('Successfully seeded 16 habits!');
@@ -143,12 +170,14 @@ export default function HomePage() {
                 <h2 style={{ color: '#ef4444' }}>⚠️ Connection Problem</h2>
                 <p style={{ marginTop: 12, color: 'var(--text-dim)', fontSize: '0.9rem' }}>
                     The app couldn't reach Supabase. This usually means:<br />
-                    1. A browser extension (Ad-blocker) is blocking it.<br />
-                    2. Your project URL is incorrect in the config.<br />
-                    3. Your project is "Paused" in the Supabase dashboard.
+                    1. <strong>Ad-blocker:</strong> Disable browser extensions like uBlock or AdBlock for this site.<br />
+                    2. <strong>Network:</strong> Your internet or firewall might be blocking Supabase.<br />
+                    3. <strong>Project Paused:</strong> Check your Supabase dashboard.
                 </p>
-                <div style={{ padding: 12, background: 'rgba(0,0,0,0.3)', borderRadius: 8, marginTop: 16, fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                    Error Detail: {error}
+                <div style={{ padding: 12, background: 'rgba(0,0,0,0.3)', borderRadius: 8, marginTop: 16, fontFamily: 'monospace', fontSize: '0.8rem', textAlign: 'left' }}>
+                    <strong>Diagnostic:</strong> <br />
+                    URL: {supabase.supabaseUrl} <br />
+                    Detail: {error}
                 </div>
                 <button className="add-btn" style={{ marginTop: 20 }} onClick={fetchData}>Try Again</button>
             </div>
@@ -157,6 +186,18 @@ export default function HomePage() {
 
     const completed = habits.filter(h => logs[h.id]).length;
     const pct = habits.length > 0 ? Math.round((completed / habits.length) * 100) : 0;
+
+    const addCustomHabit = async (name) => {
+        if (!name.trim()) return;
+        try {
+            const { error } = await supabase.from('habits').insert({ name: name.trim(), user_id: user.id });
+            if (error) throw error;
+            addToast('Habit added!');
+            await fetchData();
+        } catch (e) {
+            addToast('Failed to add habit', 'error');
+        }
+    };
 
     return (
         <div className="fade-in">
@@ -183,7 +224,7 @@ export default function HomePage() {
                                 transition={{ type: 'spring', stiffness: 400, damping: 10 }}
                                 onClick={async () => {
                                     setMood(m.score);
-                                    await supabase.from('mood_logs').upsert({ log_date: today, mood_score: m.score }, { onConflict: 'log_date' });
+                                    await supabase.from('mood_logs').upsert({ log_date: today, mood_score: m.score, user_id: user.id }, { onConflict: 'log_date' });
                                     addToast(`Feeling ${m.label}!`);
                                 }}
                             >
@@ -258,10 +299,29 @@ export default function HomePage() {
 
                 {habits.length === 0 ? (
                     <div className="empty-state" style={{ padding: '40px 0' }}>
-                        <p style={{ marginBottom: 20 }}>Your database is currently empty.</p>
-                        <button className="add-btn" onClick={seedHabits} disabled={seeding} style={{ background: 'var(--success)', padding: '12px 24px' }}>
-                            {seeding ? 'Seeding Habits...' : '🚀 Click to Load 16 Default Habits'}
-                        </button>
+                        <p style={{ marginBottom: 20, color: 'var(--text-dim)' }}>Your database is currently empty.</p>
+                        
+                        <div className="manage-form" style={{ maxWidth: '500px', margin: '0 auto 24px', justifyContent: 'center' }}>
+                            <input 
+                                className="manage-input" 
+                                type="text" 
+                                placeholder="Enter a habit name..." 
+                                id="quick-add-habit"
+                                onKeyDown={e => e.key === 'Enter' && (addCustomHabit(e.target.value), e.target.value = '')}
+                            />
+                            <button className="add-btn" onClick={() => {
+                                const el = document.getElementById('quick-add-habit');
+                                addCustomHabit(el.value);
+                                el.value = '';
+                            }}>+ Add</button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+                            <button className="add-btn" onClick={seedHabits} disabled={seeding} style={{ background: 'var(--success)', padding: '12px 24px', width: 'fit-content' }}>
+                                {seeding ? 'Seeding Habits...' : '🚀 Click to Load 16 Default Habits'}
+                            </button>
+                            <a href="/manage" className="nav-link" style={{ color: 'var(--primary-light)', fontSize: '0.8rem' }}>Or go to Settings to manage habits</a>
+                        </div>
                     </div>
                 ) : (
                     <motion.div

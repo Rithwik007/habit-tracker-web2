@@ -3,8 +3,10 @@ import { supabase } from '../supabaseClient';
 import useMidnightRefresh, { formatLocalDate } from '../hooks/useMidnightRefresh';
 import LeetCodeGraph from '../components/LeetCodeGraph';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 
 export default function MonthlyPage() {
+    const { user } = useAuth();
     const [habits, setHabits] = useState([]);
     const [logs, setLogs] = useState([]);
     const [notes, setNotes] = useState({});
@@ -25,7 +27,7 @@ export default function MonthlyPage() {
         async function fetchData() {
             setLoading(true);
             try {
-                const { data: habitsData } = await supabase.from('habits').select('*').order('created_at', { ascending: true });
+                const { data: habitsData } = await supabase.from('habits').select('*').eq('user_id', user.id).order('created_at', { ascending: true });
                 setHabits(habitsData || []);
 
                 const startStr = formatLocalDate(monthStart);
@@ -34,6 +36,7 @@ export default function MonthlyPage() {
                 const { data: logsData } = await supabase
                     .from('daily_logs')
                     .select('*')
+                    .eq('user_id', user.id)
                     .gte('log_date', startStr)
                     .lte('log_date', endStr);
 
@@ -42,6 +45,7 @@ export default function MonthlyPage() {
                 const { data: notesData } = await supabase
                     .from('daily_notes')
                     .select('*')
+                    .eq('user_id', user.id)
                     .gte('note_date', startStr)
                     .lte('note_date', endStr);
 
@@ -69,7 +73,7 @@ export default function MonthlyPage() {
         }
 
         await supabase.from('daily_logs').upsert(
-            { habit_id: habitId, log_date: dateStr, completed: next },
+            { habit_id: habitId, log_date: dateStr, completed: next, user_id: user.id },
             { onConflict: 'habit_id,log_date' }
         );
     };

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 const GREETINGS = [
     "Ready to conquer the day?",
@@ -35,6 +36,7 @@ function formatDateTime() {
 }
 
 export default function Greeting() {
+    const { profile, user } = useAuth();
     const [weather, setWeather] = useState(null);
     const [dateTime, setDateTime] = useState(formatDateTime());
     const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
@@ -73,7 +75,7 @@ export default function Greeting() {
     return (
         <div className="greeting-banner">
             <div className="greeting-time">{greeting}</div>
-            <div className="greeting-name">Hi, Rithwik Racharla</div>
+            <div className="greeting-name">Hi, {profile?.display_name || user?.email?.split('@')[0] || 'there'}</div>
             <div className="greeting-meta">
                 <span>📅 {dateTime.date}</span>
                 <span>🕐 {dateTime.time}</span>

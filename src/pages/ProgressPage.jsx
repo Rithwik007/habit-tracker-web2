@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext';
 
 export default function ProgressPage() {
+    const { user } = useAuth();
     const [habits, setHabits] = useState([]);
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -10,8 +12,8 @@ export default function ProgressPage() {
         async function fetchData() {
             setLoading(true);
             try {
-                const { data: habitsData } = await supabase.from('habits').select('*');
-                const { data: logsData } = await supabase.from('daily_logs').select('*').order('log_date', { ascending: false });
+                const { data: habitsData } = await supabase.from('habits').select('*').eq('user_id', user.id);
+                const { data: logsData } = await supabase.from('daily_logs').select('*').eq('user_id', user.id).order('log_date', { ascending: false });
                 setHabits(habitsData || []);
                 setLogs(logsData || []);
             } catch (e) {
@@ -21,7 +23,7 @@ export default function ProgressPage() {
             }
         }
         fetchData();
-    }, []);
+    }, [user?.id]);
 
     const calculateStreak = (habitId) => {
         const hLogs = logs.filter(l => l.habit_id === habitId).sort((a, b) => new Date(b.log_date) - new Date(a.log_date));

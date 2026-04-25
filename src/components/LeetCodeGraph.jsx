@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext';
 
 // Helper to format date as YYYY-MM-DD in local time
 const formatLocalDate = (date) => {
@@ -11,6 +12,7 @@ const formatLocalDate = (date) => {
 };
 
 export default function LeetCodeGraph() {
+    const { user } = useAuth();
     const [dataTracker, setDataTracker] = useState({});
     const [stats, setStats] = useState({ totalCompleted: 0, activeDays: 0, maxStreak: 0, currentStreak: 0 });
     const [loading, setLoading] = useState(true);
@@ -37,6 +39,7 @@ export default function LeetCodeGraph() {
                 const { data: logsData } = await supabase
                     .from('daily_logs')
                     .select('log_date')
+                    .eq('user_id', user.id)
                     .eq('completed', true)
                     .gte('log_date', startStr)
                     .lte('log_date', endStr);
@@ -114,7 +117,7 @@ export default function LeetCodeGraph() {
         }
 
         fetchYearlyData();
-    }, [selectedYear]);
+    }, [selectedYear, user?.id]);
 
     // Build the grid
     const weeks = [];

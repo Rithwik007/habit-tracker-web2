@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import useMidnightRefresh, { formatLocalDate } from '../hooks/useMidnightRefresh';
+import { useAuth } from '../context/AuthContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 
 export default function AnalyticsPage() {
+    const { user } = useAuth();
     const [stats, setStats] = useState({ daily: [], habitWise: [], today: 0 });
     const todayStr = useMidnightRefresh();
     const currentDate = new Date(todayStr || new Date());
@@ -33,14 +35,14 @@ export default function AnalyticsPage() {
         async function fetchStats() {
             setLoading(true);
             try {
-                const { data: habits } = await supabase.from('habits').select('*');
+                const { data: habits } = await supabase.from('habits').select('*').eq('user_id', user.id);
 
                 const startOfMonth = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
                 const endOfMonth = formatLocalDate(new Date(selectedYear, selectedMonth + 1, 0));
 
                 const [logsRes, moodRes] = await Promise.all([
-                    supabase.from('daily_logs').select('*').gte('log_date', startOfMonth).lte('log_date', endOfMonth),
-                    supabase.from('mood_logs').select('*').gte('log_date', startOfMonth).lte('log_date', endOfMonth)
+                    supabase.from('daily_logs').select('*').eq('user_id', user.id).gte('log_date', startOfMonth).lte('log_date', endOfMonth),
+                    supabase.from('mood_logs').select('*').eq('user_id', user.id).gte('log_date', startOfMonth).lte('log_date', endOfMonth)
                 ]);
 
                 const logs = logsRes.data || [];
@@ -114,7 +116,7 @@ export default function AnalyticsPage() {
             }
         }
         fetchStats();
-    }, [todayStr, selectedYear, selectedMonth, selectedDay]);
+    }, [todayStr, selectedYear, selectedMonth, selectedDay, user?.id]);
 
     if (loading) return <div className="loading-screen">📊 Calculating Analytics...</div>;
 
