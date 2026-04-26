@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { useState } from 'react';
+import { useData } from '../context/DataContext';
+import { habitApi } from '../api';
+import useMidnightRefresh, { formatLocalDate } from '../hooks/useMidnightRefresh';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,37 +15,21 @@ const DEFAULT_HABITS = [
 
 export default function ManageHabitsPage() {
     const { user } = useAuth();
-    const [habits, setHabits] = useState([]);
+    const { habits, habitsLoading, refreshHabits } = useData();
     const [newHabit, setNewHabit] = useState('');
-    const [loading, setLoading] = useState(true);
     const [seeding, setSeeding] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [editValue, setEditValue] = useState('');
     const { addToast } = useToast();
-
-    async function fetchHabits() {
-        setLoading(true);
-        try {
-            const { data } = await supabase.from('habits').select('*').eq('user_id', user.id).order('created_at', { ascending: true });
-            setHabits(data || []);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    useEffect(() => { fetchHabits(); }, [user?.id]);
 
     const addHabit = async () => {
         const name = newHabit.trim();
         if (!name) return;
         try {
-            await supabase.from('habits').insert({
-                name,
-                user_id: user.id
-            });
+            await habitApi.create({ name, userId: user.uid });
             setNewHabit('');
-            addToast('Habit added successfully!');
-            fetchHabits();
+            addToast('Habit added!');
+            refreshHabits();
         } catch (e) {
             addToast('Error adding habit', 'error');
         }
@@ -52,9 +38,9 @@ export default function ManageHabitsPage() {
     const deleteHabit = async (id) => {
         if (!confirm('Delete this habit? All its historical progress will be lost.')) return;
         try {
-            await supabase.from('habits').delete().eq('id', id);
+            await habitApi.delete(id);
             addToast('Habit deleted');
-            fetchHabits();
+            refreshHabits();
         } catch (e) {
             addToast('Error deleting habit', 'error');
         }
@@ -64,10 +50,10 @@ export default function ManageHabitsPage() {
         setSeeding(true);
         try {
             for (const name of DEFAULT_HABITS) {
-                await supabase.from('habits').upsert({ name, user_id: user.id }, { onConflict: 'name' });
+                await habitApi.create({ name, userId: user.uid });
             }
-            fetchHabits();
-            addToast('Default habits loaded successfully!');
+            refreshHabits();
+            addToast('Default habits loaded!');
         } catch (e) {
             addToast('Error seeding habits', 'error');
         } finally {
@@ -75,22 +61,19 @@ export default function ManageHabitsPage() {
         }
     };
 
-    const [editingId, setEditingId] = useState(null);
-    const [editValue, setEditValue] = useState('');
-
     const saveEdit = async (id) => {
         if (!editValue.trim()) return;
         try {
-            await supabase.from('habits').update({ name: editValue.trim() }).eq('id', id);
+            await habitApi.update(id, { name: editValue.trim() });
             setEditingId(null);
-            fetchHabits();
+            refreshHabits();
             addToast('Habit updated!');
         } catch (e) {
             addToast('Error updating habit', 'error');
         }
     };
 
-    if (loading) return <div className="loading-screen">⚙️ Loading Settings...</div>;
+    if (habitsLoading) return <div className="loading-screen">⚙️ Loading...</div>;
 
     return (
         <div className="fade-in">
@@ -112,9 +95,9 @@ export default function ManageHabitsPage() {
                     />
                     <button className="add-btn" onClick={addHabit}>+ Add Habit</button>
                 </div>
-
                 <div style={{ marginTop: 12 }}>
-                    <button className="add-btn" onClick={seedDefault} disabled={seeding} style={{ background: 'var(--success-border)', color: 'var(--success)', border: '1px solid var(--success-border)' }}>
+                    <button className="add-btn" onClick={seedDefault} disabled={seeding}
+                        style={{ background: 'var(--success-bg)', color: 'var(--success)', border: '1px solid var(--success-border)' }}>
                         {seeding ? '⏳ Loading...' : '🚀 Reload Default Set'}
                     </button>
                 </div>
@@ -126,15 +109,15 @@ export default function ManageHabitsPage() {
                 </div>
                 <div className="habit-list">
                     {habits.map(habit => (
-                        <div key={habit.id} className="habit-manage-item">
+                        <div key={habit._id} className="habit-manage-item">
                             <div style={{ display: 'flex', flex: 1, gap: '12px', alignItems: 'center' }}>
-                                {editingId === habit.id ? (
-                                    <input 
+                                {editingId === habit._id ? (
+                                    <input
                                         className="manage-input"
                                         style={{ padding: '4px 8px', height: 'auto' }}
                                         value={editValue}
                                         onChange={e => setEditValue(e.target.value)}
-                                        onKeyDown={e => e.key === 'Enter' && saveEdit(habit.id)}
+                                        onKeyDown={e => e.key === 'Enter' && saveEdit(habit._id)}
                                         autoFocus
                                     />
                                 ) : (
@@ -142,15 +125,13 @@ export default function ManageHabitsPage() {
                                 )}
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
-                                {editingId === habit.id ? (
-                                    <button className="add-btn" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => saveEdit(habit.id)}>Save</button>
+                                {editingId === habit._id ? (
+                                    <button className="add-btn" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => saveEdit(habit._id)}>Save</button>
                                 ) : (
-                                    <button className="delete-btn" style={{ background: 'rgba(37, 192, 244, 0.1)', color: 'var(--primary-light)', borderColor: 'rgba(37, 192, 244, 0.3)' }} onClick={() => {
-                                        setEditingId(habit.id);
-                                        setEditValue(habit.name);
-                                    }}>Edit</button>
+                                    <button className="delete-btn" style={{ background: 'rgba(99,102,241,0.1)', color: 'var(--primary-light)', borderColor: 'rgba(99,102,241,0.3)' }}
+                                        onClick={() => { setEditingId(habit._id); setEditValue(habit.name); }}>Edit</button>
                                 )}
-                                <button className="delete-btn" onClick={() => deleteHabit(habit.id)}>Remove</button>
+                                <button className="delete-btn" onClick={() => deleteHabit(habit._id)}>Remove</button>
                             </div>
                         </div>
                     ))}

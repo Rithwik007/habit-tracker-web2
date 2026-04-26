@@ -17,13 +17,27 @@ export default function SetupPage() {
             return;
         }
         setLoading(true);
-        const { error } = await updateProfile(displayName.trim());
-        if (error) {
-            addToast(error.message, 'error');
+
+        // Safety timeout for the UI
+        const timeout = setTimeout(() => {
             setLoading(false);
-        } else {
-            addToast('Welcome to Habit Mastery!');
-            navigate('/', { replace: true });
+            addToast('Setup is taking longer than expected. Please check your connection or refresh.', 'warning');
+        }, 8000);
+
+        try {
+            const { error } = await updateProfile(displayName.trim());
+            clearTimeout(timeout);
+            if (error) {
+                addToast(error.message, 'error');
+                setLoading(false);
+            } else {
+                addToast('Welcome to Habit Mastery!');
+                navigate('/', { replace: true });
+            }
+        } catch (err) {
+            clearTimeout(timeout);
+            setLoading(false);
+            addToast('An unexpected error occurred.', 'error');
         }
     };
 

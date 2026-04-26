@@ -1,75 +1,180 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient';
+import { 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    signOut as firebaseSignOut, 
+    onAuthStateChanged,
+    GoogleAuthProvider,
+    signInWithPopup,
+    updateProfile as firebaseUpdateProfile,
+    getAdditionalUserInfo,
+    sendEmailVerification,
+    sendPasswordResetEmail
+} from 'firebase/auth';
+import { auth } from '../firebase';
+import { userApi } from '../api';
 
 const AuthContext = createContext(null);
+const ADMIN_EMAIL = 'rithwikracharla@gmail.com';
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchProfile = useCallback(async (userId) => {
-        const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-        setProfile(data);
+    const isAdmin = user?.email === ADMIN_EMAIL;
+
+    const fetchProfile = useCallback(async (firebaseUser) => {
+        try {
+            // First, use the data from Firebase (fastest)
+            setProfile({
+                id: firebaseUser.uid,
+                display_name: firebaseUser.displayName || 'User',
+                email: firebaseUser.email
+            });
+
+            // Then try to get extra info from our MongoDB backend
+            const { data } = await userApi.getProfile(firebaseUser.uid);
+            if (data) {
+                setProfile(prev => ({ ...prev, ...data }));
+            }
+        } catch (err) {
+            console.warn('Backend profile fetch failed, using firebase data instead');
+        }
     }, []);
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-            if (session?.user) fetchProfile(session.user.id);
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                setUser(firebaseUser);
+                // Auto-sync profile to MongoDB on login
+                try {
+                    await userApi.updateProfile({
+                        firebaseId: firebaseUser.uid,
+                        email: firebaseUser.email,
+                        display_name: firebaseUser.displayName || 'User'
+                    });
+                } catch (err) {
+                    console.warn('Initial profile sync to MongoDB failed, will retry later.');
+                }
+                await fetchProfile(firebaseUser);
+            } else {
+                setUser(null);
+                setProfile(null);
+            }
             setLoading(false);
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
-                setUser(session?.user ?? null);
-                if (session?.user) {
-                    await fetchProfile(session.user.id);
-                } else {
-                    setProfile(null);
-                }
-            }
-        );
-
-        return () => subscription.unsubscribe();
+        return () => unsubscribe();
     }, [fetchProfile]);
 
     const signUp = async (email, password) => {
-        // TODO: re-enable 10-user limit after verifying user_count view exists
-        return supabase.auth.signUp({ email, password });
+        try {
+            const result = await createUserWithEmailAndPassword(auth, email, password);
+            await sendEmailVerification(result.user);
+            await firebaseSignOut(auth); // Prevent auto-login before verification
+            return { user: result.user, error: null };
+        } catch (error) {
+            return { error };
+        }
     };
 
     const signIn = async (email, password) => {
-        return supabase.auth.signInWithPassword({ email, password });
+        try {
+            const result = await signInWithEmailAndPassword(auth, email, password);
+            if (!result.user.emailVerified) {
+                await firebaseSignOut(auth);
+                throw new Error('Please verify your email address before logging in.');
+            }
+            return { user: result.user, error: null };
+        } catch (error) {
+            return { error };
+        }
+    };
+
+    const signInWithGoogle = async () => {
+        try {
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            const additionalInfo = getAdditionalUserInfo(result);
+            return { user: result.user, isNewUser: additionalInfo?.isNewUser, error: null };
+        } catch (error) {
+            console.error('Google Sign-In Error:', error);
+            return { error };
+        }
     };
 
     const signOut = async () => {
-        return supabase.auth.signOut();
+        return firebaseSignOut(auth);
     };
 
-    const updateProfile = async (displayName) => {
-        if (!user) return { error: { message: 'Not authenticated' } };
-        const { data, error } = await supabase
-            .from('profiles')
-            .update({ display_name: displayName, updated_at: new Date().toISOString() })
-            .eq('id', user.id)
-            .select()
-            .single();
-        if (!error) setProfile(prev => ({ ...prev, display_name: displayName }));
-        return { data, error };
+    const updateProfile = async (displayName, photoURL) => {
+        if (!auth.currentUser) return { error: { message: 'Not authenticated' } };
+        try {
+            // Update Firebase Profile (name only — photo is stored in MongoDB)
+            await firebaseUpdateProfile(auth.currentUser, { displayName });
+
+            // Update MongoDB Backend (includes photoURL)
+            const updated = await userApi.updateProfile({
+                firebaseId: auth.currentUser.uid,
+                email: auth.currentUser.email,
+                display_name: displayName,
+                photoURL: photoURL !== undefined ? photoURL : (profile?.photoURL || '')
+            });
+
+            setProfile(prev => ({
+                ...prev,
+                display_name: displayName,
+                photoURL: photoURL !== undefined ? photoURL : prev?.photoURL
+            }));
+            return { error: null };
+        } catch (err) {
+            console.error('Profile update failed:', err);
+            return { error: err };
+        }
     };
 
     const deleteUser = async (userId) => {
-        const { error } = await supabase.rpc('delete_user_account', { target_user_id: userId });
-        return { error };
+        try {
+            // Scrub data from MongoDB backend
+            await userApi.deleteUser(userId);
+            
+            // If the user is deleting themselves, remove from Firebase Auth
+            // (Admins cannot do this via client SDK, so this step only runs if currentUser.uid === userId)
+            if (auth.currentUser && auth.currentUser.uid === userId) {
+                await auth.currentUser.delete();
+            }
+            
+            return { error: null };
+        } catch (err) {
+            console.error('User deletion failed:', err);
+            return { error: err };
+        }
+    };
+
+    const resetPassword = async (email) => {
+        try {
+            await sendPasswordResetEmail(auth, email);
+            return { error: null };
+        } catch (error) {
+            return { error };
+        }
     };
 
     return (
-        <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signOut, updateProfile, deleteUser }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            profile, 
+            loading, 
+            isAdmin, 
+            signUp, 
+            signIn, 
+            signInWithGoogle, 
+            signOut, 
+            updateProfile, 
+            deleteUser,
+            resetPassword
+        }}>
             {children}
         </AuthContext.Provider>
     );

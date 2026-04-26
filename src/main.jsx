@@ -5,6 +5,7 @@ import App from './App.jsx'
 import './index.css'
 import { ToastProvider } from './context/ToastContext.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
+import { DataProvider } from './context/DataContext.jsx'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -13,6 +14,9 @@ class ErrorBoundary extends React.Component {
   }
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
   render() {
     if (this.state.hasError) {
@@ -36,11 +40,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         <AuthProvider>
           <ToastProvider>
-            <App />
+            <DataProvider>
+              <App />
+            </DataProvider>
           </ToastProvider>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>
-
 )

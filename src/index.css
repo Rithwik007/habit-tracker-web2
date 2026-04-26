@@ -1,25 +1,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
-  --bg: #090b10;
-  --bg-2: #12151f;
-  --bg-card: rgba(18, 21, 31, 0.7);
-  --bg-card-hover: rgba(37, 192, 244, 0.05);
-  --border: rgba(37, 192, 244, 0.2);
-  --border-hover: rgba(37, 192, 244, 0.6);
-  --primary: #e23636;
-  --primary-light: #25c0f4;
-  --primary-glow: rgba(226, 54, 54, 0.3);
-  --success: #25c0f4;
-  --success-bg: rgba(37, 192, 244, 0.1);
-  --success-border: rgba(37, 192, 244, 0.5);
-  --danger: #e23636;
-  --warning: #ffcc00;
+  --bg: #0f1117;
+  --bg-2: #161b27;
+  --bg-card: rgba(22, 27, 39, 0.85);
+  --bg-card-hover: rgba(99, 102, 241, 0.05);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(99, 102, 241, 0.5);
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-glow: rgba(99, 102, 241, 0.3);
+  --success: #22d3ee;
+  --success-bg: rgba(34, 211, 238, 0.1);
+  --success-border: rgba(34, 211, 238, 0.4);
+  --danger: #f87171;
+  --warning: #fbbf24;
   --text-main: #e2e8f0;
-  --text-dim: #8b9bb4;
+  --text-dim: #94a3b8;
   --text-muted: #475569;
-  --radius: 4px;
-  --radius-sm: 2px;
+  --radius: 12px;
+  --radius-sm: 8px;
   --nav-width: 240px;
   --transition: 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
 }
@@ -52,19 +52,17 @@ body {
 
 .main-content {
   flex: 1;
-  margin-left: var(--nav-width);
+  margin-left: 64px;
   padding: 32px;
   min-height: 100vh;
-  max-width: calc(100vw - var(--nav-width));
+  transition: margin-left 0.3s ease;
+  max-width: calc(100vw - 64px);
 }
 
-/* ---- NavBar ---- */
+/* ---- NavBar (Collapsible) ---- */
 .navbar {
-  width: var(--nav-width);
+  width: 64px;
   background: var(--bg-2);
-  background-image: linear-gradient(rgba(18, 21, 31, 0.85), rgba(18, 21, 31, 0.95)), url("/marvel/spider-man-captain-americas-shield-marvel-superheroes-4000x3609-6178.jpg");
-  background-size: cover;
-  background-position: center bottom;
   border-right: 1px solid var(--border);
   position: fixed;
   left: 0;
@@ -72,49 +70,69 @@ body {
   bottom: 0;
   display: flex;
   flex-direction: column;
-  padding: 28px 0;
-  z-index: 100;
+  z-index: 200;
+  overflow: hidden;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.navbar-collapsed { width: 64px; }
+.navbar-expanded { width: 240px; box-shadow: 4px 0 24px rgba(0,0,0,0.4); }
+
+/* Brand */
 .nav-brand {
-  padding: 0 20px 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 18px;
   border-bottom: 1px solid var(--border);
+  min-height: 68px;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
-.nav-brand h2 {
-  font-size: 1.1rem;
+.nav-brand-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+}
+
+.nav-brand-text {
+  font-size: 0.95rem;
   font-weight: 800;
   color: var(--primary);
   text-transform: uppercase;
-  letter-spacing: 2px;
-  text-shadow: 0 0 10px var(--primary-glow);
+  letter-spacing: 1.5px;
+  opacity: 0;
+  transition: opacity 0.2s ease 0.05s;
+  white-space: nowrap;
 }
 
-.nav-brand p {
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  margin-top: 2px;
-}
+.navbar-expanded .nav-brand-text { opacity: 1; }
 
+/* Nav Links */
 .nav-links {
   display: flex;
   flex-direction: column;
-  padding: 16px 12px;
-  gap: 4px;
+  padding: 12px 8px;
+  gap: 2px;
   flex: 1;
+  overflow: hidden;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 12px 10px;
   border-radius: var(--radius-sm);
   text-decoration: none;
   color: var(--text-dim);
   font-size: 0.875rem;
   font-weight: 500;
-  transition: var(--transition);
+  transition: all 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .nav-link:hover {
@@ -128,24 +146,85 @@ body {
 }
 
 .nav-icon {
-  font-size: 1.1rem;
-  width: 20px;
+  font-size: 1.15rem;
+  width: 28px;
+  flex-shrink: 0;
   text-align: center;
+}
+
+.nav-label {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.navbar-expanded .nav-label { opacity: 1; }
+
+/* Profile Section */
+.nav-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 10px;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.2s;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.nav-profile:hover { background: rgba(255,255,255,0.04); }
+
+.nav-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 2px solid var(--border);
+}
+
+.nav-profile-info {
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  min-width: 0;
+}
+
+.navbar-expanded .nav-profile-info { opacity: 1; }
+
+.nav-profile-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-profile-sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 1px;
 }
 
 /* ---- Greeting Banner ---- */
 .greeting-banner {
-  background: linear-gradient(135deg, rgba(18, 0, 0, 0.85) 0%, rgba(21, 21, 21, 0.9) 50%, rgba(9, 11, 16, 0.95) 100%), url("/marvel/avengers-endgame-thor-captain-america-iron-man-thanos-2560x1440-2037.png");
-  background-size: cover;
-  background-position: top center;
-  border: 1px solid rgba(226, 54, 54, 0.4);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(22, 27, 39, 0.9) 100%);
+  border: 1px solid var(--border);
   border-left: 4px solid var(--primary);
   border-radius: var(--radius);
   padding: 28px 32px;
   margin-bottom: 28px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 0 20px rgba(226, 54, 54, 0.1);
+  box-shadow: 0 4px 24px rgba(99, 102, 241, 0.08);
 }
 
 .greeting-banner::before {
@@ -1307,4 +1386,218 @@ body {
   background: rgba(239, 68, 68, 0.1);
   border-color: #ef4444;
   color: #ef4444;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 24px 0;
+  color: var(--text-dim);
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.auth-divider span {
+  padding: 0 12px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  opacity: 0.6;
+}
+
+.loading-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  color: var(--primary-light);
+  font-size: 1rem;
+  font-weight: 600;
+  background: var(--bg);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+}
+
+/* ---- Mood Picker ---- */
+.mood-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.mood-picker {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mood-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: rgba(255,255,255,0.04);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mood-btn:hover {
+  background: rgba(255,255,255,0.1);
+  transform: scale(1.1);
+}
+
+.mood-btn.selected {
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.2);
+  transform: scale(1.15);
+}
+
+/* ---- Daily Note Textarea ---- */
+.daily-note-area {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  line-height: 1.6;
+}
+
+.daily-note-area:focus {
+  border-color: var(--primary);
+  background: rgba(99,102,241,0.04);
+}
+
+.daily-note-area::placeholder {
+  color: var(--text-muted);
+}
+
+/* ---- LeetCode Stats Row ---- */
+.leetcode-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.leetcode-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.leetcode-stat-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.leetcode-stat-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ---- Charts Grid ---- */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+}
+
+/* ---- Delete Button ---- */
+.delete-btn {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: rgba(248, 113, 113, 0.08);
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.delete-btn:hover {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+/* ---- Streak List ---- */
+.streak-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.streak-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.streak-rank {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.streak-name {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  font-weight: 500;
+  min-width: 140px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.streak-bar-container {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.streak-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.streak-value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary-light);
+  min-width: 52px;
+  text-align: right;
+  flex-shrink: 0;
 }
