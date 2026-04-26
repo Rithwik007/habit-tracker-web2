@@ -1601,3 +1601,130 @@ body {
   text-align: right;
   flex-shrink: 0;
 }
+
+/* ---- Mobile Responsiveness ---- */
+@media (max-width: 768px) {
+  .navbar {
+    width: 100% !important;
+    height: 65px;
+    top: auto;
+    bottom: 0;
+    flex-direction: row;
+    justify-content: space-between;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    z-index: 1000;
+  }
+  
+  .navbar-expanded {
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
+  }
+  
+  .nav-brand {
+    display: none;
+  }
+  
+  .nav-links {
+    flex-direction: row;
+    padding: 0;
+    gap: 0;
+    flex: 1;
+    justify-content: flex-start; /* For scrolling */
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .nav-links::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+  
+  .nav-link {
+    flex-direction: column;
+    padding: 8px 6px;
+    gap: 4px;
+    border-radius: 0;
+    justify-content: center;
+    min-width: 65px;
+    flex: 1; /* Stretch to fit if few, otherwise scroll */
+  }
+  
+  .nav-icon {
+    font-size: 1.25rem;
+    width: auto;
+  }
+  
+  .nav-label {
+    opacity: 1 !important;
+    font-size: 0.55rem;
+    pointer-events: auto;
+    white-space: nowrap;
+    display: block;
+    color: var(--text-dim);
+  }
+
+  .nav-link.active .nav-label {
+    color: var(--primary-light);
+  }
+
+  .nav-profile {
+    border-top: none;
+    border-left: 1px solid var(--border);
+    padding: 0 16px;
+    justify-content: center;
+    background: var(--bg-2); /* ensure background stays solid */
+  }
+  
+  .nav-profile-info {
+    display: none !important;
+  }
+  
+  .nav-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+  }
+
+  /* Adjust main content */
+  .main-content {
+    margin-left: 0;
+    padding: 16px;
+    padding-bottom: 85px; /* Space for bottom nav */
+    max-width: 100vw;
+  }
+  
+  .greeting-banner {
+    padding: 18px;
+    margin-bottom: 20px;
+  }
+  
+  .greeting-name {
+    font-size: 1.3rem;
+  }
+
+  .greeting-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .habit-item {
+    padding: 12px 14px;
+  }
+
+  .manage-form {
+    flex-direction: column;
+  }
+
+  .monthly-grid-wrapper {
+    margin: 0 -16px; /* Edge to edge scrolling on mobile */
+    padding: 0 16px;
+  }
+}
