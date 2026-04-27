@@ -74,11 +74,18 @@ export default function AnalyticsPage() {
                                 <YAxis yAxisId="left" fontSize={12} stroke="var(--text-dim)" label={{ value: 'Points', angle: -90, position: 'insideLeft', fill: 'var(--text-dim)', fontSize: 12 }} />
                                 <YAxis yAxisId="right" orientation="right" fontSize={12} stroke="var(--text-dim)" domain={[0, 100]} label={{ value: 'Completion %', angle: 90, position: 'insideRight', fill: 'var(--text-dim)', fontSize: 12 }} />
                                 <Tooltip 
-                                    contentStyle={{ background: '#1e1b4b', border: '1px solid #312e81', borderRadius: 12, fontSize: 14, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                                    itemStyle={{ padding: '4px 0' }}
+                                    contentStyle={{ 
+                                        background: 'var(--bg-card)', 
+                                        border: '1px solid var(--border)', 
+                                        borderRadius: 'var(--radius)', 
+                                        fontSize: 14, 
+                                        boxShadow: 'var(--card-shadow)',
+                                        color: 'var(--text-main)'
+                                    }}
+                                    itemStyle={{ padding: '4px 0', color: 'var(--text-main)' }}
                                 />
-                                <Line yAxisId="left" name="Points Earned" type="monotone" dataKey="points" stroke="#6366f1" strokeWidth={4} dot={{ fill: '#6366f1', r: 4, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
-                                <Line yAxisId="right" name="Completion %" type="monotone" dataKey="pct" stroke="#22d3ee" strokeWidth={3} strokeDasharray="5 5" dot={false} />
+                                <Line yAxisId="left" name="Points Earned" type="monotone" dataKey="points" stroke="var(--primary)" strokeWidth={4} dot={{ fill: 'var(--primary)', r: 4, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                                <Line yAxisId="right" name="Completion %" type="monotone" dataKey="pct" stroke="var(--primary-light)" strokeWidth={3} strokeDasharray="5 5" dot={false} />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>

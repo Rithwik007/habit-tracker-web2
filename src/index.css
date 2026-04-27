@@ -1,9 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Orbitron:wght@400;700;900&family=Cinzel:wght@400;700;900&family=JetBrains+Mono:wght@400;700&family=Montserrat:wght@400;700;900&family=Inter:wght@400;700;900&display=swap');
+
 :root {
   --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --font-main: 'Inter', sans-serif;
 }
 
-/* 1. Quantum Mastery (Original Indigo - Re-Polished) */
+/* 1. Quantum Mastery (Original Indigo - Polished) */
 .theme-mastery {
   --bg: #0f1117;
   --bg-2: #161b27;
@@ -13,74 +15,87 @@
   --primary-glow: rgba(99, 102, 241, 0.25);
   --border: rgba(255, 255, 255, 0.08);
   --text-main: #e2e8f0;
+  --text-dim: #94a3b8;
   --radius: 12px;
+  --font-cool: 'Outfit', sans-serif;
   --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
+.theme-mastery * { font-family: var(--font-cool); }
 
-/* 2. Cyber Rose (Pink/Purple Neon - "The User Choice") */
+/* 2. Cyber Rose (Pink/Purple Neon) */
 .theme-cyber {
   --bg: #0a011a;
   --bg-2: #16022e;
   --bg-card: rgba(22, 2, 46, 0.8);
-  --primary: #ff007f; /* Hot Pink */
-  --primary-light: #00ffff; /* Cyan Contrast */
+  --primary: #ff007f;
+  --primary-light: #00ffff;
   --primary-glow: rgba(255, 0, 127, 0.3);
   --border: rgba(255, 0, 127, 0.2);
   --text-main: #fff;
-  --radius: 4px;
-  --card-shadow: 0 0 20px rgba(255, 0, 127, 0.15), inset 0 0 10px rgba(255, 0, 127, 0.05);
+  --text-dim: #f5d0fe;
+  --radius: 2px;
+  --font-cool: 'Orbitron', sans-serif;
+  --card-shadow: 0 0 20px rgba(255, 0, 127, 0.15);
 }
-.theme-cyber .add-btn { background: linear-gradient(90deg, #ff007f, #7f00ff); box-shadow: 0 0 20px var(--primary-glow); }
-.theme-cyber .card:hover { border-color: var(--primary-light); box-shadow: 0 0 30px rgba(0, 255, 255, 0.2); }
+.theme-cyber * { font-family: var(--font-cool); letter-spacing: 1px; }
+.theme-cyber .add-btn { text-transform: uppercase; border: 1px solid var(--primary); background: transparent; color: var(--primary); }
+.theme-cyber .add-btn:hover { background: var(--primary); color: #fff; box-shadow: 0 0 30px var(--primary); }
 
-/* 3. Golden Obsidian (The Luxury Executive) */
+/* 3. Golden Obsidian (Luxury Executive) */
 .theme-gold {
   --bg: #050505;
   --bg-2: #0a0a0a;
-  --bg-card: linear-gradient(145deg, #0f0f0f, #050505);
-  --primary: #d4af37; /* Metallic Gold */
+  --bg-card: #000;
+  --primary: #d4af37;
   --primary-light: #f1d592;
   --primary-glow: rgba(212, 175, 55, 0.2);
-  --border: rgba(212, 175, 55, 0.15);
+  --border: #222;
   --text-main: #f8fafc;
+  --text-dim: #666;
   --radius: 0px;
-  --card-shadow: 0 4px 30px rgba(0, 0, 0, 0.8), 0 0 1px var(--primary);
+  --font-cool: 'Cinzel', serif;
+  --card-shadow: 0 0 50px rgba(0,0,0,1);
 }
-.theme-gold .add-btn { background: #d4af37; color: #000; font-weight: 800; border-radius: 0; }
-.theme-gold .navbar { border-right: 1px solid var(--border); }
+.theme-gold * { font-family: var(--font-cool); }
+.theme-gold .card { border-top: 1px solid var(--primary); }
+.theme-gold .add-btn { background: #d4af37; color: #000; border-radius: 0; font-weight: 700; }
 
 /* 4. Toxic Emerald (Bio-Hazard Stealth) */
 .theme-toxic {
   --bg: #020a05;
   --bg-2: #05140b;
-  --bg-card: rgba(5, 20, 11, 0.9);
-  --primary: #39ff14; /* Toxic Green */
+  --bg-card: #05140b;
+  --primary: #39ff14;
   --primary-light: #00ff00;
   --primary-glow: rgba(57, 255, 20, 0.2);
-  --border: rgba(57, 255, 20, 0.1);
+  --border: #1a2e1f;
   --text-main: #ecfdf5;
-  --radius: 8px;
+  --text-dim: #34d399;
+  --radius: 0px;
+  --font-cool: 'JetBrains Mono', monospace;
   --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
 }
-.theme-toxic body::before {
-  content: ''; position: fixed; inset: 0;
-  background: radial-gradient(circle at 80% 20%, rgba(57, 255, 20, 0.05) 0%, transparent 40%);
-  pointer-events: none;
-}
+.theme-toxic * { font-family: var(--font-cool); }
+.theme-toxic .card { border: 1px solid #1a2e1f; position: relative; }
+.theme-toxic .card::after { content: ''; position: absolute; inset: 0; pointer-events: none; border: 1px solid rgba(57, 255, 20, 0.05); }
 
-/* 5. Deep Oceanic (The Liquid Calm) */
+/* 5. Deep Oceanic (Liquid Calm) */
 .theme-oceanic {
   --bg: #010409;
   --bg-2: #0d1117;
   --bg-card: rgba(13, 17, 23, 0.7);
-  --primary: #0ea5e9; /* Deep Sea Blue */
-  --primary-light: #2dd4bf; /* Teal */
+  --primary: #0ea5e9;
+  --primary-light: #2dd4bf;
   --primary-glow: rgba(14, 165, 233, 0.3);
   --border: rgba(14, 165, 233, 0.1);
   --text-main: #f0f6fc;
-  --radius: 20px;
+  --text-dim: #8b949e;
+  --radius: 30px;
+  --font-cool: 'Montserrat', sans-serif;
   --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
+.theme-oceanic * { font-family: var(--font-cool); }
+.theme-oceanic .add-btn { border-radius: 50px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); }
 .theme-oceanic body { background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%); background-attachment: fixed; }
 
 /* Global Stability Fixes */
