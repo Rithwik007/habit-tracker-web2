@@ -18,6 +18,7 @@ export const habitApi = {
 export const userApi = {
   getProfile: (firebaseId) => api.get(`/users/${firebaseId}`),
   updateProfile: (profileData) => api.post('/users/profile', profileData),
+  updateTheme: (firebaseId, theme) => api.patch(`/users/${firebaseId}/theme`, { theme }),
   deleteUser: (firebaseId) => api.delete(`/users/${firebaseId}`)
 };
 

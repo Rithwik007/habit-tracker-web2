@@ -1,4 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useAuth } from './AuthContext';
+import { userApi } from '../api';
 
 const ThemeContext = createContext();
 
@@ -11,17 +14,42 @@ export const THEMES = [
 ];
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => localStorage.getItem('app-theme') || 'midnight');
+  const { user, profile } = useAuth();
+  const location = useLocation();
+  const [theme, setThemeState] = useState('mastery');
 
+  // Detect if current page is an Auth page
+  const isAuthPage = ['/login', '/register', '/setup'].includes(location.pathname);
+
+  // Sync with profile theme on login
   useEffect(() => {
-    // Remove all theme classes
+    if (profile?.theme) {
+      setThemeState(profile.theme);
+    } else if (!user) {
+      setThemeState('mastery'); // Reset to default on logout
+    }
+  }, [profile?.theme, user]);
+
+  // Apply theme to body
+  useEffect(() => {
     const body = document.body;
     THEMES.forEach(t => body.classList.remove(`theme-${t.id}`));
     
-    // Add current theme class
-    body.classList.add(`theme-${theme}`);
-    localStorage.setItem('app-theme', theme);
-  }, [theme]);
+    // Auth pages always use 'mastery'
+    const activeTheme = isAuthPage ? 'mastery' : theme;
+    body.classList.add(`theme-${activeTheme}`);
+  }, [theme, isAuthPage]);
+
+  const setTheme = async (newTheme) => {
+    setThemeState(newTheme);
+    if (user) {
+      try {
+        await userApi.updateTheme(user.uid, newTheme);
+      } catch (err) {
+        console.error('Failed to sync theme to account:', err);
+      }
+    }
+  };
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>

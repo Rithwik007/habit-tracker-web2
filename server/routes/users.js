@@ -40,6 +40,23 @@ router.post('/profile', async (req, res) => {
   }
 });
 
+// Update Theme Preference
+router.patch('/:firebaseId/theme', async (req, res) => {
+  try {
+    const { theme } = req.body;
+    if (!theme) return res.status(400).json({ message: 'Theme is required' });
+    
+    const user = await User.findOneAndUpdate(
+      { firebaseId: req.params.firebaseId },
+      { theme },
+      { new: true }
+    );
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Delete user and all associated data
 router.delete('/:firebaseId', async (req, res) => {
   try {
