@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Orbitron:wght@400;700;900&family=Cinzel:wght@400;700;900&family=JetBrains+Mono:wght@400;700&family=Montserrat:wght@400;700;900&family=Inter:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Orbitron:wght@400;700;900&family=Cinzel:wght@400;700;900&family=JetBrains+Mono:wght@400;700&family=Montserrat:wght@400;700;900&family=Inter:wght@400;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
 
 :root {
   --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -34,10 +34,11 @@
   --text-main: #fff;
   --text-dim: #f9a8d4;
   --radius: 24px;
-  --font-cool: 'Poppins', sans-serif;
+  --font-cool: 'Playfair Display', serif;
   --card-shadow: 0 10px 40px rgba(244, 114, 182, 0.05);
 }
 .theme-cyber * { font-family: var(--font-cool); }
+.theme-cyber .page-title, .theme-cyber .card-title { font-style: italic; font-weight: 700; }
 .theme-cyber .card { 
   border: 1px solid var(--border); 
   backdrop-filter: blur(10px);
