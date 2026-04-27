@@ -1,104 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Poppins:wght@300;500;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700;900&display=swap');
+
 :root {
-  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --font-main: 'Inter', sans-serif;
+  --transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 1. Mastery (The Original Legend) */
+/* =========================================
+   1. Mastery (Original Legend)
+   Layout: Standard Left Sidebar
+   ========================================= */
 .theme-mastery {
   --bg: #0f1117;
   --bg-2: #161b27;
-  --bg-card: rgba(22, 27, 39, 0.85);
   --primary: #6366f1;
-  --primary-light: #818cf8;
-  --primary-glow: rgba(99, 102, 241, 0.2);
-  --border: rgba(255, 255, 255, 0.08);
-  --text-main: #e2e8f0;
-  --text-dim: #94a3b8;
   --radius: 12px;
-  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --font-main: 'Inter', sans-serif;
 }
 
-/* 2. Midnight Nebula (Deep Space / Cosmic) */
-.theme-nebula {
-  --bg: #02040a;
-  --bg-2: #0b0e1a;
-  --bg-card: rgba(11, 14, 26, 0.7);
-  --primary: #c084fc;
-  --primary-light: #818cf8;
-  --primary-glow: rgba(192, 132, 252, 0.3);
-  --border: rgba(192, 132, 252, 0.1);
-  --text-main: #f3f4f6;
-  --radius: 20px;
-  --card-shadow: 0 0 40px rgba(192, 132, 252, 0.1);
+/* =========================================
+   2. Monolith (Centered Executive)
+   Layout: No Sidebar (Hidden or Full Width)
+   ========================================= */
+.theme-monolith {
+  --bg: #000;
+  --bg-2: #050505;
+  --primary: #fff;
+  --radius: 2px;
+  --font-main: 'Space Grotesk', sans-serif;
 }
-.theme-nebula body {
-  background: radial-gradient(circle at 50% 50%, #0b0e1a 0%, #02040a 100%);
-}
-.theme-nebula body::before {
-  content: ''; position: fixed; inset: 0;
-  background-image: radial-gradient(#fff 1px, transparent 1px);
-  background-size: 50px 50px;
-  opacity: 0.1; pointer-events: none;
-}
+.theme-monolith .navbar { width: 0; opacity: 0; pointer-events: none; }
+.theme-monolith .main-content { margin-left: 0 !important; max-width: 800px !important; margin: 0 auto !important; padding-top: 100px; }
+.theme-monolith .card { border: 1px solid #222; background: #000; }
+.theme-monolith .add-btn { width: 100%; border-radius: 0; background: #fff; color: #000; }
 
-/* 3. Onyx & Ember (Volcanic / Intense) */
-.theme-ember {
-  --bg: #050505;
-  --bg-2: #110905;
-  --bg-card: rgba(17, 9, 5, 0.9);
-  --primary: #f97316;
-  --primary-light: #fbbf24;
-  --primary-glow: rgba(249, 115, 22, 0.4);
-  --border: rgba(249, 115, 22, 0.15);
-  --text-main: #fff;
-  --radius: 4px;
-  --card-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(249, 115, 22, 0.05);
-}
-.theme-ember .card:hover { border-color: var(--primary); box-shadow: 0 0 30px rgba(249, 115, 22, 0.2); }
-.theme-ember .add-btn { background: linear-gradient(135deg, #f97316, #ea580c); box-shadow: 0 0 20px rgba(249, 115, 22, 0.3); }
-
-/* 4. Emerald Stealth (Tactical / Forest Dark) */
-.theme-stealth {
-  --bg: #060907;
-  --bg-2: #0d140f;
-  --bg-card: rgba(13, 20, 15, 0.8);
-  --primary: #10b981;
-  --primary-light: #34d399;
-  --primary-glow: rgba(16, 185, 129, 0.2);
-  --border: rgba(16, 185, 129, 0.1);
-  --text-main: #ecfdf5;
+/* =========================================
+   3. Terminal (80s Hacker)
+   Layout: Command Line Style
+   ========================================= */
+.theme-terminal {
+  --bg: #0a0a0a;
+  --bg-2: #000;
+  --primary: #0f0;
   --radius: 0px;
-  --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  --font-main: 'Roboto Mono', monospace;
 }
-.theme-stealth .card { border-left: 3px solid var(--primary); }
+.theme-terminal body::after {
+  content: " "; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 9999; background-size: 100% 2px, 3px 100%; pointer-events: none;
+}
+.theme-terminal .card { border: 1px solid #0f0; background: #000; box-shadow: 0 0 10px rgba(0,255,0,0.2); }
+.theme-terminal .add-btn { background: #0f0; color: #000; font-weight: bold; }
 
-/* 5. Cyber Rose (Neon Pink / Dark Plum) */
-.theme-cyberrose {
-  --bg: #0f0714;
-  --bg-2: #1a0b21;
-  --bg-card: rgba(26, 11, 33, 0.85);
-  --primary: #fb7185;
-  --primary-light: #fda4af;
-  --primary-glow: rgba(251, 113, 133, 0.3);
-  --border: rgba(251, 113, 133, 0.2);
-  --text-main: #fff;
-  --radius: 16px;
-  --card-shadow: 0 10px 40px rgba(251, 113, 133, 0.1);
+/* =========================================
+   4. Island (The Floating Experience)
+   Layout: Bottom Dock Sidebar
+   ========================================= */
+.theme-island {
+  --bg: #0f172a;
+  --bg-2: #1e293b;
+  --primary: #ec4899; /* Pinkish but Dark */
+  --radius: 32px;
+  --font-main: 'Poppins', sans-serif;
 }
-.theme-cyberrose body {
-  background: linear-gradient(135deg, #0f0714 0%, #1a0b21 100%);
+.theme-island .navbar {
+  width: 90% !important; height: 70px !important; bottom: 20px !important; top: auto !important; left: 5% !important;
+  border-radius: 40px !important; border: 1px solid rgba(255,255,255,0.1) !important;
+  flex-direction: row !important; backdrop-filter: blur(20px); background: rgba(15, 23, 42, 0.8) !important;
 }
-.theme-cyberrose .add-btn { 
-  background: transparent; 
-  border: 1px solid var(--primary); 
-  color: var(--primary);
-  text-shadow: 0 0 10px var(--primary);
+.theme-island .nav-links { flex-direction: row !important; justify-content: space-around; width: 100%; }
+.theme-island .nav-brand, .theme-island .nav-profile-info { display: none !important; }
+.theme-island .main-content { margin-left: 0 !important; padding-bottom: 120px; }
+.theme-island .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); }
+
+/* =========================================
+   5. Ethereal (Typography Dark)
+   Layout: Minimalist Typography
+   ========================================= */
+.theme-ethereal {
+  --bg: #030014;
+  --bg-2: #030014;
+  --primary: #6366f1;
+  --radius: 100px;
+  --font-main: 'Inter', sans-serif;
 }
-.theme-cyberrose .add-btn:hover {
-  background: var(--primary);
-  color: #fff;
-  box-shadow: 0 0 30px var(--primary);
-}
+.theme-ethereal .card { background: transparent; border: none; border-bottom: 1px solid #1e1b4b; border-radius: 0; }
+.theme-ethereal .habit-name { font-size: 1.5rem; font-weight: 300; }
+.theme-ethereal .check-circle { width: 40px; height: 40px; }
 
 * {
   font-family: var(--font-main);
@@ -107,9 +94,15 @@
 
 body {
   background: var(--bg);
-  color: var(--text-main);
+  color: var(--text-main, #fff);
   margin: 0;
-  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
 .card:hover {
