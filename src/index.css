@@ -24,6 +24,60 @@
   --transition: 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
 }
 
+/* Emerald Forest Theme */
+.theme-emerald {
+  --bg: #061a15;
+  --bg-2: #09261f;
+  --bg-card: rgba(9, 38, 31, 0.85);
+  --primary: #10b981;
+  --primary-light: #34d399;
+  --primary-glow: rgba(16, 185, 129, 0.3);
+  --border: rgba(16, 185, 129, 0.15);
+  --border-hover: rgba(16, 185, 129, 0.6);
+}
+
+/* Cyber Neon Theme */
+.theme-cyber {
+  --bg: #0d011a;
+  --bg-2: #16022e;
+  --bg-card: rgba(22, 2, 46, 0.85);
+  --primary: #f0abfc;
+  --primary-light: #f5d0fe;
+  --primary-glow: rgba(240, 171, 252, 0.3);
+  --border: rgba(240, 171, 252, 0.2);
+  --border-hover: rgba(240, 171, 252, 0.8);
+}
+
+/* Royal Gold Theme (Light) */
+.theme-royal {
+  --bg: #fcfaf2;
+  --bg-2: #fffdfa;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --primary: #fbbf24;
+  --primary-light: #fcd34d;
+  --primary-glow: rgba(251, 191, 36, 0.2);
+  --border: rgba(251, 191, 36, 0.15);
+  --border-hover: rgba(251, 191, 36, 0.6);
+  --text-main: #1e293b;
+  --text-dim: #64748b;
+  --text-muted: #94a3b8;
+}
+
+/* Clear Sky Theme (Light) */
+.theme-sky {
+  --bg: #f8fafc;
+  --bg-2: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.95);
+  --primary: #0ea5e9;
+  --primary-light: #38bdf8;
+  --primary-glow: rgba(14, 165, 233, 0.2);
+  --border: rgba(14, 165, 233, 0.1);
+  --border-hover: rgba(14, 165, 233, 0.5);
+  --text-main: #0f172a;
+  --text-dim: #475569;
+  --text-muted: #64748b;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -250,7 +304,7 @@ body {
 .greeting-name {
   font-size: 1.9rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-main);
   margin-bottom: 6px;
 }
 

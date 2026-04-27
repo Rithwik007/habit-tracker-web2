@@ -200,8 +200,7 @@ export default function HomePage() {
                     />
                     <input
                         className="manage-input goal-input-time"
-                        type="text"
-                        placeholder="Time (optional)"
+                        type="time"
                         value={newGoalTime}
                         onChange={e => setNewGoalTime(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && addGoal()}
