@@ -3,11 +3,11 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const ThemeContext = createContext();
 
 export const THEMES = [
-  { id: 'legacy', name: 'Legacy Mastery', color: '#6366f1' },
-  { id: 'sakura', name: 'Sakura Bloom', color: '#ff8fa3' },
-  { id: 'cyber', name: 'Cyber Grid', color: '#00ff00' },
-  { id: 'paperback', name: 'Paperback', color: '#1a1a1a' },
-  { id: 'liquid', name: 'Glass Liquid', color: '#0ea5e9' },
+  { id: 'mastery', name: 'Habit Mastery (Original)', color: '#6366f1' },
+  { id: 'nebula', name: 'Midnight Nebula', color: '#c084fc' },
+  { id: 'ember', name: 'Onyx & Ember', color: '#f97316' },
+  { id: 'stealth', name: 'Emerald Stealth', color: '#10b981' },
+  { id: 'cyberrose', name: 'Cyber Rose', color: '#fb7185' },
 ];
 
 export function ThemeProvider({ children }) {
