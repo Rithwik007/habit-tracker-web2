@@ -8,6 +8,7 @@ export const THEMES = [
   { id: 'cyber', name: 'Cyber Neon', color: '#f0abfc' },
   { id: 'royal', name: 'Royal Gold', color: '#fbbf24' },
   { id: 'sky', name: 'Clear Sky', color: '#38bdf8' },
+  { id: 'rose', name: 'Rose Quartz', color: '#fb7185' },
 ];
 
 export function ThemeProvider({ children }) {
