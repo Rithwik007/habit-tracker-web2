@@ -3,11 +3,11 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const ThemeContext = createContext();
 
 export const THEMES = [
-  { id: 'mastery', name: 'Mastery (Classic)', color: '#6366f1' },
-  { id: 'monolith', name: 'Monolith (Centered)', color: '#ffffff' },
-  { id: 'terminal', name: 'Terminal (Hacker)', color: '#00ff00' },
-  { id: 'island', name: 'Island (Floating)', color: '#ec4899' },
-  { id: 'ethereal', name: 'Ethereal (Typo)', color: '#818cf8' },
+  { id: 'mastery', name: 'Mastery (Indigo)', color: '#6366f1' },
+  { id: 'cyber', name: 'Cyber (Pink Neon)', color: '#ff007f' },
+  { id: 'gold', name: 'Gold (Luxury)', color: '#d4af37' },
+  { id: 'toxic', name: 'Toxic (Emerald)', color: '#39ff14' },
+  { id: 'oceanic', name: 'Oceanic (Teal)', color: '#0ea5e9' },
 ];
 
 export function ThemeProvider({ children }) {
