@@ -41,36 +41,6 @@ export default function AnalyticsPage() {
         });
     }
 
-    // Habit-wise consistency for the selected month
-    const habitWise = habits.map(h => {
-        const count = (h.completions || []).filter(c => {
-            const d = new Date(c.date);
-            return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth;
-        }).length;
-        return { name: h.name, points: count * 10 };
-    }).sort((a, b) => b.points - a.points);
-
-    // Donut chart
-    let earned = 0, possible = 1;
-    if (selectedDay === 0) {
-        let maxDays = daysInMonth;
-        if (selectedYear === currentYear && selectedMonth === currentMonth) {
-            maxDays = currentDate.getDate();
-        }
-        earned = habits.reduce((sum, h) =>
-            sum + (h.completions || []).filter(c => {
-                const d = new Date(c.date);
-                return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth;
-            }).length, 0) * 10;
-        possible = maxDays * habits.length * 10 || 1;
-    } else {
-        const targetDateStr = formatLocalDate(new Date(selectedYear, selectedMonth, selectedDay));
-        earned = habits.filter(h =>
-            (h.completions || []).some(c => c.date === targetDateStr)
-        ).length * 10;
-        possible = habits.length * 10 || 1;
-    }
-
     return (
         <div className="fade-in">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
