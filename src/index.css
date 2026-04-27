@@ -1,161 +1,118 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Quicksand:wght@400;600;700&family=Orbitron:wght@400;700;900&family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700;900&display=swap');
 
 :root {
   --bg: #0f1117;
   --bg-2: #161b27;
   --bg-card: rgba(22, 27, 39, 0.85);
-  --bg-card-hover: rgba(99, 102, 241, 0.05);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(99, 102, 241, 0.5);
+  --primary: #6366f1;
+  --text-main: #e2e8f0;
+  --transition: 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  --font-main: 'Inter', sans-serif;
+}
+
+* {
+  font-family: var(--font-main);
+  transition: background 0.4s, color 0.4s, border-color 0.4s, border-radius 0.4s, box-shadow 0.4s, transform 0.4s;
+}
+
+/* 1. Legacy Mastery (The Original Sleek Dark) */
+.theme-legacy {
+  --bg: #0d0e12;
+  --bg-2: #16181d;
   --primary: #6366f1;
   --primary-light: #818cf8;
-  --primary-glow: rgba(99, 102, 241, 0.3);
-  --success: #22d3ee;
-  --success-bg: rgba(34, 211, 238, 0.1);
-  --success-border: rgba(34, 211, 238, 0.4);
-  --danger: #f87171;
-  --warning: #fbbf24;
-  --text-main: #e2e8f0;
-  --text-dim: #94a3b8;
-  --text-muted: #475569;
   --radius: 12px;
-  --radius-sm: 8px;
-  --nav-width: 240px;
-  --transition: 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
-  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  --btn-shadow: 0 4px 12px var(--primary-glow);
+  --font-main: 'Inter', sans-serif;
+  --card-shadow: 0 10px 40px rgba(0,0,0,0.5);
 }
 
-/* Midnight Noir Theme (Default) */
-.theme-midnight {
-  --bg: #0f1117;
-  --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  --card-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-  --btn-shadow: 0 8px 20px var(--primary-glow);
-  --glass: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.08);
+/* 2. Sakura Bloom (Soft Rounded Pink Aesthetic) */
+.theme-sakura {
+  --bg: #fff5f7;
+  --bg-2: #ffffff;
+  --bg-card: #ffffff;
+  --primary: #ff8fa3;
+  --primary-light: #ffb3c1;
+  --radius: 30px; /* Ultra rounded pills */
+  --font-main: 'Quicksand', sans-serif;
+  --text-main: #5c2d36;
+  --text-dim: #8e5d67;
+  --border: #ffe4e9;
+  --card-shadow: 0 15px 35px rgba(255, 143, 163, 0.15);
 }
+.theme-sakura body {
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='50' cy='50' r='2' fill='%23ff8fa3' fill-opacity='0.1'/%3E%3C/svg%3E");
+}
+.theme-sakura .add-btn { border-radius: 50px; text-transform: lowercase; }
 
-/* 1. Obsidian Gold (The Executive Dark) */
-.theme-obsidian {
+/* 3. Cyber Grid (Neon Green Tech / Retro Gamer) */
+.theme-cyber {
   --bg: #050505;
   --bg-2: #0a0a0a;
-  --bg-card: linear-gradient(145deg, #0f0f0f, #050505);
-  --radius: 4px;
-  --primary: #fbbf24;
-  --primary-light: #fcd34d;
-  --primary-glow: rgba(251, 191, 36, 0.15);
-  --border: rgba(251, 191, 36, 0.1);
-  --border-hover: rgba(251, 191, 36, 0.5);
-  --text-main: #f8fafc;
-  --text-dim: #94a3b8;
-  --card-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 1px var(--primary);
+  --bg-card: rgba(0, 0, 0, 0.95);
+  --primary: #00ff00;
+  --primary-light: #39ff14;
+  --radius: 0px; /* Sharp beveled edges */
+  --font-main: 'Orbitron', sans-serif;
+  --text-main: #00ff00;
+  --border: #00ff00;
+  --card-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
 }
+.theme-cyber body {
+  background: linear-gradient(rgba(0, 255, 0, 0.05) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0, 255, 0, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+.theme-cyber .card { border-left: 5px solid var(--primary); }
+.theme-cyber .add-btn { border: 2px solid var(--primary); background: transparent; color: var(--primary); font-weight: 900; }
+.theme-cyber .add-btn:hover { background: var(--primary); color: #000; box-shadow: 0 0 30px var(--primary); }
 
-/* 2. Ethereal Dream (The Aesthetic Pink / Glassmorphism) */
-.theme-ethereal {
+/* 4. Paperback (Academic Ink / Classic Serif) */
+.theme-paperback {
+  --bg: #f4f1ea;
+  --bg-2: #ede9de;
+  --bg-card: #fcfbf9;
+  --primary: #1a1a1a;
+  --primary-light: #444444;
+  --radius: 2px;
+  --font-main: 'EB Garamond', serif;
+  --text-main: #1a1a1a;
+  --text-dim: #333333;
+  --border: #d1ccbc;
+  --card-shadow: 3px 3px 0px #d1ccbc;
+}
+.theme-paperback body::after {
+  content: ''; position: fixed; inset: 0; 
+  background: url('https://www.transparenttextures.com/patterns/paper-fibers.png');
+  opacity: 0.4; pointer-events: none; z-index: 100;
+}
+.theme-paperback .card { border: 1px solid #000; }
+.theme-paperback .add-btn { border: 1px solid #000; background: #fff; color: #000; font-style: italic; }
+
+/* 5. Glass Liquid (Futuristic Fluid / Apple Style) */
+.theme-liquid {
   --bg: #020617;
   --bg-2: #0f172a;
   --bg-card: rgba(255, 255, 255, 0.05);
+  --primary: #0ea5e9;
+  --primary-light: #c084fc;
   --radius: 24px;
-  --primary: #f472b6;
-  --primary-light: #fb923c;
-  --primary-glow: rgba(244, 114, 182, 0.4);
-  --border: rgba(255, 255, 255, 0.1);
-  --border-hover: rgba(244, 114, 182, 0.8);
+  --font-main: 'Montserrat', sans-serif;
   --text-main: #fff;
-  --text-dim: #e2e8f0;
-  --card-shadow: 0 20px 50px rgba(244, 114, 182, 0.15);
-  --glass-blur: blur(25px);
+  --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
-.theme-ethereal .card { backdrop-filter: var(--glass-blur); }
-.theme-ethereal body::before {
-  content: ''; position: fixed; inset: 0; 
-  background: radial-gradient(circle at 20% 30%, rgba(244, 114, 182, 0.15) 0%, transparent 40%),
-              radial-gradient(circle at 80% 70%, rgba(251, 146, 60, 0.1) 0%, transparent 40%);
-  pointer-events: none; z-index: -1;
+.theme-liquid body {
+  background: linear-gradient(-45deg, #020617, #1e1b4b, #0f172a, #312e81);
+  background-size: 400% 400%;
+  animation: liquidBg 15s ease infinite;
 }
-
-/* 3. Neon Drift (The Futuristic Gamer) */
-.theme-neon {
-  --bg: #030005;
-  --bg-2: #0a0118;
-  --bg-card: rgba(10, 1, 24, 0.9);
-  --radius: 8px;
-  --primary: #a855f7;
-  --primary-light: #22d3ee;
-  --primary-glow: rgba(168, 85, 247, 0.6);
-  --border: #a855f7;
-  --border-hover: #22d3ee;
-  --text-main: #fff;
-  --card-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+@keyframes liquidBg {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
-.theme-neon .card { border-width: 2px; }
-.theme-neon .add-btn { text-shadow: 0 0 10px #fff; }
-
-/* 4. Nordic Snow (The Apple-Style Minimalist) */
-.theme-nordic {
-  --bg: #f8fafc;
-  --bg-2: #ffffff;
-  --bg-card: #ffffff;
-  --radius: 12px;
-  --primary: #334155;
-  --primary-light: #64748b;
-  --primary-glow: rgba(51, 65, 85, 0.05);
-  --border: #f1f5f9;
-  --border-hover: #cbd5e1;
-  --text-main: #0f172a;
-  --text-dim: #475569;
-  --text-muted: #94a3b8;
-  --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.04);
-}
-
-/* 5. Bamboo Zen (The Organic Harmony) */
-.theme-bamboo {
-  --bg: #fdfaf6;
-  --bg-2: #f4f1ea;
-  --bg-card: #ffffff;
-  --radius: 40px;
-  --primary: #2d6a4f;
-  --primary-light: #40916c;
-  --primary-glow: rgba(45, 106, 79, 0.1);
-  --border: #e9e5d9;
-  --border-hover: #2d6a4f;
-  --text-main: #1b4332;
-  --text-dim: #40916c;
-  --text-muted: #95d5b2;
-  --card-shadow: 0 15px 35px rgba(45, 106, 79, 0.05);
-}
-
-/* 6. Aurora Borealis (The Creative Vibrant) */
-.theme-aurora {
-  --bg: #0f172a;
-  --bg-2: #1e293b;
-  --bg-card: rgba(30, 41, 59, 0.7);
-  --radius: 16px;
-  --primary: #2dd4bf;
-  --primary-light: #818cf8;
-  --primary-glow: rgba(45, 212, 191, 0.4);
-  --border: rgba(255, 255, 255, 0.1);
-  --text-main: #f8fafc;
-  --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-}
-.theme-aurora body {
-  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #111827 100%);
-  background-attachment: fixed;
-  animation: auroraBackground 30s infinite alternate ease-in-out;
-}
-
-@keyframes auroraBackground {
-  0% { filter: hue-rotate(0deg); }
-  100% { filter: hue-rotate(45deg); }
-}
-
-/* Advanced Component Overrides */
-.card {
-  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
-  box-shadow: var(--card-shadow);
-}
+.theme-liquid .card { backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.1); }
+.theme-liquid .add-btn { background: linear-gradient(90deg, #0ea5e9, #c084fc); border: none; }
 
 .card:hover {
   transform: translateY(-4px);

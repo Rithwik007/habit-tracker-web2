@@ -3,12 +3,11 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const ThemeContext = createContext();
 
 export const THEMES = [
-  { id: 'obsidian', name: 'Obsidian Gold', color: '#fbbf24' },
-  { id: 'ethereal', name: 'Ethereal Dream', color: '#f472b6' },
-  { id: 'neon', name: 'Neon Drift', color: '#a855f7' },
-  { id: 'nordic', name: 'Nordic Snow', color: '#64748b' },
-  { id: 'bamboo', name: 'Bamboo Zen', color: '#2d6a4f' },
-  { id: 'aurora', name: 'Aurora Borealis', color: '#2dd4bf' },
+  { id: 'legacy', name: 'Legacy Mastery', color: '#6366f1' },
+  { id: 'sakura', name: 'Sakura Bloom', color: '#ff8fa3' },
+  { id: 'cyber', name: 'Cyber Grid', color: '#00ff00' },
+  { id: 'paperback', name: 'Paperback', color: '#1a1a1a' },
+  { id: 'liquid', name: 'Glass Liquid', color: '#0ea5e9' },
 ];
 
 export function ThemeProvider({ children }) {
