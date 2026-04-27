@@ -22,24 +22,31 @@
 }
 .theme-mastery * { font-family: var(--font-cool); }
 
-/* 2. Cyber Rose (Pink/Purple Neon) */
+/* 2. Rose Aura (Elegant Premium Pink) */
 .theme-cyber {
-  --bg: #0a011a;
-  --bg-2: #16022e;
-  --bg-card: rgba(22, 2, 46, 0.8);
-  --primary: #ff007f;
-  --primary-light: #00ffff;
-  --primary-glow: rgba(255, 0, 127, 0.3);
-  --border: rgba(255, 0, 127, 0.2);
+  --bg: #1a0b12; /* Deep Dark Rose */
+  --bg-2: #2d141e;
+  --bg-card: rgba(45, 20, 30, 0.7);
+  --primary: #f472b6; /* Vibrant Rose */
+  --primary-light: #fbcfe8;
+  --primary-glow: rgba(244, 114, 182, 0.2);
+  --border: rgba(244, 114, 182, 0.15);
   --text-main: #fff;
-  --text-dim: #f5d0fe;
-  --radius: 2px;
-  --font-cool: 'Orbitron', sans-serif;
-  --card-shadow: 0 0 20px rgba(255, 0, 127, 0.15);
+  --text-dim: #f9a8d4;
+  --radius: 24px;
+  --font-cool: 'Poppins', sans-serif;
+  --card-shadow: 0 10px 40px rgba(244, 114, 182, 0.05);
 }
-.theme-cyber * { font-family: var(--font-cool); letter-spacing: 1px; }
-.theme-cyber .add-btn { text-transform: uppercase; border: 1px solid var(--primary); background: transparent; color: var(--primary); }
-.theme-cyber .add-btn:hover { background: var(--primary); color: #fff; box-shadow: 0 0 30px var(--primary); }
+.theme-cyber * { font-family: var(--font-cool); }
+.theme-cyber .card { 
+  border: 1px solid var(--border); 
+  backdrop-filter: blur(10px);
+}
+.theme-cyber .add-btn { 
+  background: linear-gradient(135deg, #f472b6, #ec4899); 
+  border: none; 
+  box-shadow: 0 10px 20px rgba(244, 114, 182, 0.3);
+}
 
 /* 3. Golden Obsidian (Luxury Executive) */
 .theme-gold {
@@ -77,7 +84,6 @@
 }
 .theme-toxic * { font-family: var(--font-cool); }
 .theme-toxic .card { border: 1px solid #1a2e1f; position: relative; }
-.theme-toxic .card::after { content: ''; position: absolute; inset: 0; pointer-events: none; border: 1px solid rgba(57, 255, 20, 0.05); }
 
 /* 5. Deep Oceanic (Liquid Calm) */
 .theme-oceanic {
@@ -95,13 +101,11 @@
   --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 .theme-oceanic * { font-family: var(--font-cool); }
-.theme-oceanic .add-btn { border-radius: 50px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); }
-.theme-oceanic body { background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%); background-attachment: fixed; }
 
 /* Global Stability Fixes */
 * {
   font-family: var(--font-main);
-  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+  box-sizing: border-box;
 }
 
 body {
@@ -113,16 +117,53 @@ body {
 }
 
 .main-content {
-  margin-left: 64px; /* Fixed sidebar width */
-  transition: margin-left 0.25s ease;
+  margin-left: 64px;
+  padding: 24px;
+  transition: all 0.3s ease;
 }
 
 .navbar-expanded + .main-content {
   margin-left: 240px;
 }
 
+/* MOBILE BREATHABILITY OVERHAUL */
 @media (max-width: 768px) {
-  .main-content { margin-left: 0 !important; padding-bottom: 80px; }
+  .main-content {
+    margin-left: 0 !important;
+    padding: 16px !important;
+    padding-bottom: 100px !important; /* Space for bottom dock */
+  }
+
+  .page-title {
+    font-size: 1.5rem !important;
+    margin-bottom: 20px !important;
+  }
+
+  .card {
+    margin-bottom: 16px !important;
+    padding: 16px !important;
+  }
+
+  .card-header {
+    margin-bottom: 12px !important;
+  }
+
+  .habit-item {
+    padding: 12px !important;
+    gap: 12px !important;
+  }
+
+  .habits-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px !important;
+  }
+
+  /* Fix for overlapping buttons on mobile */
+  .mobile-bottom-nav {
+    gap: 0 !important;
+    justify-content: space-around !important;
+  }
 }
 
 .card {
@@ -130,7 +171,7 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--card-shadow);
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .card:hover {

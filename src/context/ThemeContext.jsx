@@ -7,7 +7,7 @@ const ThemeContext = createContext();
 
 export const THEMES = [
   { id: 'mastery', name: 'Mastery (Indigo)', color: '#6366f1' },
-  { id: 'cyber', name: 'Cyber (Pink Neon)', color: '#ff007f' },
+  { id: 'cyber', name: 'Rose Aura (Premium Pink)', color: '#f472b6' },
   { id: 'gold', name: 'Gold (Luxury)', color: '#d4af37' },
   { id: 'toxic', name: 'Toxic (Emerald)', color: '#39ff14' },
   { id: 'oceanic', name: 'Oceanic (Teal)', color: '#0ea5e9' },
