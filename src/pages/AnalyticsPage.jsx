@@ -66,28 +66,30 @@ export default function AnalyticsPage() {
                     <div className="card-header">
                         <span className="card-title">Daily Performance Trend ({months[selectedMonth]} {selectedYear})</span>
                     </div>
-                    <div style={{ width: '100%', height: 400, marginTop: '20px' }}>
-                        <ResponsiveContainer>
-                            <LineChart data={dailyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                                <XAxis dataKey="name" fontSize={12} tickMargin={15} stroke="var(--text-dim)" />
-                                <YAxis yAxisId="left" fontSize={12} stroke="var(--text-dim)" label={{ value: 'Points', angle: -90, position: 'insideLeft', fill: 'var(--text-dim)', fontSize: 12 }} />
-                                <YAxis yAxisId="right" orientation="right" fontSize={12} stroke="var(--text-dim)" domain={[0, 100]} label={{ value: 'Completion %', angle: 90, position: 'insideRight', fill: 'var(--text-dim)', fontSize: 12 }} />
-                                <Tooltip 
-                                    contentStyle={{ 
-                                        background: 'var(--bg-card)', 
-                                        border: '1px solid var(--border)', 
-                                        borderRadius: 'var(--radius)', 
-                                        fontSize: 14, 
-                                        boxShadow: 'var(--card-shadow)',
-                                        color: 'var(--text-main)'
-                                    }}
-                                    itemStyle={{ padding: '4px 0', color: 'var(--text-main)' }}
-                                />
-                                <Line yAxisId="left" name="Points Earned" type="monotone" dataKey="points" stroke="var(--primary)" strokeWidth={4} dot={{ fill: 'var(--primary)', r: 4, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
-                                <Line yAxisId="right" name="Completion %" type="monotone" dataKey="pct" stroke="var(--primary-light)" strokeWidth={3} strokeDasharray="5 5" dot={false} />
-                            </LineChart>
-                        </ResponsiveContainer>
+                    <div className="scrollable-chart-wrapper">
+                        <div style={{ width: '100%', minWidth: '800px', height: 400, marginTop: '20px' }}>
+                            <ResponsiveContainer>
+                                <LineChart data={dailyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                    <XAxis dataKey="name" fontSize={12} tickMargin={15} stroke="var(--text-dim)" />
+                                    <YAxis yAxisId="left" fontSize={12} stroke="var(--text-dim)" label={{ value: 'Points', angle: -90, position: 'insideLeft', fill: 'var(--text-dim)', fontSize: 12 }} />
+                                    <YAxis yAxisId="right" orientation="right" fontSize={12} stroke="var(--text-dim)" domain={[0, 100]} label={{ value: 'Completion %', angle: 90, position: 'insideRight', fill: 'var(--text-dim)', fontSize: 12 }} />
+                                    <Tooltip 
+                                        contentStyle={{ 
+                                            background: 'var(--bg-card)', 
+                                            border: '1px solid var(--border)', 
+                                            borderRadius: 'var(--radius)', 
+                                            fontSize: 14, 
+                                            boxShadow: 'var(--card-shadow)',
+                                            color: 'var(--text-main)'
+                                        }}
+                                        itemStyle={{ padding: '4px 0', color: 'var(--text-main)' }}
+                                    />
+                                    <Line yAxisId="left" name="Points Earned" type="monotone" dataKey="points" stroke="var(--primary)" strokeWidth={4} dot={{ fill: 'var(--primary)', r: 4, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                                    <Line yAxisId="right" name="Completion %" type="monotone" dataKey="pct" stroke="var(--primary-light)" strokeWidth={3} strokeDasharray="5 5" dot={false} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
                 </div>
             </div>
