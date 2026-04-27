@@ -91,68 +91,26 @@ export default function AnalyticsPage() {
                 </div>
             </div>
 
-            <div className="charts-grid">
-                <div className="card" style={{ gridColumn: 'span 3' }}>
+            <div className="charts-grid" style={{ gridTemplateColumns: '1fr' }}>
+                <div className="card" style={{ gridColumn: '1 / -1' }}>
                     <div className="card-header">
-                        <span className="card-title">Daily Performance Trend ({months[selectedMonth]})</span>
+                        <span className="card-title">Daily Performance Trend ({months[selectedMonth]} {selectedYear})</span>
                     </div>
-                    <div style={{ width: '100%', height: 300 }}>
+                    <div style={{ width: '100%', height: 400, marginTop: '20px' }}>
                         <ResponsiveContainer>
-                            <LineChart data={dailyData}>
+                            <LineChart data={dailyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                                <XAxis dataKey="name" fontSize={10} tickMargin={10} stroke="var(--text-dim)" />
-                                <YAxis yAxisId="left" fontSize={10} stroke="var(--text-dim)" />
-                                <YAxis yAxisId="right" orientation="right" fontSize={10} stroke="var(--text-dim)" domain={[0, 100]} />
-                                <Tooltip contentStyle={{ background: '#1e1b4b', border: '1px solid #312e81', borderRadius: 8, fontSize: 12 }} />
-                                <Line yAxisId="left" type="monotone" dataKey="points" stroke="#6366f1" strokeWidth={3} dot={{ fill: '#6366f1', r: 3 }} activeDot={{ r: 5 }} />
-                                <Line yAxisId="right" type="monotone" dataKey="pct" stroke="#22d3ee" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                                <XAxis dataKey="name" fontSize={12} tickMargin={15} stroke="var(--text-dim)" />
+                                <YAxis yAxisId="left" fontSize={12} stroke="var(--text-dim)" label={{ value: 'Points', angle: -90, position: 'insideLeft', fill: 'var(--text-dim)', fontSize: 12 }} />
+                                <YAxis yAxisId="right" orientation="right" fontSize={12} stroke="var(--text-dim)" domain={[0, 100]} label={{ value: 'Completion %', angle: 90, position: 'insideRight', fill: 'var(--text-dim)', fontSize: 12 }} />
+                                <Tooltip 
+                                    contentStyle={{ background: '#1e1b4b', border: '1px solid #312e81', borderRadius: 12, fontSize: 14, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                    itemStyle={{ padding: '4px 0' }}
+                                />
+                                <Line yAxisId="left" name="Points Earned" type="monotone" dataKey="points" stroke="#6366f1" strokeWidth={4} dot={{ fill: '#6366f1', r: 4, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                                <Line yAxisId="right" name="Completion %" type="monotone" dataKey="pct" stroke="#22d3ee" strokeWidth={3} strokeDasharray="5 5" dot={false} />
                             </LineChart>
                         </ResponsiveContainer>
-                    </div>
-                </div>
-
-                <div className="card" style={{ gridColumn: 'span 2' }}>
-                    <div className="card-header">
-                        <span className="card-title">Consistency per Habit</span>
-                    </div>
-                    <div className="custom-scrollbar" style={{ width: '100%', height: 350, overflowY: 'auto' }}>
-                        <ResponsiveContainer height={Math.max(200, habitWise.length * 32)}>
-                            <BarChart data={habitWise} layout="vertical" margin={{ left: 5, right: 30, top: 0, bottom: 0 }}>
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" fontSize={10} width={110} tickMargin={5} stroke="var(--text-dim)" />
-                                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.03)' }} contentStyle={{ background: '#1e1b4b', border: '1px solid #312e81', borderRadius: 8, fontSize: 10 }} />
-                                <Bar dataKey="points" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={12} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '350px' }}>
-                    <div className="card-header">
-                        <span className="card-title">
-                            {selectedDay === 0 ? 'Month Summary' : `${selectedDay} ${months[selectedMonth]}`}
-                        </span>
-                    </div>
-                    <div style={{ width: '100%', height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                        <ResponsiveContainer>
-                            <PieChart>
-                                <Pie
-                                    data={[{ value: earned }, { value: Math.max(0, possible - earned) }]}
-                                    innerRadius={70} outerRadius={90} paddingAngle={0}
-                                    dataKey="value" startAngle={90} endAngle={450}
-                                >
-                                    <Cell fill="#6366f1" />
-                                    <Cell fill="rgba(255,255,255,0.05)" />
-                                </Pie>
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div style={{ position: 'absolute', textAlign: 'center' }}>
-                            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'white' }}>{earned}</div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '1px' }}>Points</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--primary-light)', marginTop: '4px', fontWeight: 600 }}>
-                                {Math.round((earned / possible) * 100)}%
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

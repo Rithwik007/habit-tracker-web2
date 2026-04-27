@@ -1429,6 +1429,95 @@ body {
   z-index: 9999;
 }
 
+/* ---- Goals Section ---- */
+.goal-input-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.goal-input-main {
+  flex: 3;
+  min-width: 200px;
+}
+
+.goal-input-time {
+  flex: 1;
+  min-width: 120px;
+}
+
+.goal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.goal-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.goal-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.goal-item.completed {
+  opacity: 0.6;
+}
+
+.goal-item.completed .goal-text {
+  text-decoration: line-through;
+  color: var(--text-dim);
+}
+
+.goal-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.goal-text {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.goal-time-badge {
+  font-size: 0.7rem;
+  color: var(--primary-light);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.goal-delete-btn {
+  opacity: 0;
+  padding: 6px;
+  color: var(--text-dim);
+  transition: all 0.2s;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.goal-item:hover .goal-delete-btn {
+  opacity: 1;
+}
+
+.goal-delete-btn:hover {
+  color: var(--danger);
+  background: rgba(248, 113, 113, 0.1);
+}
+
 /* ---- Mood Picker ---- */
 .mood-section {
   display: flex;

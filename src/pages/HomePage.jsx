@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { habitApi, moodApi } from '../api';
+import { habitApi, moodApi, goalApi } from '../api';
 import Greeting from '../components/Greeting';
 import useMidnightRefresh from '../hooks/useMidnightRefresh';
 import { useToast } from '../context/ToastContext';
@@ -28,6 +28,9 @@ export default function HomePage() {
     const { habits, habitsLoading, refreshHabits } = useData();
     const [logs, setLogs] = useState({});
     const [mood, setMood] = useState(null);
+    const [goals, setGoals] = useState([]);
+    const [newGoalText, setNewGoalText] = useState('');
+    const [newGoalTime, setNewGoalTime] = useState('');
     const [seeding, setSeeding] = useState(false);
     const [error, setError] = useState(null);
     const { addToast } = useToast();
@@ -49,6 +52,10 @@ export default function HomePage() {
         if (!user?.uid || !today) return;
         moodApi.getByDate(user.uid, today)
             .then(({ data }) => setMood(data?.score || null))
+            .catch(() => {});
+        
+        goalApi.getAll(user.uid, today)
+            .then(({ data }) => setGoals(data))
             .catch(() => {});
     }, [user?.uid, today]);
 
@@ -103,6 +110,46 @@ export default function HomePage() {
         }
     };
 
+    const addGoal = async () => {
+        if (!newGoalText.trim()) return;
+        try {
+            const { data } = await goalApi.create({
+                userId: user.uid,
+                text: newGoalText.trim(),
+                time: newGoalTime.trim(),
+                date: today
+            });
+            setGoals(prev => [...prev, data]);
+            setNewGoalText('');
+            setNewGoalTime('');
+            addToast('🎯 Goal added!');
+        } catch (e) {
+            addToast('Failed to add goal', 'error');
+        }
+    };
+
+    const toggleGoal = async (id) => {
+        try {
+            setGoals(prev => prev.map(g => g._id === id ? { ...g, completed: !g.completed } : g));
+            await goalApi.toggle(id);
+        } catch (e) {
+            addToast('Failed to update goal', 'error');
+            // Revert state on error
+            setGoals(prev => prev.map(g => g._id === id ? { ...g, completed: !g.completed } : g));
+        }
+    };
+
+    const deleteGoal = async (e, id) => {
+        e.stopPropagation();
+        try {
+            await goalApi.delete(id);
+            setGoals(prev => prev.filter(g => g._id !== id));
+            addToast('Goal removed');
+        } catch (e) {
+            addToast('Failed to delete goal', 'error');
+        }
+    };
+
     if (habitsLoading) return <div className="loading-screen">⏳ Loading...</div>;
 
     const completed = habits.filter(h => logs[h._id]).length;
@@ -134,6 +181,67 @@ export default function HomePage() {
                     <span className="kpi-sub">active trackers</span>
                 </motion.div>
             </motion.div>
+
+            {/* Today's Goals Section */}
+            <div className="card" style={{ marginBottom: '24px' }}>
+                <div className="card-header">
+                    <span className="card-title">🎯 Today's Goals</span>
+                    <span className="badge badge-primary">{goals.filter(g => g.completed).length} / {goals.length} done</span>
+                </div>
+                
+                <div className="goal-input-row">
+                    <input
+                        className="manage-input goal-input-main"
+                        type="text"
+                        placeholder="What's your goal for today?"
+                        value={newGoalText}
+                        onChange={e => setNewGoalText(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addGoal()}
+                    />
+                    <input
+                        className="manage-input goal-input-time"
+                        type="text"
+                        placeholder="Time (optional)"
+                        value={newGoalTime}
+                        onChange={e => setNewGoalTime(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addGoal()}
+                    />
+                    <button className="add-btn" onClick={addGoal} style={{ padding: '0 20px' }}>+ Add Goal</button>
+                </div>
+
+                {goals.length === 0 ? (
+                    <p style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '20px 0', fontSize: '0.9rem' }}>
+                        No goals set for today yet.
+                    </p>
+                ) : (
+                    <div className="goal-list">
+                        {goals.sort((a, b) => a.completed - b.completed).map(goal => (
+                            <div 
+                                key={goal._id} 
+                                className={`goal-item${goal.completed ? ' completed' : ''}`}
+                                onClick={() => toggleGoal(goal._id)}
+                            >
+                                <div className="check-circle" style={{ width: '22px', height: '22px', marginRight: '4px' }}>
+                                    {goal.completed && (
+                                        <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                    )}
+                                </div>
+                                <div className="goal-content">
+                                    <span className="goal-text">{goal.text}</span>
+                                    {goal.time && <span className="goal-time-badge">🕒 {goal.time}</span>}
+                                </div>
+                                <div className="goal-delete-btn" onClick={(e) => deleteGoal(e, goal._id)}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
+                                    </svg>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
 
             {/* Mood of the Day */}
             <div className="card" style={{ marginBottom: '24px' }}>

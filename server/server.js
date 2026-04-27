@@ -7,6 +7,7 @@ import userRoutes from './routes/users.js';
 import noteRoutes from './routes/notes.js';
 import moodRoutes from './routes/moods.js';
 import adminRoutes from './routes/admin.js';
+import goalRoutes from './routes/goals.js';
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/moods', moodRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/goals', goalRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

@@ -39,4 +39,11 @@ export const adminApi = {
   deleteUser: (uid) => api.delete(`/admin/user/${uid}`)
 };
 
+export const goalApi = {
+  getAll: (userId, date) => api.get(`/goals/${userId}/${date}`),
+  create: (goalData) => api.post('/goals', goalData),
+  toggle: (id) => api.put(`/goals/${id}/toggle`),
+  delete: (id) => api.delete(`/goals/${id}`)
+};
+
 export default api;
