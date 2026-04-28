@@ -149,16 +149,6 @@ export default function NotificationSettingsPanel() {
 
                       <div style={{ display: 'flex', gap: '12px', opacity: habit.naggingInterval > 0 ? 1 : 0.5, pointerEvents: habit.naggingInterval > 0 ? 'auto' : 'none' }}>
                         <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: '0.65rem', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>Deadline</label>
-                          <input
-                            type="time"
-                            className="notif-time-input"
-                            style={{ width: '100%' }}
-                            value={habit.deadlineTime || ''}
-                            onChange={e => updateHabitSettings(habit._id, { deadlineTime: e.target.value })}
-                          />
-                        </div>
-                        <div style={{ flex: 1 }}>
                           <label style={{ fontSize: '0.65rem', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>Nag every (min)</label>
                           <input
                             type="number"

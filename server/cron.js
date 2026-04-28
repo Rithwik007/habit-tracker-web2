@@ -84,22 +84,22 @@ const startCronJobs = () => {
             shouldNotify = true;
           }
 
-          // 2. Check Overdue Nagging (Deadline Logic)
-          if (!shouldNotify && habit.deadlineTime && habit.naggingInterval > 0) {
-            const [deadlineH, deadlineM] = habit.deadlineTime.split(':').map(Number);
+          // 2. Check Overdue Nagging (Using Standard Reminder Time as Deadline)
+          if (!shouldNotify && pref?.enabled && habit.naggingInterval > 0 && pref.time) {
+            const [deadlineH, deadlineM] = pref.time.split(':').map(Number);
             const currentH = Number(currentHours);
             const currentM = Number(currentMinutes);
 
             const totalDeadlineMins = deadlineH * 60 + deadlineM;
             const totalCurrentMins = currentH * 60 + currentM;
 
-            // If we are past the deadline
+            // If we are past the reminder time
             if (totalCurrentMins > totalDeadlineMins) {
               const diff = totalCurrentMins - totalDeadlineMins;
               // If we land exactly on a nagging interval
               if (diff % habit.naggingInterval === 0) {
                 shouldNotify = true;
-                messageTag = `nag-${habit._id}-${totalCurrentMins}`; // Unique tag for each nag
+                messageTag = `nag-${habit._id}-${totalCurrentMins}`; 
               }
             }
           }

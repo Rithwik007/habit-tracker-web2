@@ -7,10 +7,10 @@ This file tracks the latest features and improvements added to the Habit Mastery
 ### 🔔 Advanced Notification System (Major Update)
 - **Consolidated Notification Panel**: All habit-specific notification settings have been moved into a single, intuitive panel at the bottom of the "Manage Disciplines" page.
 - **Expandable Habit Settings**: Click the arrow (▶) next to any habit in the reminder list to reveal detailed settings.
-- **Overdue Nagging Logic**: 
-  - Added a "Reminders after deadline" toggle.
-  - Users can set a strict **Deadline Time** and a **Nagging Interval**.
-  - The system will send recurring notifications every X minutes if a habit is not completed by its deadline.
+- **Simplified Nagging Logic**: 
+  - The **Standard Reminder Time** now automatically acts as the deadline.
+  - If you enable "Reminders after deadline", the system will start nagging you every X minutes immediately after the first reminder time if the habit is not done.
+  - Removed the redundant separate "Deadline" input field for a cleaner experience.
 - **Custom Reminder Messages**: Every habit can now have its own unique notification text (e.g., "Don't break the streak! Gym time!").
 
 ### 💧 System-Wide Reminders
