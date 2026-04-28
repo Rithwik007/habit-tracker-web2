@@ -7,6 +7,7 @@ import { ToastProvider } from './context/ToastContext.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { DataProvider } from './context/DataContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import { NotificationProvider } from './context/NotificationContext.jsx'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -42,9 +43,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <AuthProvider>
           <ToastProvider>
             <DataProvider>
-              <ThemeProvider>
-                <App />
-              </ThemeProvider>
+              <NotificationProvider>
+                <ThemeProvider>
+                  <App />
+                </ThemeProvider>
+              </NotificationProvider>
             </DataProvider>
           </ToastProvider>
         </AuthProvider>
@@ -52,3 +55,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </React.StrictMode>
 )
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => {
+      console.warn('SW registration failed:', err);
+    });
+  });
+}

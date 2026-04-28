@@ -4,6 +4,7 @@ import { habitApi } from '../api';
 import useMidnightRefresh, { formatLocalDate } from '../hooks/useMidnightRefresh';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import NotificationSettingsPanel from '../components/NotificationSettingsPanel';
 
 const DEFAULT_HABITS = [
     "Wake up at 8:00 AM", "Oat Meal", "Gym", "Dsa", "web development",
@@ -138,6 +139,9 @@ export default function ManageHabitsPage() {
                     {habits.length === 0 && <div className="empty-state">No habits tracked yet.</div>}
                 </div>
             </div>
+
+            {/* Notification Settings */}
+            <NotificationSettingsPanel />
         </div>
     );
 }
