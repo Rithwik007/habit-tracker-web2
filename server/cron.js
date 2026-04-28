@@ -56,11 +56,15 @@ const startCronJobs = () => {
 
         if (habitsToNotify.length === 0) continue;
 
-        // 3. Fetch the habit names from DB
+        // 3. Fetch the habit docs and filter out those already completed TODAY
+        const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(now); // YYYY-MM-DD
         const habits = await Habit.find({ _id: { $in: habitsToNotify } });
         
-        // 4. Send a push notification for each habit
+        // 4. Send a push notification for each habit that isn't completed yet
         for (const habit of habits) {
+          const isCompletedToday = habit.completions?.some(c => c.date === todayStr);
+          if (isCompletedToday) continue;
+
           const payload = JSON.stringify({
             title: '⏰ Habit Reminder',
             body: `Time for: ${habit.name}`,

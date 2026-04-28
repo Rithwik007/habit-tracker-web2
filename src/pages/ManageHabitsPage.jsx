@@ -50,7 +50,11 @@ export default function ManageHabitsPage() {
     const seedDefault = async () => {
         setSeeding(true);
         try {
+            // Get current habit names to prevent duplicates
+            const currentNames = new Set(habits.map(h => h.name.toLowerCase()));
+            
             for (const name of DEFAULT_HABITS) {
+                if (currentNames.has(name.toLowerCase())) continue;
                 await habitApi.create({ name, userId: user.uid });
             }
             refreshHabits();
