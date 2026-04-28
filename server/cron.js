@@ -23,9 +23,15 @@ const startCronJobs = () => {
   cron.schedule('* * * * *', async () => {
     try {
       const now = new Date();
-      // Format current time as HH:MM (e.g., "08:00")
-      const currentHours = String(now.getHours()).padStart(2, '0');
-      const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+      // Format current time in user's timezone (IST) as HH:MM
+      const options = { timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit' };
+      const timeParts = new Intl.DateTimeFormat('en-US', options).formatToParts(now);
+      let currentHours = timeParts.find(p => p.type === 'hour').value;
+      const currentMinutes = timeParts.find(p => p.type === 'minute').value;
+      
+      // Handle edge case where some Node versions return '24' instead of '00'
+      if (currentHours === '24') currentHours = '00';
+      
       const currentTimeStr = `${currentHours}:${currentMinutes}`;
 
       // 1. Find all users who have a push subscription
