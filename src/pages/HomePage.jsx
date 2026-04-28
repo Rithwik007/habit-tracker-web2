@@ -96,17 +96,20 @@ export default function HomePage() {
     };
 
     const seedHabits = async () => {
+        if (!confirm('This will delete ALL your current habits and reset to the default set. Are you sure?')) return;
         setSeeding(true);
         try {
-            // Get current habit names to prevent duplicates
-            const currentNames = new Set(habits.map(h => h.name.toLowerCase()));
+            // 1. Delete all current habits
+            for (const habit of habits) {
+                await habitApi.delete(habit._id);
+            }
 
+            // 2. Load defaults
             for (const name of DEFAULT_HABITS) {
-                if (currentNames.has(name.toLowerCase())) continue;
                 await habitApi.create({ name, userId: user.uid, targetValue: 1, unit: 'times' });
             }
             refreshHabits();
-            addToast('Default habits loaded!');
+            addToast('Habits reset to default!');
         } catch (e) {
             addToast('Seeding failed', 'error');
         } finally {
