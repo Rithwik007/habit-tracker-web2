@@ -137,69 +137,10 @@ export default function ManageHabitsPage() {
                                             value={editValue}
                                             onChange={e => setEditValue(e.target.value)}
                                         />
-                                        <input
-                                            className="manage-input"
-                                            style={{ padding: '8px', height: 'auto', width: '100%', fontSize: '0.85rem' }}
-                                            placeholder="Custom Notification Message (optional)"
-                                            value={editMessage}
-                                            onChange={e => setEditMessage(e.target.value)}
-                                        />
-                                        <div style={{ padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>⏰ Reminders after deadline</span>
-                                                <button 
-                                                    className={`notif-toggle-btn ${editNagEnabled ? 'active' : ''}`}
-                                                    onClick={() => setEditNagEnabled(!editNagEnabled)}
-                                                    style={{ padding: '4px 10px', fontSize: '0.7rem' }}
-                                                >
-                                                    {editNagEnabled ? 'ON' : 'OFF'}
-                                                </button>
-                                            </div>
-                                            
-                                            <div style={{ display: 'flex', gap: '8px', opacity: editNagEnabled ? 1 : 0.5, pointerEvents: editNagEnabled ? 'auto' : 'none' }}>
-                                                <div style={{ flex: 1 }}>
-                                                    <label style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginLeft: '4px' }}>Deadline</label>
-                                                    <input
-                                                        className="manage-input"
-                                                        type="time"
-                                                        style={{ padding: '6px', height: 'auto', width: '100%' }}
-                                                        value={editDeadline}
-                                                        onChange={e => setEditDeadline(e.target.value)}
-                                                    />
-                                                </div>
-                                                <div style={{ flex: 1 }}>
-                                                    <label style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginLeft: '4px' }}>Nag every (min)</label>
-                                                    <input
-                                                        className="manage-input"
-                                                        type="number"
-                                                        style={{ padding: '6px', height: 'auto', width: '100%' }}
-                                                        value={editNag}
-                                                        onChange={e => setEditNag(e.target.value)}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                         <span style={{ fontWeight: 600 }}>{habit.name}</span>
-                                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                            {habit.deadlineTime && (
-                                                <span style={{ fontSize: '0.7rem', color: 'var(--primary-light)', background: 'rgba(99,102,241,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                                                    🏁 Deadline: {habit.deadlineTime}
-                                                </span>
-                                            )}
-                                            {habit.naggingInterval > 0 && (
-                                                <span style={{ fontSize: '0.7rem', color: 'var(--warning)', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                                                    🔔 Nags: every {habit.naggingInterval}m
-                                                </span>
-                                            )}
-                                        </div>
-                                        {habit.reminderMessage && (
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic', marginTop: '4px' }}>
-                                                💬 "{habit.reminderMessage}"
-                                            </span>
-                                        )}
                                     </div>
                                 )}
                             </div>
@@ -211,10 +152,6 @@ export default function ManageHabitsPage() {
                                         onClick={() => { 
                                             setEditingId(habit._id); 
                                             setEditValue(habit.name);
-                                            setEditMessage(habit.reminderMessage || '');
-                                            setEditDeadline(habit.deadlineTime || '');
-                                            setEditNag(habit.naggingInterval || 0);
-                                            setEditNagEnabled(habit.naggingInterval > 0);
                                         }}>Edit</button>
                                 )}
                                 <button className="delete-btn" onClick={() => deleteHabit(habit._id)}>Remove</button>

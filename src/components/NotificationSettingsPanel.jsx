@@ -82,24 +82,87 @@ export default function NotificationSettingsPanel() {
         )}
         {habits.map(habit => {
           const pref = prefs[habit._id] || { enabled: false, time: '08:00' };
+          const isExpanded = expandedId === habit._id;
+          
           return (
-            <div key={habit._id} className="notif-habit-row">
-              <span className="notif-habit-name">{habit.name}</span>
-              <input
-                type="time"
-                value={pref.time}
-                onChange={e => setHabitNotif(habit._id, habit.name, pref.enabled, e.target.value)}
-                className="notif-time-input"
-                disabled={!pref.enabled}
-              />
-              <button
-                className={`notif-toggle-btn ${pref.enabled ? 'active' : ''}`}
-                onClick={() => setHabitNotif(habit._id, habit.name, !pref.enabled, pref.time)}
-                disabled={permission !== 'granted'}
-                title={permission !== 'granted' ? 'Enable notifications first' : ''}
-              >
-                {pref.enabled ? '🔔 ON' : '🔕 OFF'}
-              </button>
+            <div key={habit._id} className={`notif-habit-card ${isExpanded ? 'expanded' : ''}`} style={{ borderBottom: '1px solid var(--border-color)', padding: '12px 0' }}>
+              <div className="notif-habit-row" style={{ borderBottom: 'none', padding: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, cursor: 'pointer' }} onClick={() => setExpandedId(isExpanded ? null : habit._id)}>
+                  <span style={{ fontSize: '0.8rem', transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+                  <span className="notif-habit-name">{habit.name}</span>
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <input
+                    type="time"
+                    value={pref.time}
+                    onChange={e => setHabitNotif(habit._id, habit.name, pref.enabled, e.target.value)}
+                    className="notif-time-input"
+                    disabled={!pref.enabled}
+                  />
+                  <button
+                    className={`notif-toggle-btn ${pref.enabled ? 'active' : ''}`}
+                    onClick={() => setHabitNotif(habit._id, habit.name, !pref.enabled, pref.time)}
+                    disabled={permission !== 'granted'}
+                  >
+                    {pref.enabled ? '🔔 ON' : '🔕 OFF'}
+                  </button>
+                </div>
+              </div>
+
+              {isExpanded && (
+                <div className="fade-in" style={{ marginTop: '12px', paddingLeft: '20px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>⏰ Overdue Nagging</span>
+                      <button 
+                        className={`notif-toggle-btn ${habit.naggingInterval > 0 ? 'active' : ''}`}
+                        onClick={() => updateHabitSettings(habit._id, { naggingInterval: habit.naggingInterval > 0 ? 0 : 30 })}
+                        style={{ padding: '2px 8px', fontSize: '0.65rem' }}
+                      >
+                        {habit.naggingInterval > 0 ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.65rem', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>Custom Reminder Message</label>
+                        <input
+                          type="text"
+                          className="notif-time-input"
+                          style={{ width: '100%', fontSize: '0.8rem' }}
+                          placeholder="Don't break the streak!..."
+                          value={habit.reminderMessage || ''}
+                          onChange={e => updateHabitSettings(habit._id, { reminderMessage: e.target.value })}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '12px', opacity: habit.naggingInterval > 0 ? 1 : 0.5, pointerEvents: habit.naggingInterval > 0 ? 'auto' : 'none' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '0.65rem', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>Deadline</label>
+                          <input
+                            type="time"
+                            className="notif-time-input"
+                            style={{ width: '100%' }}
+                            value={habit.deadlineTime || ''}
+                            onChange={e => updateHabitSettings(habit._id, { deadlineTime: e.target.value })}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: '0.65rem', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>Nag every (min)</label>
+                          <input
+                            type="number"
+                            className="notif-time-input"
+                            style={{ width: '100%' }}
+                            value={habit.naggingInterval || 0}
+                            onChange={e => updateHabitSettings(habit._id, { naggingInterval: Number(e.target.value) })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
