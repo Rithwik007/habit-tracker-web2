@@ -73,6 +73,22 @@ router.patch('/:firebaseId/notifPrefs', async (req, res) => {
   }
 });
 
+// Update Push Subscription
+router.post('/:firebaseId/push-subscription', async (req, res) => {
+  try {
+    const { subscription } = req.body;
+    if (!subscription) return res.status(400).json({ message: 'Subscription object is required' });
+    const user = await User.findOneAndUpdate(
+      { firebaseId: req.params.firebaseId },
+      { pushSubscription: subscription },
+      { new: true }
+    );
+    res.json({ message: 'Push subscription saved' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Delete user and all associated data
 router.delete('/:firebaseId', async (req, res) => {
   try {

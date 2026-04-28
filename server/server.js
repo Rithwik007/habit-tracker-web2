@@ -8,6 +8,7 @@ import noteRoutes from './routes/notes.js';
 import moodRoutes from './routes/moods.js';
 import adminRoutes from './routes/admin.js';
 import goalRoutes from './routes/goals.js';
+import startCronJobs from './cron.js';
 
 dotenv.config();
 
