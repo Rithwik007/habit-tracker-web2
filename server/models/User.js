@@ -6,6 +6,7 @@ const UserSchema = new mongoose.Schema({
   display_name: { type: String },
   photoURL: { type: String },
   theme: { type: String, default: 'mastery' },
+  notifPrefs: { type: Map, of: mongoose.Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now }
 });
 

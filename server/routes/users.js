@@ -57,6 +57,22 @@ router.patch('/:firebaseId/theme', async (req, res) => {
   }
 });
 
+// Update Notification Preferences
+router.patch('/:firebaseId/notifPrefs', async (req, res) => {
+  try {
+    const { notifPrefs } = req.body;
+    if (notifPrefs === undefined) return res.status(400).json({ message: 'notifPrefs is required' });
+    const user = await User.findOneAndUpdate(
+      { firebaseId: req.params.firebaseId },
+      { notifPrefs },
+      { new: true }
+    );
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Delete user and all associated data
 router.delete('/:firebaseId', async (req, res) => {
   try {

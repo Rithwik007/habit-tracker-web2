@@ -19,6 +19,7 @@ export const userApi = {
   getProfile: (firebaseId) => api.get(`/users/${firebaseId}`),
   updateProfile: (profileData) => api.post('/users/profile', profileData),
   updateTheme: (firebaseId, theme) => api.patch(`/users/${firebaseId}/theme`, { theme }),
+  updateNotifPrefs: (firebaseId, notifPrefs) => api.patch(`/users/${firebaseId}/notifPrefs`, { notifPrefs }),
   deleteUser: (firebaseId) => api.delete(`/users/${firebaseId}`)
 };
 

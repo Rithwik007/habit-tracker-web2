@@ -2,7 +2,7 @@ import { useNotification } from '../context/NotificationContext';
 import { useData } from '../context/DataContext';
 
 export default function NotificationSettingsPanel() {
-  const { permission, requestPermission, prefs, setHabitNotif, isSupported } = useNotification();
+  const { permission, requestPermission, prefs, setHabitNotif, isSupported, testNotification } = useNotification();
   const { habits } = useData();
 
   const renderBanner = () => {

@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { useData } from './DataContext';
+import { userApi } from '../api';
 
 const NotificationContext = createContext(null);
 
 export function NotificationProvider({ children }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { habits } = useData();
   const [permission, setPermission] = useState(
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
@@ -14,15 +15,29 @@ export function NotificationProvider({ children }) {
   const timers = useRef({});
   const isSupported = typeof window !== 'undefined' && 'Notification' in window;
 
-  // Load prefs from localStorage when user changes
+  // Load prefs from profile (MongoDB) when user/profile changes
+  // Falls back to localStorage for offline resilience
   useEffect(() => {
     if (!user) {
       setPrefs({});
       return;
     }
-    const stored = localStorage.getItem(`notif_prefs_${user.uid}`);
-    setPrefs(stored ? JSON.parse(stored) : {});
-  }, [user]);
+
+    // Load from MongoDB profile (synced across devices)
+    if (profile?.notifPrefs) {
+      // MongoDB returns Map as object — convert if needed
+      const loaded = profile.notifPrefs instanceof Map
+        ? Object.fromEntries(profile.notifPrefs)
+        : profile.notifPrefs;
+      setPrefs(loaded);
+      // Keep localStorage in sync as a cache
+      localStorage.setItem(`notif_prefs_${user.uid}`, JSON.stringify(loaded));
+    } else {
+      // Fallback: load from localStorage cache
+      const cached = localStorage.getItem(`notif_prefs_${user.uid}`);
+      setPrefs(cached ? JSON.parse(cached) : {});
+    }
+  }, [user, profile?.notifPrefs]);
 
   // Cancel all timers on logout
   useEffect(() => {
@@ -67,17 +82,15 @@ export function NotificationProvider({ children }) {
   useEffect(() => {
     if (!user || !habits || habits.length === 0 || !isSupported) return;
     if (Notification.permission !== 'granted') return;
+    if (Object.keys(prefs).length === 0) return;
 
-    const stored = localStorage.getItem(`notif_prefs_${user.uid}`);
-    const loadedPrefs = stored ? JSON.parse(stored) : {};
-
-    Object.entries(loadedPrefs).forEach(([habitId, pref]) => {
+    Object.entries(prefs).forEach(([habitId, pref]) => {
       if (pref.enabled) {
         const habit = habits.find(h => h._id === habitId);
         if (habit) scheduleNotification(habitId, habit.name, pref.time);
       }
     });
-  }, [user, habits, isSupported, scheduleNotification]);
+  }, [user, habits, isSupported, prefs, scheduleNotification]);
 
   const requestPermission = async () => {
     if (!isSupported) return;
@@ -86,47 +99,59 @@ export function NotificationProvider({ children }) {
       setPermission(result);
       return result;
     } catch (err) {
-      // Firefox in iframes throws instead of returning 'denied'
       console.warn('Notification permission request failed:', err);
       setPermission('denied');
       return 'denied';
     }
   };
 
+  // Save prefs to both MongoDB + localStorage for cross-device sync
+  const savePrefs = useCallback(async (newPrefs) => {
+    setPrefs(newPrefs);
+    localStorage.setItem(`notif_prefs_${user.uid}`, JSON.stringify(newPrefs));
+    try {
+      await userApi.updateNotifPrefs(user.uid, newPrefs);
+    } catch (err) {
+      console.warn('Failed to sync notif prefs to backend:', err);
+    }
+  }, [user]);
+
   const setHabitNotif = useCallback((habitId, habitName, enabled, time) => {
     if (!user) return;
 
-    const newPrefs = {
-      ...prefs,
-      [habitId]: { enabled, time },
-    };
-    setPrefs(newPrefs);
-    localStorage.setItem(`notif_prefs_${user.uid}`, JSON.stringify(newPrefs));
+    const newPrefs = { ...prefs, [habitId]: { enabled, time } };
+    savePrefs(newPrefs);
 
     if (enabled && Notification.permission === 'granted') {
       scheduleNotification(habitId, habitName, time);
     } else {
-      // Cancel the timer if disabling
       if (timers.current[habitId]) {
         clearTimeout(timers.current[habitId]);
         delete timers.current[habitId];
       }
     }
-  }, [user, prefs, scheduleNotification]);
+  }, [user, prefs, scheduleNotification, savePrefs]);
 
   const clearHabitNotif = useCallback((habitId) => {
     if (!user) return;
-
     const newPrefs = { ...prefs };
     delete newPrefs[habitId];
-    setPrefs(newPrefs);
-    localStorage.setItem(`notif_prefs_${user.uid}`, JSON.stringify(newPrefs));
-
+    savePrefs(newPrefs);
     if (timers.current[habitId]) {
       clearTimeout(timers.current[habitId]);
       delete timers.current[habitId];
     }
-  }, [user, prefs]);
+  }, [user, prefs, savePrefs]);
+
+  // Test notification — fires immediately to verify browser allows them
+  const testNotification = useCallback(() => {
+    if (Notification.permission !== 'granted') return;
+    new Notification('✅ Notifications Working!', {
+      body: 'Your habit reminders are set up correctly.',
+      icon: '/favicon.ico',
+      tag: 'test-notif',
+    });
+  }, []);
 
   return (
     <NotificationContext.Provider value={{
@@ -135,6 +160,7 @@ export function NotificationProvider({ children }) {
       prefs,
       setHabitNotif,
       clearHabitNotif,
+      testNotification,
       isSupported,
     }}>
       {children}
