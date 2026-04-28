@@ -21,6 +21,7 @@ export default function ManageHabitsPage() {
     const [seeding, setSeeding] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [editValue, setEditValue] = useState('');
+    const [editMessage, setEditMessage] = useState('');
     const { addToast } = useToast();
 
     const addHabit = async () => {
@@ -69,7 +70,10 @@ export default function ManageHabitsPage() {
     const saveEdit = async (id) => {
         if (!editValue.trim()) return;
         try {
-            await habitApi.update(id, { name: editValue.trim() });
+            await habitApi.update(id, { 
+                name: editValue.trim(),
+                reminderMessage: editMessage.trim()
+            });
             setEditingId(null);
             refreshHabits();
             addToast('Habit updated!');
@@ -117,24 +121,43 @@ export default function ManageHabitsPage() {
                         <div key={habit._id} className="habit-manage-item">
                             <div style={{ display: 'flex', flex: 1, gap: '12px', alignItems: 'center' }}>
                                 {editingId === habit._id ? (
-                                    <input
-                                        className="manage-input"
-                                        style={{ padding: '4px 8px', height: 'auto' }}
-                                        value={editValue}
-                                        onChange={e => setEditValue(e.target.value)}
-                                        onKeyDown={e => e.key === 'Enter' && saveEdit(habit._id)}
-                                        autoFocus
-                                    />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                                        <input
+                                            className="manage-input"
+                                            style={{ padding: '8px', height: 'auto', width: '100%' }}
+                                            placeholder="Habit Name"
+                                            value={editValue}
+                                            onChange={e => setEditValue(e.target.value)}
+                                        />
+                                        <input
+                                            className="manage-input"
+                                            style={{ padding: '8px', height: 'auto', width: '100%', fontSize: '0.85rem' }}
+                                            placeholder="Custom Notification Message (optional)"
+                                            value={editMessage}
+                                            onChange={e => setEditMessage(e.target.value)}
+                                        />
+                                    </div>
                                 ) : (
-                                    <span style={{ fontWeight: 600 }}>{habit.name}</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontWeight: 600 }}>{habit.name}</span>
+                                        {habit.reminderMessage && (
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+                                                💬 "{habit.reminderMessage}"
+                                            </span>
+                                        )}
+                                    </div>
                                 )}
                             </div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                                 {editingId === habit._id ? (
-                                    <button className="add-btn" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => saveEdit(habit._id)}>Save</button>
+                                    <button className="add-btn" style={{ padding: '8px 16px' }} onClick={() => saveEdit(habit._id)}>Save</button>
                                 ) : (
                                     <button className="delete-btn" style={{ background: 'rgba(99,102,241,0.1)', color: 'var(--primary-light)', borderColor: 'rgba(99,102,241,0.3)' }}
-                                        onClick={() => { setEditingId(habit._id); setEditValue(habit.name); }}>Edit</button>
+                                        onClick={() => { 
+                                            setEditingId(habit._id); 
+                                            setEditValue(habit.name);
+                                            setEditMessage(habit.reminderMessage || '');
+                                        }}>Edit</button>
                                 )}
                                 <button className="delete-btn" onClick={() => deleteHabit(habit._id)}>Remove</button>
                             </div>

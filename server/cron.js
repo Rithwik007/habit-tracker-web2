@@ -65,9 +65,14 @@ const startCronJobs = () => {
           const isCompletedToday = habit.completions?.some(c => c.date === todayStr);
           if (isCompletedToday) continue;
 
+          // Use custom message if available, otherwise use the new default
+          const messageBody = habit.reminderMessage 
+            ? habit.reminderMessage 
+            : `Don't break the streak! It's time for ${habit.name} 🔥`;
+
           const payload = JSON.stringify({
             title: '⏰ Habit Reminder',
-            body: `Time for: ${habit.name}`,
+            body: messageBody,
             tag: `habit-${habit._id}`,
             data: { url: '/' } // URL to open when clicked
           });

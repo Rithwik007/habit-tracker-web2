@@ -13,6 +13,7 @@ const HabitSchema = new mongoose.Schema({
     date: { type: String }, // Format: YYYY-MM-DD
     value: { type: Number, default: 1 }
   }],
+  reminderMessage: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
 
