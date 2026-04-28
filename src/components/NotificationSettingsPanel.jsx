@@ -124,11 +124,15 @@ export default function NotificationSettingsPanel() {
                 <div className="fade-in" style={{ marginTop: '12px', paddingLeft: '20px' }}>
                   <div style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>⏰ Overdue Nagging</span>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>⏰ Overdue Nagging</span>
+                        {!pref.enabled && <span style={{ fontSize: '0.6rem', color: 'var(--warning)' }}>⚠️ Turn on standard reminder above to use this</span>}
+                      </div>
                       <button 
                         className={`notif-toggle-btn ${habit.naggingInterval > 0 ? 'active' : ''}`}
                         onClick={() => updateHabitSettings(habit._id, { naggingInterval: habit.naggingInterval > 0 ? 0 : 30 })}
                         style={{ padding: '2px 8px', fontSize: '0.65rem' }}
+                        disabled={!pref.enabled}
                       >
                         {habit.naggingInterval > 0 ? 'ON' : 'OFF'}
                       </button>

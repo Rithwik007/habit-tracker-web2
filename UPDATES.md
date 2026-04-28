@@ -10,6 +10,7 @@ This file tracks the latest features and improvements added to the Habit Mastery
 - **Simplified Nagging Logic**: 
   - The **Standard Reminder Time** now automatically acts as the deadline.
   - If you enable "Reminders after deadline", the system will start nagging you every X minutes immediately after the first reminder time if the habit is not done.
+  - **Logic Guard**: You can only enable "Overdue Nagging" if the primary habit reminder is turned ON. This prevents confusing "impossible" states.
   - Removed the redundant separate "Deadline" input field for a cleaner experience.
 - **Custom Reminder Messages**: Every habit can now have its own unique notification text (e.g., "Don't break the streak! Gym time!").
 
