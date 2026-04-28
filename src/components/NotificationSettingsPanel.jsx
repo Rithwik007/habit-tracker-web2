@@ -1,14 +1,15 @@
 import { useNotification } from '../context/NotificationContext';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
-import { userApi } from '../api';
+import { userApi, habitApi } from '../api';
 import { useState, useEffect } from 'react';
 
 export default function NotificationSettingsPanel() {
   const { permission, requestPermission, prefs, setHabitNotif, isSupported } = useNotification();
-  const { habits } = useData();
+  const { habits, refreshHabits } = useData();
   const { user, profile } = useAuth();
   const [waterReminders, setWaterReminders] = useState({ enabled: false, interval: 60 });
+  const [expandedId, setExpandedId] = useState(null);
   
   useEffect(() => {
     if (profile?.systemReminders?.water) {
@@ -23,6 +24,15 @@ export default function NotificationSettingsPanel() {
       await userApi.updateSystemReminders(user.uid, { water: newState });
     } catch (err) {
       console.error('Failed to update system reminders');
+    }
+  };
+
+  const updateHabitSettings = async (id, updates) => {
+    try {
+      await habitApi.update(id, updates);
+      refreshHabits();
+    } catch (err) {
+      console.error('Failed to update habit settings');
     }
   };
 
