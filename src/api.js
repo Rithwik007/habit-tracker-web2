@@ -21,6 +21,7 @@ export const userApi = {
   updateTheme: (firebaseId, theme) => api.patch(`/users/${firebaseId}/theme`, { theme }),
   updateNotifPrefs: (firebaseId, notifPrefs) => api.patch(`/users/${firebaseId}/notifPrefs`, { notifPrefs }),
   updatePushSubscription: (firebaseId, subscription) => api.post(`/users/${firebaseId}/push-subscription`, { subscription }),
+  updateSystemReminders: (firebaseId, systemReminders) => api.patch(`/users/${firebaseId}/systemReminders`, { systemReminders }),
   deleteUser: (firebaseId) => api.delete(`/users/${firebaseId}`)
 };
 

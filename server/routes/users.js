@@ -89,6 +89,22 @@ router.post('/:firebaseId/push-subscription', async (req, res) => {
   }
 });
 
+// Update System Reminders (Water, etc.)
+router.patch('/:firebaseId/systemReminders', async (req, res) => {
+  try {
+    const { systemReminders } = req.body;
+    if (!systemReminders) return res.status(400).json({ message: 'systemReminders is required' });
+    const user = await User.findOneAndUpdate(
+      { firebaseId: req.params.firebaseId },
+      { systemReminders },
+      { new: true }
+    );
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Delete user and all associated data
 router.delete('/:firebaseId', async (req, res) => {
   try {

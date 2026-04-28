@@ -1,9 +1,30 @@
 import { useNotification } from '../context/NotificationContext';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+import { userApi } from '../api';
+import { useState, useEffect } from 'react';
 
 export default function NotificationSettingsPanel() {
-  const { permission, requestPermission, prefs, setHabitNotif, isSupported, testNotification } = useNotification();
+  const { permission, requestPermission, prefs, setHabitNotif, isSupported } = useNotification();
   const { habits } = useData();
+  const { user, profile } = useAuth();
+  const [waterReminders, setWaterReminders] = useState({ enabled: false, interval: 60 });
+  
+  useEffect(() => {
+    if (profile?.systemReminders?.water) {
+      setWaterReminders(profile.systemReminders.water);
+    }
+  }, [profile]);
+
+  const updateWater = async (updates) => {
+    const newState = { ...waterReminders, ...updates };
+    setWaterReminders(newState);
+    try {
+      await userApi.updateSystemReminders(user.uid, { water: newState });
+    } catch (err) {
+      console.error('Failed to update system reminders');
+    }
+  };
 
   const renderBanner = () => {
     if (!isSupported) {
@@ -82,6 +103,45 @@ export default function NotificationSettingsPanel() {
             </div>
           );
         })}
+      </div>
+
+      <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
+        <div className="card-header" style={{ padding: '0 0 16px 0' }}>
+          <span className="card-title">💧 Default Reminders</span>
+        </div>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '16px' }}>
+          These reminders run in the background throughout the day and don't need to be checked off.
+        </p>
+        
+        <div className="notif-habit-row">
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span className="notif-habit-name">Water Reminder</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Stay hydrated all day</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.75rem' }}>Every</span>
+            <select 
+              value={waterReminders.interval}
+              onChange={e => updateWater({ interval: Number(e.target.value) })}
+              className="notif-time-input"
+              style={{ width: '80px', padding: '4px' }}
+              disabled={!waterReminders.enabled}
+            >
+              <option value="30">30 min</option>
+              <option value="60">1 hour</option>
+              <option value="120">2 hours</option>
+              <option value="180">3 hours</option>
+              <option value="240">4 hours</option>
+            </select>
+          </div>
+          <button
+            className={`notif-toggle-btn ${waterReminders.enabled ? 'active' : ''}`}
+            onClick={() => updateWater({ enabled: !waterReminders.enabled })}
+            disabled={permission !== 'granted'}
+          >
+            {waterReminders.enabled ? '🔔 ON' : '🔕 OFF'}
+          </button>
+        </div>
       </div>
     </div>
   );
