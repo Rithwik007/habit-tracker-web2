@@ -69,7 +69,7 @@ const startCronJobs = () => {
         const prefs = user.notifPrefs instanceof Map ? Object.fromEntries(user.notifPrefs) : user.notifPrefs;
         
         // Find habits to check for this user
-        const habits = await Habit.find({ userId: user.id });
+        const habits = await Habit.find({ userId: user.firebaseId });
         
         for (const habit of habits) {
           const isCompletedToday = habit.completions?.some(c => c.date === todayStr);
