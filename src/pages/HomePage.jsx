@@ -32,8 +32,12 @@ export default function HomePage() {
     const [historyGoals, setHistoryGoals] = useState([]);
     const [goalTab, setGoalTab] = useState('today');
     const [newGoalText, setNewGoalText] = useState('');
-    const [newGoalTime, setNewGoalTime] = useState('');
-    const [newGoalNagTime, setNewGoalNagTime] = useState('0');
+    const getCurrentTimeStr = () => {
+        const now = new Date();
+        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    };
+    const [newGoalTime, setNewGoalTime] = useState(getCurrentTimeStr());
+    const [newGoalNagTime, setNewGoalNagTime] = useState('');
     const [seeding, setSeeding] = useState(false);
     const [error, setError] = useState(null);
     const { addToast } = useToast();
@@ -131,14 +135,14 @@ export default function HomePage() {
                 userId: user.uid,
                 text: newGoalText.trim(),
                 time: newGoalTime.trim(),
-                nagTime: parseInt(newGoalNagTime, 10),
+                nagTime: parseInt(newGoalNagTime, 10) || 0,
                 date: today
             });
             setGoals(prev => [...prev, data]);
             setHistoryGoals(prev => [data, ...prev]);
             setNewGoalText('');
-            setNewGoalTime('');
-            setNewGoalNagTime('0');
+            setNewGoalTime(getCurrentTimeStr());
+            setNewGoalNagTime('');
             addToast('🎯 Goal added!');
         } catch (e) {
             addToast('Failed to add goal', 'error');
@@ -241,18 +245,17 @@ export default function HomePage() {
                                 onKeyDown={e => e.key === 'Enter' && addGoal()}
                                 title="Deadline"
                             />
-                            <select 
+                            <input 
                                 className="manage-input" 
                                 style={{ flex: '1 1 120px', padding: '10px' }}
+                                type="number"
+                                min="0"
+                                placeholder="Nag (mins)"
                                 value={newGoalNagTime}
                                 onChange={e => setNewGoalNagTime(e.target.value)}
-                                title="Nag Interval"
-                            >
-                                <option value="0">No Nagging</option>
-                                <option value="15">Every 15m</option>
-                                <option value="30">Every 30m</option>
-                                <option value="60">Every 1h</option>
-                            </select>
+                                onKeyDown={e => e.key === 'Enter' && addGoal()}
+                                title="Nag Interval (leave empty or 0 to disable)"
+                            />
                             <button className="add-btn" onClick={addGoal} style={{ padding: '0 20px', flex: '1 1 100px' }}>+ Add Goal</button>
                         </div>
 
@@ -315,11 +318,6 @@ export default function HomePage() {
                                         <span className="goal-text">{goal.text}</span>
                                         <span className="goal-time-badge" style={{ background: 'var(--bg-card-hover)' }}>📅 {goal.date}</span>
                                         {goal.time && <span className="goal-time-badge">🕒 {goal.time}</span>}
-                                    </div>
-                                    <div className="goal-delete-btn" onClick={(e) => deleteGoal(e, goal._id)}>
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
-                                        </svg>
                                     </div>
                                 </div>
                             ))
