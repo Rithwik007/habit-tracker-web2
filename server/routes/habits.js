@@ -54,6 +54,9 @@ router.post('/:id/toggle', async (req, res) => {
     const habit = await Habit.findById(req.params.id);
     if (!habit) return res.status(404).json({ message: 'Habit not found' });
 
+    // Clean up any corrupted legacy completions that lack a date
+    habit.completions = habit.completions.filter(c => c.date);
+
     const completionIndex = habit.completions.findIndex(c => c.date === date);
     if (completionIndex > -1) {
       habit.completions[completionIndex].value = value;
