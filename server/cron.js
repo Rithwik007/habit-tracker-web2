@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import webpush from 'web-push';
 import User from './models/User.js';
 import Habit from './models/Habit.js';
+import Goal from './models/Goal.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -113,6 +114,55 @@ const startCronJobs = () => {
               title: '⏰ Habit Reminder',
               body: messageBody,
               tag: messageTag,
+              data: { url: '/' }
+            });
+
+            try {
+              await webpush.sendNotification(user.pushSubscription, payload);
+            } catch (err) {
+              if (err.statusCode === 410 || err.statusCode === 404) {
+                await User.updateOne({ _id: user._id }, { $unset: { pushSubscription: 1 } });
+              }
+            }
+          }
+        }
+
+        // --- PART C: GOAL NOTIFICATIONS (Standard + Nagging) ---
+        const goals = await Goal.find({ userId: user.firebaseId, date: todayStr, completed: false });
+        for (const goal of goals) {
+          if (!goal.time) continue; // No deadline, no notification
+          
+          let shouldNotifyGoal = false;
+          let goalMessageTag = `goal-${goal._id}`;
+          
+          const [deadlineH, deadlineM] = goal.time.split(':').map(Number);
+          const currentH = Number(currentHours);
+          const currentM = Number(currentMinutes);
+
+          const totalDeadlineMins = deadlineH * 60 + deadlineM;
+          const totalCurrentMins = currentH * 60 + currentM;
+
+          // 1. Check Standard Deadline Trigger
+          if (totalCurrentMins === totalDeadlineMins) {
+            shouldNotifyGoal = true;
+          }
+          
+          // 2. Check Overdue Nagging
+          if (!shouldNotifyGoal && goal.nagTime > 0) {
+            if (totalCurrentMins > totalDeadlineMins) {
+              const diff = totalCurrentMins - totalDeadlineMins;
+              if (diff % goal.nagTime === 0) {
+                shouldNotifyGoal = true;
+                goalMessageTag = `goal-nag-${goal._id}-${totalCurrentMins}`; 
+              }
+            }
+          }
+
+          if (shouldNotifyGoal) {
+            const payload = JSON.stringify({
+              title: '🎯 Goal Reminder',
+              body: `Don't forget your goal: ${goal.text}`,
+              tag: goalMessageTag,
               data: { url: '/' }
             });
 

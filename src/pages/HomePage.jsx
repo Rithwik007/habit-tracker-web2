@@ -29,8 +29,11 @@ export default function HomePage() {
     const [logs, setLogs] = useState({});
     const [mood, setMood] = useState(null);
     const [goals, setGoals] = useState([]);
+    const [historyGoals, setHistoryGoals] = useState([]);
+    const [goalTab, setGoalTab] = useState('today');
     const [newGoalText, setNewGoalText] = useState('');
     const [newGoalTime, setNewGoalTime] = useState('');
+    const [newGoalNagTime, setNewGoalNagTime] = useState('0');
     const [seeding, setSeeding] = useState(false);
     const [error, setError] = useState(null);
     const { addToast } = useToast();
@@ -56,6 +59,10 @@ export default function HomePage() {
         
         goalApi.getAll(user.uid, today)
             .then(({ data }) => setGoals(data))
+            .catch(() => {});
+            
+        goalApi.getHistory(user.uid)
+            .then(({ data }) => setHistoryGoals(data))
             .catch(() => {});
     }, [user?.uid, today]);
 
@@ -124,11 +131,14 @@ export default function HomePage() {
                 userId: user.uid,
                 text: newGoalText.trim(),
                 time: newGoalTime.trim(),
+                nagTime: parseInt(newGoalNagTime, 10),
                 date: today
             });
             setGoals(prev => [...prev, data]);
+            setHistoryGoals(prev => [data, ...prev]);
             setNewGoalText('');
             setNewGoalTime('');
+            setNewGoalNagTime('0');
             addToast('🎯 Goal added!');
         } catch (e) {
             addToast('Failed to add goal', 'error');
@@ -138,11 +148,13 @@ export default function HomePage() {
     const toggleGoal = async (id) => {
         try {
             setGoals(prev => prev.map(g => g._id === id ? { ...g, completed: !g.completed } : g));
+            setHistoryGoals(prev => prev.map(g => g._id === id ? { ...g, completed: !g.completed } : g));
             await goalApi.toggle(id);
         } catch (e) {
             addToast('Failed to update goal', 'error');
             // Revert state on error
             setGoals(prev => prev.map(g => g._id === id ? { ...g, completed: !g.completed } : g));
+            setHistoryGoals(prev => prev.map(g => g._id === id ? { ...g, completed: !g.completed } : g));
         }
     };
 
@@ -151,6 +163,7 @@ export default function HomePage() {
         try {
             await goalApi.delete(id);
             setGoals(prev => prev.filter(g => g._id !== id));
+            setHistoryGoals(prev => prev.filter(g => g._id !== id));
             addToast('Goal removed');
         } catch (e) {
             addToast('Failed to delete goal', 'error');
@@ -191,60 +204,126 @@ export default function HomePage() {
 
             {/* Today's Goals Section */}
             <div className="card" style={{ marginBottom: '24px' }}>
-                <div className="card-header">
-                    <span className="card-title">🎯 Today's Goals</span>
-                    <span className="badge badge-primary">{goals.filter(g => g.completed).length} / {goals.length} done</span>
+                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '15px' }}>
+                        <span 
+                            className={`card-title ${goalTab === 'today' ? '' : 'dimmed'}`} 
+                            style={{ cursor: 'pointer', opacity: goalTab === 'today' ? 1 : 0.5 }}
+                            onClick={() => setGoalTab('today')}
+                        >🎯 Today's Goals</span>
+                        <span 
+                            className={`card-title ${goalTab === 'history' ? '' : 'dimmed'}`} 
+                            style={{ cursor: 'pointer', opacity: goalTab === 'history' ? 1 : 0.5 }}
+                            onClick={() => setGoalTab('history')}
+                        >📜 History</span>
+                    </div>
+                    {goalTab === 'today' && <span className="badge badge-primary">{goals.filter(g => g.completed).length} / {goals.length} done</span>}
                 </div>
                 
-                <div className="goal-input-row">
-                    <input
-                        className="manage-input goal-input-main"
-                        type="text"
-                        placeholder="What's your goal for today?"
-                        value={newGoalText}
-                        onChange={e => setNewGoalText(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && addGoal()}
-                    />
-                    <input
-                        className="manage-input goal-input-time"
-                        type="time"
-                        value={newGoalTime}
-                        onChange={e => setNewGoalTime(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && addGoal()}
-                    />
-                    <button className="add-btn" onClick={addGoal} style={{ padding: '0 20px' }}>+ Add Goal</button>
-                </div>
-
-                {goals.length === 0 ? (
-                    <p style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '20px 0', fontSize: '0.9rem' }}>
-                        No goals set for today yet.
-                    </p>
-                ) : (
-                    <div className="goal-list">
-                        {goals.sort((a, b) => a.completed - b.completed).map(goal => (
-                            <div 
-                                key={goal._id} 
-                                className={`goal-item${goal.completed ? ' completed' : ''}`}
-                                onClick={() => toggleGoal(goal._id)}
+                {goalTab === 'today' ? (
+                    <>
+                        <div className="goal-input-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                            <input
+                                className="manage-input goal-input-main"
+                                style={{ flex: '2 1 200px' }}
+                                type="text"
+                                placeholder="What's your goal for today?"
+                                value={newGoalText}
+                                onChange={e => setNewGoalText(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && addGoal()}
+                            />
+                            <input
+                                className="manage-input goal-input-time"
+                                style={{ flex: '1 1 100px' }}
+                                type="time"
+                                value={newGoalTime}
+                                onChange={e => setNewGoalTime(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && addGoal()}
+                                title="Deadline"
+                            />
+                            <select 
+                                className="manage-input" 
+                                style={{ flex: '1 1 120px', padding: '10px' }}
+                                value={newGoalNagTime}
+                                onChange={e => setNewGoalNagTime(e.target.value)}
+                                title="Nag Interval"
                             >
-                                <div className="check-circle" style={{ width: '22px', height: '22px', marginRight: '4px' }}>
-                                    {goal.completed && (
-                                        <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                                            <polyline points="20 6 9 17 4 12" />
-                                        </svg>
-                                    )}
-                                </div>
-                                <div className="goal-content">
-                                    <span className="goal-text">{goal.text}</span>
-                                    {goal.time && <span className="goal-time-badge">🕒 {goal.time}</span>}
-                                </div>
-                                <div className="goal-delete-btn" onClick={(e) => deleteGoal(e, goal._id)}>
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
-                                    </svg>
-                                </div>
+                                <option value="0">No Nagging</option>
+                                <option value="15">Every 15m</option>
+                                <option value="30">Every 30m</option>
+                                <option value="60">Every 1h</option>
+                            </select>
+                            <button className="add-btn" onClick={addGoal} style={{ padding: '0 20px', flex: '1 1 100px' }}>+ Add Goal</button>
+                        </div>
+
+                        {goals.length === 0 ? (
+                            <p style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '20px 0', fontSize: '0.9rem' }}>
+                                No goals set for today yet.
+                            </p>
+                        ) : (
+                            <div className="goal-list">
+                                {goals.sort((a, b) => a.completed - b.completed).map(goal => (
+                                    <div 
+                                        key={goal._id} 
+                                        className={`goal-item${goal.completed ? ' completed' : ''}`}
+                                        onClick={() => toggleGoal(goal._id)}
+                                    >
+                                        <div className="check-circle" style={{ width: '22px', height: '22px', marginRight: '4px' }}>
+                                            {goal.completed && (
+                                                <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                                    <polyline points="20 6 9 17 4 12" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                        <div className="goal-content">
+                                            <span className="goal-text">{goal.text}</span>
+                                            {goal.time && <span className="goal-time-badge">🕒 Complete by {goal.time}</span>}
+                                            {goal.nagTime > 0 && <span className="goal-time-badge" style={{marginLeft: '6px'}}>🔔 Nag {goal.nagTime}m</span>}
+                                        </div>
+                                        <div className="goal-delete-btn" onClick={(e) => deleteGoal(e, goal._id)}>
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
+                        )}
+                    </>
+                ) : (
+                    <div className="goal-list history-list">
+                        {historyGoals.length === 0 ? (
+                            <p style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '20px 0', fontSize: '0.9rem' }}>
+                                No goal history found.
+                            </p>
+                        ) : (
+                            historyGoals.map(goal => (
+                                <div 
+                                    key={goal._id} 
+                                    className={`goal-item${goal.completed ? ' completed' : ''}`}
+                                    onClick={() => toggleGoal(goal._id)}
+                                    style={{ opacity: goal.completed ? 0.7 : 1 }}
+                                >
+                                    <div className="check-circle" style={{ width: '22px', height: '22px', marginRight: '4px' }}>
+                                        {goal.completed && (
+                                            <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    <div className="goal-content">
+                                        <span className="goal-text">{goal.text}</span>
+                                        <span className="goal-time-badge" style={{ background: 'var(--bg-card-hover)' }}>📅 {goal.date}</span>
+                                        {goal.time && <span className="goal-time-badge">🕒 {goal.time}</span>}
+                                    </div>
+                                    <div className="goal-delete-btn" onClick={(e) => deleteGoal(e, goal._id)}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 )}
             </div>

@@ -13,6 +13,16 @@ router.get('/:userId/:date', async (req, res) => {
   }
 });
 
+// Get all goals history for a user
+router.get('/history/:userId', async (req, res) => {
+  try {
+    const goals = await Goal.find({ userId: req.params.userId }).sort({ date: -1 });
+    res.json(goals);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Create a goal
 router.post('/', async (req, res) => {
   const goal = new Goal(req.body);

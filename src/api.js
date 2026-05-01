@@ -45,6 +45,7 @@ export const adminApi = {
 
 export const goalApi = {
   getAll: (userId, date) => api.get(`/goals/${userId}/${date}`),
+  getHistory: (userId) => api.get(`/goals/history/${userId}`),
   create: (goalData) => api.post('/goals', goalData),
   toggle: (id) => api.put(`/goals/${id}/toggle`),
   delete: (id) => api.delete(`/goals/${id}`)
