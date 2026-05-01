@@ -34,6 +34,7 @@ export default function HomePage() {
     const [newGoalText, setNewGoalText] = useState('');
     const [newGoalTime, setNewGoalTime] = useState('');
     const [newGoalNagTime, setNewGoalNagTime] = useState('');
+    const [newGoalHasDeadline, setNewGoalHasDeadline] = useState(false);
     const [seeding, setSeeding] = useState(false);
     const [error, setError] = useState(null);
     const { addToast } = useToast();
@@ -130,8 +131,8 @@ export default function HomePage() {
             const { data } = await goalApi.create({
                 userId: user.uid,
                 text: newGoalText.trim(),
-                time: newGoalTime.trim(),
-                nagTime: parseInt(newGoalNagTime, 10) || 0,
+                time: newGoalHasDeadline ? newGoalTime.trim() : '',
+                nagTime: newGoalHasDeadline ? (parseInt(newGoalNagTime, 10) || 0) : 0,
                 date: today
             });
             setGoals(prev => [...prev, data]);
@@ -139,6 +140,7 @@ export default function HomePage() {
             setNewGoalText('');
             setNewGoalTime('');
             setNewGoalNagTime('');
+            setNewGoalHasDeadline(false);
             addToast('🎯 Goal added!');
         } catch (e) {
             addToast('Failed to add goal', 'error');
@@ -232,26 +234,38 @@ export default function HomePage() {
                                 onChange={e => setNewGoalText(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && addGoal()}
                             />
-                            <input
-                                className="manage-input goal-input-time"
-                                style={{ flex: '1 1 100px' }}
-                                type="time"
-                                value={newGoalTime}
-                                onChange={e => setNewGoalTime(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && addGoal()}
-                                title="Deadline"
-                            />
-                            <input 
-                                className="manage-input" 
-                                style={{ flex: '1 1 120px', padding: '10px' }}
-                                type="number"
-                                min="0"
-                                placeholder="Nag (mins)"
-                                value={newGoalNagTime}
-                                onChange={e => setNewGoalNagTime(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && addGoal()}
-                                title="Nag Interval (leave empty or 0 to disable)"
-                            />
+                            <button 
+                                className={`notif-toggle-btn ${newGoalHasDeadline ? 'active' : ''}`}
+                                style={{ flex: '0 0 auto', padding: '0 12px', height: '42px', borderRadius: '8px' }}
+                                onClick={() => setNewGoalHasDeadline(!newGoalHasDeadline)}
+                                title="Toggle Deadline"
+                            >
+                                ⏰
+                            </button>
+                            {newGoalHasDeadline && (
+                                <>
+                                    <input
+                                        className="manage-input goal-input-time"
+                                        style={{ flex: '1 1 100px' }}
+                                        type="time"
+                                        value={newGoalTime}
+                                        onChange={e => setNewGoalTime(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && addGoal()}
+                                        title="Deadline"
+                                    />
+                                    <input 
+                                        className="manage-input" 
+                                        style={{ flex: '1 1 100px', padding: '10px' }}
+                                        type="number"
+                                        min="0"
+                                        placeholder="Nag (mins)"
+                                        value={newGoalNagTime}
+                                        onChange={e => setNewGoalNagTime(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && addGoal()}
+                                        title="Nag Interval (leave empty or 0 to disable)"
+                                    />
+                                </>
+                            )}
                             <button className="add-btn" onClick={addGoal} style={{ padding: '0 20px', flex: '1 1 100px' }}>+ Add Goal</button>
                         </div>
 
