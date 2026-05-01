@@ -32,11 +32,7 @@ export default function HomePage() {
     const [historyGoals, setHistoryGoals] = useState([]);
     const [goalTab, setGoalTab] = useState('today');
     const [newGoalText, setNewGoalText] = useState('');
-    const getCurrentTimeStr = () => {
-        const now = new Date();
-        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    };
-    const [newGoalTime, setNewGoalTime] = useState(getCurrentTimeStr());
+    const [newGoalTime, setNewGoalTime] = useState('');
     const [newGoalNagTime, setNewGoalNagTime] = useState('');
     const [seeding, setSeeding] = useState(false);
     const [error, setError] = useState(null);
@@ -141,7 +137,7 @@ export default function HomePage() {
             setGoals(prev => [...prev, data]);
             setHistoryGoals(prev => [data, ...prev]);
             setNewGoalText('');
-            setNewGoalTime(getCurrentTimeStr());
+            setNewGoalTime('');
             setNewGoalNagTime('');
             addToast('🎯 Goal added!');
         } catch (e) {
