@@ -74,7 +74,7 @@ router.patch('/:firebaseId/notifPrefs', async (req, res) => {
     if (notifPrefs === undefined) return res.status(400).json({ message: 'notifPrefs is required' });
     const user = await User.findOneAndUpdate(
       { firebaseId: req.params.firebaseId },
-      { notifPrefs },
+      { $set: { notifPrefs } },
       { new: true }
     );
     res.json(user);

@@ -36,7 +36,7 @@ export function NotificationProvider({ children }) {
       return;
     }
 
-    if (profile?.notifPrefs) {
+    if (profile?.notifPrefs && Object.keys(profile.notifPrefs).length > 0) {
       const loaded = profile.notifPrefs instanceof Map
         ? Object.fromEntries(profile.notifPrefs)
         : profile.notifPrefs;
@@ -44,7 +44,14 @@ export function NotificationProvider({ children }) {
       localStorage.setItem(`notif_prefs_${user.uid}`, JSON.stringify(loaded));
     } else {
       const cached = localStorage.getItem(`notif_prefs_${user.uid}`);
-      setPrefs(cached ? JSON.parse(cached) : {});
+      if (cached && cached !== '{}') {
+        const parsed = JSON.parse(cached);
+        setPrefs(parsed);
+        // Sync back to DB to heal
+        userApi.updateNotifPrefs(user.uid, parsed).catch(e => console.warn('Heal sync failed', e));
+      } else {
+        setPrefs({});
+      }
     }
   }, [user, profile?.notifPrefs]);
 
