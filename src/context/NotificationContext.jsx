@@ -182,7 +182,9 @@ export function NotificationProvider({ children }) {
     if (user) {
       fetchInAppNotifications();
       // Poll every 30 seconds for a "real-time" feel
-      const interval = setInterval(fetchInAppNotifications, 30 * 1000);
+      const interval = setInterval(() => {
+        if (user) fetchInAppNotifications();
+      }, 30 * 1000);
       return () => clearInterval(interval);
     } else {
       setInAppNotifications([]);
@@ -197,7 +199,10 @@ export function NotificationProvider({ children }) {
     if (!user) return;
     try {
       await userApi.markNotificationRead(user.uid, id);
-      setInAppNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+      setInAppNotifications(prev => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        return safePrev.map(n => n._id === id ? { ...n, isRead: true } : n);
+      });
       setUnreadCount(prev => Math.max(0, prev - 1));
       if (latestPopup?._id === id) setLatestPopup(null);
     } catch (err) {
@@ -209,7 +214,10 @@ export function NotificationProvider({ children }) {
     if (!user) return;
     try {
       await userApi.markAllNotificationsRead(user.uid);
-      setInAppNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setInAppNotifications(prev => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        return safePrev.map(n => ({ ...n, isRead: true }));
+      });
       setUnreadCount(0);
       setLatestPopup(null);
     } catch (err) {

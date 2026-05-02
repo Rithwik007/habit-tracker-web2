@@ -24,10 +24,12 @@ export function DataProvider({ children }) {
         setHabitsLoading(prev => prev); // don't flash loading if we already have data
         try {
             const { data } = await habitApi.getAll(user.uid);
-            setHabits(data || []);
+            // Strict array check for mobile stability
+            setHabits(Array.isArray(data) ? data : []);
             lastFetchedAt.current = Date.now();
         } catch (e) {
             console.error('DataContext fetch error:', e);
+            setHabits([]); // Fallback to empty array on error
         } finally {
             isFetching.current = false;
             setHabitsLoading(false);
