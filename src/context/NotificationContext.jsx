@@ -148,8 +148,9 @@ export function NotificationProvider({ children }) {
     if (!user) return;
     try {
       const { data } = await userApi.getNotifications(user.uid);
-      setInAppNotifications(data || []);
-      const unread = data.filter(n => !n.isRead);
+      const safeData = Array.isArray(data) ? data : [];
+      setInAppNotifications(safeData);
+      const unread = safeData.filter(n => !n.isRead);
       setUnreadCount(unread.length);
 
       // Real-time Popup Logic:

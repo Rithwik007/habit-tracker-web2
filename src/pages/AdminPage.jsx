@@ -75,7 +75,7 @@ export default function AdminPage() {
         setLoading(true);
         try {
             const { data } = await adminApi.getAllUsers();
-            setUsers(data || []);
+            setUsers(Array.isArray(data) ? data : []);
         } catch (e) {
             addToast('Failed to load users', 'error');
         } finally {
