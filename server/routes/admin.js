@@ -1,5 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import webpush from 'web-push';
 
 const router = express.Router();
 
@@ -63,6 +64,53 @@ router.delete('/user/:uid', async (req, res) => {
     await Note.deleteMany({ userId: uid });
     
     res.json({ message: 'User deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// POST send custom notification
+router.post('/notify', async (req, res) => {
+  const { userIds, title, message } = req.body;
+  
+  if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+    return res.status(400).json({ message: 'No users selected' });
+  }
+  if (!title || !message) {
+    return res.status(400).json({ message: 'Title and message are required' });
+  }
+
+  try {
+    const users = await User.find({ 
+      firebaseId: { $in: userIds }, 
+      pushSubscription: { $exists: true, $ne: null } 
+    });
+    
+    let sentCount = 0;
+    let failedCount = 0;
+
+    for (const user of users) {
+      if (!user.pushSubscription) continue;
+
+      const payload = JSON.stringify({
+        title: title,
+        body: message,
+        tag: `admin-broadcast-${Date.now()}`,
+        data: { url: '/' }
+      });
+
+      try {
+        await webpush.sendNotification(user.pushSubscription, payload);
+        sentCount++;
+      } catch (err) {
+        failedCount++;
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          await User.updateOne({ _id: user._id }, { $unset: { pushSubscription: 1 } });
+        }
+      }
+    }
+
+    res.json({ message: `Successfully sent to ${sentCount} active devices. (${failedCount} unavailable)` });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

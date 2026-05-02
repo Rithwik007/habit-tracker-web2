@@ -61,6 +61,10 @@ export default function AdminPage() {
     const [userHabits, setUserHabits] = useState({});
     const [loadingHabits, setLoadingHabits] = useState(null);
     const [deleting, setDeleting] = useState(null);
+    const [selectedUsers, setSelectedUsers] = useState([]);
+    const [notifTitle, setNotifTitle] = useState('');
+    const [notifMessage, setNotifMessage] = useState('');
+    const [sendingNotif, setSendingNotif] = useState(false);
 
     const now = new Date();
     const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
@@ -112,6 +116,33 @@ export default function AdminPage() {
         }
     };
 
+    const handleToggleUser = (uid) => {
+        setSelectedUsers(prev => prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]);
+    };
+
+    const handleSelectAll = () => {
+        if (selectedUsers.length === users.length) setSelectedUsers([]);
+        else setSelectedUsers(users.map(u => u.firebaseId));
+    };
+
+    const handleSendBroadcast = async () => {
+        if (selectedUsers.length === 0) return addToast('Select at least one user', 'error');
+        if (!notifTitle.trim() || !notifMessage.trim()) return addToast('Title and message are required', 'error');
+        
+        setSendingNotif(true);
+        try {
+            const { data } = await adminApi.notifyUsers({ userIds: selectedUsers, title: notifTitle, message: notifMessage });
+            addToast(data.message);
+            setNotifTitle('');
+            setNotifMessage('');
+            setSelectedUsers([]);
+        } catch (e) {
+            addToast(e.response?.data?.message || 'Failed to send notifications', 'error');
+        } finally {
+            setSendingNotif(false);
+        }
+    };
+
     if (!isAdmin) return (
         <div style={{ textAlign: 'center', padding: '40px' }}>
             <div className="card" style={{ borderColor: 'var(--danger)' }}>
@@ -130,10 +161,46 @@ export default function AdminPage() {
         <div className="fade-in">
             <h1 className="page-title">🛡️ Admin Panel</h1>
 
+            {/* Broadcast Card */}
+            <div className="card" style={{ marginBottom: '24px', borderColor: 'var(--primary)' }}>
+                <div className="card-header">
+                    <span className="card-title">📢 Broadcast Notification</span>
+                    <span className="badge badge-primary">{selectedUsers.length} selected</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <input
+                        className="manage-input"
+                        placeholder="Notification Title (e.g., App Update)"
+                        value={notifTitle}
+                        onChange={e => setNotifTitle(e.target.value)}
+                    />
+                    <textarea
+                        className="manage-input"
+                        placeholder="Message body..."
+                        value={notifMessage}
+                        onChange={e => setNotifMessage(e.target.value)}
+                        style={{ minHeight: '80px', resize: 'vertical', fontFamily: 'inherit' }}
+                    />
+                    <button 
+                        className="add-btn" 
+                        onClick={handleSendBroadcast} 
+                        disabled={sendingNotif || selectedUsers.length === 0}
+                        style={{ opacity: (sendingNotif || selectedUsers.length === 0) ? 0.5 : 1 }}
+                    >
+                        {sendingNotif ? 'Sending...' : '🚀 Send Push Notification'}
+                    </button>
+                </div>
+            </div>
+
             <div className="card" style={{ marginBottom: '24px' }}>
                 <div className="card-header">
-                    <span className="card-title">Registered Users</span>
-                    <span className="badge badge-primary">{users.length} users</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span className="card-title">Registered Users</span>
+                        <span className="badge badge-primary">{users.length} users</span>
+                    </div>
+                    <button className="add-btn" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={handleSelectAll}>
+                        {selectedUsers.length > 0 && selectedUsers.length === users.length ? 'Deselect All' : 'Select All'}
+                    </button>
                 </div>
                 <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', margin: '8px 0 16px' }}>
                     Click any user to view their monthly performance trend.
@@ -174,6 +241,14 @@ export default function AdminPage() {
                                     onClick={() => handleExpand(u.firebaseId)}
                                 >
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                                        <div onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
+                                            <input 
+                                                type="checkbox" 
+                                                checked={selectedUsers.includes(u.firebaseId)}
+                                                onChange={() => handleToggleUser(u.firebaseId)}
+                                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                                            />
+                                        </div>
                                         {/* Avatar */}
                                         <div style={{
                                             width: '40px', height: '40px', borderRadius: '50%',

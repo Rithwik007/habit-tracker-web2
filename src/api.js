@@ -40,7 +40,8 @@ export const moodApi = {
 export const adminApi = {
   getAllUsers: () => api.get('/admin/users'),
   getUserHabits: (uid) => api.get(`/admin/user-habits/${uid}`),
-  deleteUser: (uid) => api.delete(`/admin/user/${uid}`)
+  deleteUser: (uid) => api.delete(`/admin/user/${uid}`),
+  notifyUsers: (payload) => api.post('/admin/notify', payload)
 };
 
 export const goalApi = {
