@@ -25,7 +25,7 @@ const DEFAULT_HABITS = [
 
 export default function HomePage() {
     const { user } = useAuth();
-    const { habits, habitsLoading, refreshHabits } = useData();
+    const { habits, habitsLoading, refreshHabits, setHabits } = useData();
     const [logs, setLogs] = useState({});
     const [mood, setMood] = useState(null);
     const [goals, setGoals] = useState([]);
@@ -71,13 +71,31 @@ export default function HomePage() {
         const habitId = habit._id;
         const current = !!logs[habitId];
         const next = !current;
+
+        // Optimistic update: logs (for today's view) + habits.completions (for monthly/analytics/progress/graph)
         setLogs(prev => ({ ...prev, [habitId]: next }));
+        setHabits(prev => prev.map(h => {
+            if (h._id !== habitId) return h;
+            const completions = next
+                ? [...(h.completions || []), { date: today, value: 1 }]
+                : (h.completions || []).filter(c => c.date !== today);
+            return { ...h, completions };
+        }));
+
         try {
             await habitApi.toggleCompletion(habitId, today, next ? 1 : 0);
-            if (next) addToast(`✅ ${habit.name}`);
+            if (next) addToast(habit.name); // toast already prepends ✅ icon
         } catch (e) {
             addToast('Failed to save progress', 'error');
+            // Revert both states on error
             setLogs(prev => ({ ...prev, [habitId]: current }));
+            setHabits(prev => prev.map(h => {
+                if (h._id !== habitId) return h;
+                const completions = current
+                    ? [...(h.completions || []), { date: today, value: 1 }]
+                    : (h.completions || []).filter(c => c.date !== today);
+                return { ...h, completions };
+            }));
         }
     };
 

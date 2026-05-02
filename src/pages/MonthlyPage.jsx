@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 export default function MonthlyPage() {
     const { user } = useAuth();
-    const { habits, habitsLoading, refreshHabits } = useData();
+    const { habits, habitsLoading, refreshHabits, setHabits } = useData();
     const [currentDate, setCurrentDate] = useState(new Date());
     const todayStr = useMidnightRefresh(() => setCurrentDate(new Date()));
 
@@ -19,11 +19,30 @@ export default function MonthlyPage() {
     const toggleCell = async (habitId, dateStr) => {
         const habit = habits.find(h => h._id === habitId);
         const alreadyDone = habit?.completions?.some(c => c.date === dateStr);
+        const nextState = alreadyDone ? 0 : 1;
+
+        // Optimistically update
+        setHabits(prev => prev.map(h => {
+            if (h._id !== habitId) return h;
+            const completions = nextState
+                ? [...(h.completions || []), { date: dateStr, value: 1 }]
+                : (h.completions || []).filter(c => c.date !== dateStr);
+            return { ...h, completions };
+        }));
+
         try {
-            await habitApi.toggleCompletion(habitId, dateStr, alreadyDone ? 0 : 1);
-            refreshHabits();
+            await habitApi.toggleCompletion(habitId, dateStr, nextState);
+            // Optional: refreshHabits() to ensure total sync later
         } catch (e) {
             console.error('Toggle error:', e);
+            // Revert on error
+            setHabits(prev => prev.map(h => {
+                if (h._id !== habitId) return h;
+                const completions = alreadyDone
+                    ? [...(h.completions || []), { date: dateStr, value: 1 }]
+                    : (h.completions || []).filter(c => c.date !== dateStr);
+                return { ...h, completions };
+            }));
         }
     };
 
@@ -67,8 +86,8 @@ export default function MonthlyPage() {
                         >
                             {habits.map(habit => {
                                 const habitMonthCount = (habit.completions || []).filter(c => {
-                                    const d = new Date(c.date);
-                                    return d.getFullYear() === currentDate.getFullYear() && d.getMonth() === currentDate.getMonth();
+                                    const [year, month] = c.date.split('-');
+                                    return Number(year) === currentDate.getFullYear() && (Number(month) - 1) === currentDate.getMonth();
                                 }).length;
                                 return (
                                     <motion.tr key={habit._id} variants={{ hidden: { opacity: 0, x: -15 }, show: { opacity: 1, x: 0 } }}>

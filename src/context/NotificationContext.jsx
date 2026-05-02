@@ -100,6 +100,7 @@ export function NotificationProvider({ children }) {
   }, [user, permission, subscribeToPush]);
 
   const savePrefs = useCallback(async (newPrefs) => {
+    if (!user) return;
     setPrefs(newPrefs);
     localStorage.setItem(`notif_prefs_${user.uid}`, JSON.stringify(newPrefs));
     try {

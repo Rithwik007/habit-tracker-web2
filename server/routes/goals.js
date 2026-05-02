@@ -3,20 +3,21 @@ import Goal from '../models/Goal.js';
 
 const router = express.Router();
 
-// Get goals for a user on a specific date
-router.get('/:userId/:date', async (req, res) => {
+// Get all goals history for a user
+// IMPORTANT: This MUST be defined BEFORE /:userId/:date to prevent route shadowing
+router.get('/history/:userId', async (req, res) => {
   try {
-    const goals = await Goal.find({ userId: req.params.userId, date: req.params.date });
+    const goals = await Goal.find({ userId: req.params.userId }).sort({ date: -1 });
     res.json(goals);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// Get all goals history for a user
-router.get('/history/:userId', async (req, res) => {
+// Get goals for a user on a specific date
+router.get('/:userId/:date', async (req, res) => {
   try {
-    const goals = await Goal.find({ userId: req.params.userId }).sort({ date: -1 });
+    const goals = await Goal.find({ userId: req.params.userId, date: req.params.date });
     res.json(goals);
   } catch (err) {
     res.status(500).json({ message: err.message });

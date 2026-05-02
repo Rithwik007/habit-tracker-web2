@@ -152,6 +152,10 @@ export default function ManageHabitsPage() {
                                         onClick={() => { 
                                             setEditingId(habit._id); 
                                             setEditValue(habit.name);
+                                            setEditMessage(habit.reminderMessage || '');
+                                            setEditDeadline(habit.deadlineTime || '');
+                                            setEditNag(habit.naggingInterval || 0);
+                                            setEditNagEnabled((habit.naggingInterval || 0) > 0);
                                         }}>Edit</button>
                                 )}
                                 <button className="delete-btn" onClick={() => deleteHabit(habit._id)}>Remove</button>

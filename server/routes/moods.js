@@ -10,7 +10,7 @@ const MoodSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
-const Mood = mongoose.model('Mood', MoodSchema);
+const Mood = mongoose.models.Mood || mongoose.model('Mood', MoodSchema);
 
 // Get mood for a specific date
 router.get('/:userId/:date', async (req, res) => {
