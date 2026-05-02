@@ -1,30 +1,10 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import webpush from 'web-push';
+import User from '../models/User.js';
+import Habit from '../models/Habit.js';
 import Notification from '../models/Notification.js';
 
 const router = express.Router();
-
-// Re-use existing User model if already compiled
-const UserSchema = new mongoose.Schema({
-  firebaseId: { type: String, required: true, unique: true },
-  email: String,
-  display_name: String,
-  photoURL: String,
-  isAdmin: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
-});
-
-const User = mongoose.models.User || mongoose.model('User', UserSchema);
-
-const HabitSchema = new mongoose.Schema({
-  userId: String,
-  name: String,
-  completions: [{ date: String, value: Number }],
-  createdAt: { type: Date, default: Date.now }
-});
-
-const Habit = mongoose.models.Habit || mongoose.model('Habit', HabitSchema);
 
 // GET all users (admin only - no server-side auth check, handled by frontend)
 router.get('/users', async (req, res) => {
