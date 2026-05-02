@@ -109,6 +109,7 @@ router.post('/notify', async (req, res) => {
     let sentCount = 0;
     let failedCount = 0;
 
+    console.log(`Attempting to send push to ${users.length} users...`);
     for (const user of users) {
       if (!user.pushSubscription) continue;
 
@@ -126,6 +127,7 @@ router.post('/notify', async (req, res) => {
         await webpush.sendNotification(user.pushSubscription, payload);
         sentCount++;
       } catch (err) {
+        console.error(`Push failed for user ${user.email}:`, err.message);
         failedCount++;
         if (err.statusCode === 410 || err.statusCode === 404) {
           await User.updateOne({ _id: user._id }, { $unset: { pushSubscription: 1 } });
@@ -141,7 +143,8 @@ router.post('/notify', async (req, res) => {
     }));
     await Notification.insertMany(notificationsToInsert);
 
-    res.json({ message: `Successfully sent to ${sentCount} active devices. (${failedCount} unavailable)` });
+    console.log(`Broadcast finished: ${sentCount} sent, ${failedCount} failed.`);
+    res.json({ message: `Sent to ${sentCount} devices. (${failedCount} failed/unavailable)` });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

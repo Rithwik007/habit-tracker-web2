@@ -158,10 +158,17 @@ export function NotificationProvider({ children }) {
       if (unread.length > 0) {
         const latest = unread[0];
         if (!shownIds.current.has(latest._id)) {
-          // If first load, only show if we haven't seen it
-          // If not first load, this is a "real-time" arrival
           setLatestPopup(latest);
           shownIds.current.add(latest._id);
+
+          // Also trigger a NATIVE system notification if permitted
+          if (Notification.permission === 'granted') {
+            new Notification(latest.title, {
+              body: latest.message,
+              icon: '/favicon.ico',
+              tag: latest._id
+            });
+          }
         }
       }
       isFirstLoad.current = false;
