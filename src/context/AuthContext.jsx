@@ -113,7 +113,7 @@ export function AuthProvider({ children }) {
         try {
             // Update Firebase Profile (name only — photo is stored in MongoDB)
             await firebaseUpdateProfile(auth.currentUser, { displayName });
-...
+
             // Update MongoDB Backend (includes photoURL and setup flag)
             await userApi.updateProfile({
                 firebaseId: auth.currentUser.uid,
