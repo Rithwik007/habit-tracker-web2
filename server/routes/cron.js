@@ -71,7 +71,12 @@ router.get('/cron-notify', async (req, res) => {
       }
 
       // --- HABIT REMINDERS ---
-      const prefs = user.notifPrefs instanceof Map ? Object.fromEntries(user.notifPrefs) : (user.notifPrefs || {});
+      let prefs = {};
+      if (user.notifPrefs) {
+        prefs = typeof user.notifPrefs.toJSON === 'function' 
+          ? user.notifPrefs.toJSON() 
+          : (user.notifPrefs instanceof Map ? Object.fromEntries(user.notifPrefs) : user.notifPrefs);
+      }
       const habits = await Habit.find({ userId: user.firebaseId });
 
       for (const habit of habits) {

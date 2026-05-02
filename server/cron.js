@@ -66,8 +66,13 @@ const startCronJobs = () => {
         }
 
         // --- PART B: HABIT NOTIFICATIONS (Standard + Nagging) ---
-        if (!user.notifPrefs) continue;
-        const prefs = user.notifPrefs instanceof Map ? Object.fromEntries(user.notifPrefs) : user.notifPrefs;
+        // Safely parse notifPrefs to a plain object
+        let prefs = {};
+        if (user.notifPrefs) {
+          prefs = typeof user.notifPrefs.toJSON === 'function' 
+            ? user.notifPrefs.toJSON() 
+            : (user.notifPrefs instanceof Map ? Object.fromEntries(user.notifPrefs) : user.notifPrefs);
+        }
         
         // Find habits to check for this user
         const habits = await Habit.find({ userId: user.firebaseId });
