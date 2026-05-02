@@ -23,6 +23,68 @@ const DEFAULT_HABITS = [
     "sleep at 11 PM", "8 hours sleep"
 ];
 
+function GoalInputForm({ onAdd }) {
+    const [text, setText] = useState('');
+    const [hasDeadline, setHasDeadline] = useState(false);
+    const [time, setTime] = useState('');
+    const [nagTime, setNagTime] = useState('');
+
+    const handleAdd = () => {
+        onAdd(text, time, nagTime, hasDeadline);
+        setText('');
+        setTime('');
+        setNagTime('');
+        setHasDeadline(false);
+    };
+
+    return (
+        <div className="goal-input-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+            <input
+                className="manage-input goal-input-main"
+                style={{ flex: '2 1 200px' }}
+                type="text"
+                placeholder="What's your goal for today?"
+                value={text}
+                onChange={e => setText(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            />
+            <button 
+                className={`notif-toggle-btn ${hasDeadline ? 'active' : ''}`}
+                style={{ flex: '0 0 auto', padding: '0 12px', height: '42px', borderRadius: '8px' }}
+                onClick={() => setHasDeadline(!hasDeadline)}
+                title="Toggle Deadline"
+            >
+                ⏰
+            </button>
+            {hasDeadline && (
+                <>
+                    <input
+                        className="manage-input goal-input-time"
+                        style={{ flex: '1 1 100px' }}
+                        type="time"
+                        value={time}
+                        onChange={e => setTime(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                        title="Deadline"
+                    />
+                    <input 
+                        className="manage-input" 
+                        style={{ flex: '1 1 100px', padding: '10px' }}
+                        type="number"
+                        min="0"
+                        placeholder="Nag (mins)"
+                        value={nagTime}
+                        onChange={e => setNagTime(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                        title="Nag Interval (leave empty or 0 to disable)"
+                    />
+                </>
+            )}
+            <button className="add-btn" onClick={handleAdd} style={{ padding: '0 20px', flex: '1 1 100px' }}>+ Add Goal</button>
+        </div>
+    );
+}
+
 export default function HomePage() {
     const { user } = useAuth();
     const { habits, habitsLoading, refreshHabits, setHabits } = useData();
@@ -31,10 +93,6 @@ export default function HomePage() {
     const [goals, setGoals] = useState([]);
     const [historyGoals, setHistoryGoals] = useState([]);
     const [goalTab, setGoalTab] = useState('today');
-    const [newGoalText, setNewGoalText] = useState('');
-    const [newGoalTime, setNewGoalTime] = useState('');
-    const [newGoalNagTime, setNewGoalNagTime] = useState('');
-    const [newGoalHasDeadline, setNewGoalHasDeadline] = useState(false);
     const [seeding, setSeeding] = useState(false);
     const [error, setError] = useState(null);
     const { addToast } = useToast();
@@ -143,22 +201,18 @@ export default function HomePage() {
         }
     };
 
-    const addGoal = async () => {
-        if (!newGoalText.trim()) return;
+    const addGoal = async (goalText, goalTime, goalNagTime, goalHasDeadline) => {
+        if (!goalText.trim()) return;
         try {
             const { data } = await goalApi.create({
                 userId: user.uid,
-                text: newGoalText.trim(),
-                time: newGoalHasDeadline ? newGoalTime.trim() : '',
-                nagTime: newGoalHasDeadline ? (parseInt(newGoalNagTime, 10) || 0) : 0,
+                text: goalText.trim(),
+                time: goalHasDeadline ? goalTime.trim() : '',
+                nagTime: goalHasDeadline ? (parseInt(goalNagTime, 10) || 0) : 0,
                 date: today
             });
             setGoals(prev => [...prev, data]);
             setHistoryGoals(prev => [data, ...prev]);
-            setNewGoalText('');
-            setNewGoalTime('');
-            setNewGoalNagTime('');
-            setNewGoalHasDeadline(false);
             addToast('🎯 Goal added!');
         } catch (e) {
             addToast('Failed to add goal', 'error');
@@ -242,50 +296,7 @@ export default function HomePage() {
                 
                 {goalTab === 'today' ? (
                     <>
-                        <div className="goal-input-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-                            <input
-                                className="manage-input goal-input-main"
-                                style={{ flex: '2 1 200px' }}
-                                type="text"
-                                placeholder="What's your goal for today?"
-                                value={newGoalText}
-                                onChange={e => setNewGoalText(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && addGoal()}
-                            />
-                            <button 
-                                className={`notif-toggle-btn ${newGoalHasDeadline ? 'active' : ''}`}
-                                style={{ flex: '0 0 auto', padding: '0 12px', height: '42px', borderRadius: '8px' }}
-                                onClick={() => setNewGoalHasDeadline(!newGoalHasDeadline)}
-                                title="Toggle Deadline"
-                            >
-                                ⏰
-                            </button>
-                            {newGoalHasDeadline && (
-                                <>
-                                    <input
-                                        className="manage-input goal-input-time"
-                                        style={{ flex: '1 1 100px' }}
-                                        type="time"
-                                        value={newGoalTime}
-                                        onChange={e => setNewGoalTime(e.target.value)}
-                                        onKeyDown={e => e.key === 'Enter' && addGoal()}
-                                        title="Deadline"
-                                    />
-                                    <input 
-                                        className="manage-input" 
-                                        style={{ flex: '1 1 100px', padding: '10px' }}
-                                        type="number"
-                                        min="0"
-                                        placeholder="Nag (mins)"
-                                        value={newGoalNagTime}
-                                        onChange={e => setNewGoalNagTime(e.target.value)}
-                                        onKeyDown={e => e.key === 'Enter' && addGoal()}
-                                        title="Nag Interval (leave empty or 0 to disable)"
-                                    />
-                                </>
-                            )}
-                            <button className="add-btn" onClick={addGoal} style={{ padding: '0 20px', flex: '1 1 100px' }}>+ Add Goal</button>
-                        </div>
+                        <GoalInputForm onAdd={addGoal} />
 
                         {goals.length === 0 ? (
                             <p style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '20px 0', fontSize: '0.9rem' }}>

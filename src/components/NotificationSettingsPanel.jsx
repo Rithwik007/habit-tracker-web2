@@ -138,7 +138,7 @@ export default function NotificationSettingsPanel() {
                       </button>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div>
                         <label style={{ fontSize: '0.65rem', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>Custom Reminder Message</label>
                         <input
@@ -146,8 +146,13 @@ export default function NotificationSettingsPanel() {
                           className="notif-time-input"
                           style={{ width: '100%', fontSize: '0.8rem' }}
                           placeholder="Don't break the streak!..."
-                          value={habit.reminderMessage || ''}
-                          onChange={e => updateHabitSettings(habit._id, { reminderMessage: e.target.value })}
+                          defaultValue={habit.reminderMessage || ''}
+                          onBlur={e => {
+                            if (e.target.value !== (habit.reminderMessage || '')) {
+                              updateHabitSettings(habit._id, { reminderMessage: e.target.value });
+                            }
+                          }}
+                          onKeyDown={e => e.key === 'Enter' && e.target.blur()}
                         />
                       </div>
 
@@ -158,8 +163,14 @@ export default function NotificationSettingsPanel() {
                             type="number"
                             className="notif-time-input"
                             style={{ width: '100%' }}
-                            value={habit.naggingInterval || 0}
-                            onChange={e => updateHabitSettings(habit._id, { naggingInterval: Number(e.target.value) })}
+                            defaultValue={habit.naggingInterval || 0}
+                            onBlur={e => {
+                              const val = Number(e.target.value);
+                              if (val !== (habit.naggingInterval || 0)) {
+                                updateHabitSettings(habit._id, { naggingInterval: val });
+                              }
+                            }}
+                            onKeyDown={e => e.key === 'Enter' && e.target.blur()}
                           />
                         </div>
                       </div>
