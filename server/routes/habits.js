@@ -27,10 +27,15 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update a habit
+// Update a habit — use $set to never replace the full document
 router.put('/:id', async (req, res) => {
   try {
-    const updatedHabit = await Habit.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updatedHabit = await Habit.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+    if (!updatedHabit) return res.status(404).json({ message: 'Habit not found' });
     res.json(updatedHabit);
   } catch (err) {
     res.status(400).json({ message: err.message });
