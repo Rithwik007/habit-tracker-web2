@@ -86,6 +86,8 @@ export function NotificationProvider({ children }) {
       setPermission(result);
       if (result === 'granted') {
         await subscribeToPush();
+      } else if (result === 'denied') {
+        alert('Notification permission denied. Background alerts will not work unless you allow them in your browser settings.');
       }
       return result;
     } catch (err) {

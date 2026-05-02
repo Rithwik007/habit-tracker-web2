@@ -10,7 +10,20 @@ import adminRoutes from './routes/admin.js';
 import goalRoutes from './routes/goals.js';
 import startCronJobs from './cron.js';
 
+import webpush from 'web-push';
 dotenv.config();
+
+// Configure web-push with VAPID keys centrally
+if (process.env.VITE_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    'mailto:support@habit-tracker.com',
+    process.env.VITE_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+  console.log('Web Push (VAPID) configured.');
+} else {
+  console.warn('VAPID keys not found in environment. Push notifications will not work.');
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;

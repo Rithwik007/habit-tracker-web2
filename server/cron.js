@@ -7,16 +7,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Configure web-push with VAPID keys
-if (process.env.VITE_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(
-    'mailto:support@habit-tracker.com',
-    process.env.VITE_VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-  );
-} else {
-  console.warn('VAPID keys not found in .env. Push notifications will not work.');
-}
+
 
 const startCronJobs = () => {
   // Run every minute: '0 * * * * *' (at the 0th second of every minute)
