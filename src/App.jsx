@@ -12,7 +12,6 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import SetupPage from './pages/SetupPage';
 import AdminPage from './pages/AdminPage';
-import TimerPage from './pages/TimerPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
@@ -37,7 +36,6 @@ export default function App() {
             <Route path="/progress" element={<ProtectedRoute><PageWrapper><ProgressPage /></PageWrapper></ProtectedRoute>} />
             <Route path="/notes" element={<ProtectedRoute><PageWrapper><NotesPage /></PageWrapper></ProtectedRoute>} />
             <Route path="/manage" element={<ProtectedRoute><PageWrapper><ManageHabitsPage /></PageWrapper></ProtectedRoute>} />
-            <Route path="/timer" element={<ProtectedRoute><PageWrapper><TimerPage /></PageWrapper></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><PageWrapper><AdminPage /></PageWrapper></ProtectedRoute>} />
           </Routes>
         </AnimatePresence>
