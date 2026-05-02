@@ -85,12 +85,11 @@ export default function LeetCodeGraph() {
                 <div className="leetcode-grid">
                     {weeks.map((week, wIdx) => {
                         let isStartOfMonth = false;
-                        const firstValidDay = week.find(d => d !== null);
-                        if (firstValidDay) {
-                            if (firstValidDay.getDate() <= 7 && wIdx > 0) {
-                                const prevWeekFirstDay = weeks[wIdx - 1]?.find(d => d !== null);
-                                if (prevWeekFirstDay && prevWeekFirstDay.getMonth() !== firstValidDay.getMonth()) isStartOfMonth = true;
-                            } else if (wIdx === 0) isStartOfMonth = true;
+                        if (wIdx === 0) {
+                            isStartOfMonth = true;
+                        } else {
+                            const hasFirstDay = week.some(d => d !== null && d.getDate() === 1);
+                            if (hasFirstDay) isStartOfMonth = true;
                         }
                         return (
                             <div key={wIdx} className={`leetcode-col ${isStartOfMonth ? 'month-start' : ''}`}>
@@ -117,11 +116,19 @@ export default function LeetCodeGraph() {
                         const monthLabels = [];
                         let lastMonth = -1, count = 0;
                         weeks.forEach(week => {
-                            const firstValidDay = week.find(d => d !== null);
-                            if (firstValidDay) {
-                                const m = firstValidDay.getMonth();
-                                if (m !== lastMonth) { if (lastMonth !== -1) monthLabels.push({ m: lastMonth, c: count }); lastMonth = m; count = 1; }
-                                else count++;
+                            const hasFirstDay = week.find(d => d !== null && d.getDate() === 1);
+                            let m = lastMonth;
+                            if (hasFirstDay) {
+                                m = hasFirstDay.getMonth();
+                            } else if (lastMonth === -1) {
+                                const firstValidDay = week.find(d => d !== null);
+                                if (firstValidDay) m = firstValidDay.getMonth();
+                            }
+
+                            if (m !== lastMonth) {
+                                if (lastMonth !== -1) monthLabels.push({ m: lastMonth, c: count });
+                                lastMonth = m;
+                                count = 1;
                             } else count++;
                         });
                         monthLabels.push({ m: lastMonth, c: count });
