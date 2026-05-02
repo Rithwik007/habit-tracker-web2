@@ -15,13 +15,10 @@ export default function ProtectedRoute({ children }) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // New User Check:
-    // We only force setup if:
-    // 1. Profile is confirmed by DB
-    // 2. onboardingCompleted flag is false
-    // 3. AND they have EXACTLY ZERO habits (not undefined)
-    const hasNoHabits = profile.habitCount === 0; 
-    const needsSetup = profile?.profileConfirmed && !profile.onboardingCompleted && hasNoHabits;
+    // Only show setup if the DB has confirmed this user hasn't onboarded yet.
+    // We wait for profileConfirmed so we don't redirect before the DB data arrives.
+    // All existing users have been migrated to have onboardingCompleted: true.
+    const needsSetup = profile?.profileConfirmed === true && profile?.onboardingCompleted !== true;
     if (needsSetup && location.pathname !== '/setup') {
         return <Navigate to="/setup" replace />;
     }
