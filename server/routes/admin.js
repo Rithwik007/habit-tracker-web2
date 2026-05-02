@@ -64,6 +64,25 @@ router.delete('/user/:uid', async (req, res) => {
     
     await Note.deleteMany({ userId: uid });
     
+    // Delete all moods for this user
+    const MoodSchema = new mongoose.Schema({
+      userId: { type: String, required: true },
+      date: { type: String, required: true },
+      score: { type: Number, min: 1, max: 5, required: true },
+      updatedAt: { type: Date, default: Date.now }
+    });
+    const Mood = mongoose.models.Mood || mongoose.model('Mood', MoodSchema);
+    await Mood.deleteMany({ userId: uid });
+
+    // Delete all goals for this user
+    const Goal = mongoose.models.Goal;
+    if (Goal) {
+      await Goal.deleteMany({ userId: uid });
+    }
+    
+    // Delete all notifications for this user
+    await Notification.deleteMany({ userId: uid });
+    
     res.json({ message: 'User deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });

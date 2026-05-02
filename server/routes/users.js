@@ -18,7 +18,7 @@ router.get('/:firebaseId', async (req, res) => {
 
 // Update/Create Profile (supports photoURL and display_name)
 router.post('/profile', async (req, res) => {
-  const { firebaseId, email, display_name, photoURL } = req.body;
+  const { firebaseId, email, display_name, photoURL, hasCompletedSetup } = req.body;
 
   if (!firebaseId) {
     return res.status(400).json({ message: 'Missing firebaseId' });
@@ -28,6 +28,7 @@ router.post('/profile', async (req, res) => {
     const updateData = { email };
     if (display_name !== undefined) updateData.display_name = display_name;
     if (photoURL !== undefined) updateData.photoURL = photoURL;
+    if (hasCompletedSetup !== undefined) updateData.hasCompletedSetup = hasCompletedSetup;
 
     let user = await User.findOneAndUpdate(
       { firebaseId },
@@ -132,6 +133,22 @@ router.delete('/:firebaseId', async (req, res) => {
     
     // Delete all notifications for this user
     await Notification.deleteMany({ userId: firebaseId });
+    
+    // Delete all moods for this user
+    const MoodSchema = new mongoose.Schema({
+      userId: { type: String, required: true },
+      date: { type: String, required: true },
+      score: { type: Number, min: 1, max: 5, required: true },
+      updatedAt: { type: Date, default: Date.now }
+    });
+    const Mood = mongoose.models.Mood || mongoose.model('Mood', MoodSchema);
+    await Mood.deleteMany({ userId: firebaseId });
+
+    // Delete all goals for this user
+    const Goal = mongoose.models.Goal; // Already registered if imported in server.js
+    if (Goal) {
+      await Goal.deleteMany({ userId: firebaseId });
+    }
 
     res.json({ message: 'User and all associated data permanently deleted.' });
   } catch (err) {

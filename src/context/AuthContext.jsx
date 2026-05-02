@@ -108,24 +108,26 @@ export function AuthProvider({ children }) {
         return firebaseSignOut(auth);
     };
 
-    const updateProfile = async (displayName, photoURL) => {
+    const updateProfile = async (displayName, photoURL, hasCompletedSetup) => {
         if (!auth.currentUser) return { error: { message: 'Not authenticated' } };
         try {
             // Update Firebase Profile (name only — photo is stored in MongoDB)
             await firebaseUpdateProfile(auth.currentUser, { displayName });
-
-            // Update MongoDB Backend (includes photoURL)
-            const updated = await userApi.updateProfile({
+...
+            // Update MongoDB Backend (includes photoURL and setup flag)
+            await userApi.updateProfile({
                 firebaseId: auth.currentUser.uid,
                 email: auth.currentUser.email,
                 display_name: displayName,
-                photoURL: photoURL !== undefined ? photoURL : (profile?.photoURL || '')
+                photoURL: photoURL !== undefined ? photoURL : (profile?.photoURL || ''),
+                hasCompletedSetup: hasCompletedSetup !== undefined ? hasCompletedSetup : (profile?.hasCompletedSetup || false)
             });
 
             setProfile(prev => ({
                 ...prev,
                 display_name: displayName,
-                photoURL: photoURL !== undefined ? photoURL : prev?.photoURL
+                photoURL: photoURL !== undefined ? photoURL : prev?.photoURL,
+                hasCompletedSetup: hasCompletedSetup !== undefined ? hasCompletedSetup : prev?.hasCompletedSetup
             }));
             return { error: null };
         } catch (err) {
