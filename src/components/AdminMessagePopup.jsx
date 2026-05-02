@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNotification } from '../context/NotificationContext';
 import { X, Bell, CheckCircle } from 'lucide-react';
 

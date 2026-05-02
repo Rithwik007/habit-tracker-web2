@@ -41,7 +41,9 @@ export default function App() {
           </Routes>
         </AnimatePresence>
       </main>
-      <AdminMessagePopup />
+      <AnimatePresence>
+        <AdminMessagePopup />
+      </AnimatePresence>
     </div>
   );
 }
