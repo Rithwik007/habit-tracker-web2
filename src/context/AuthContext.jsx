@@ -27,11 +27,12 @@ export function AuthProvider({ children }) {
     const fetchProfile = useCallback(async (firebaseUser) => {
         try {
             // First, use the data from Firebase (fastest)
-            setProfile({
+            setProfile(prev => ({
                 id: firebaseUser.uid,
                 display_name: firebaseUser.displayName || 'User',
-                email: firebaseUser.email
-            });
+                email: firebaseUser.email,
+                onboardingCompleted: prev?.onboardingCompleted ?? false // Preserve if already known
+            }));
 
             // Then try to get extra info from our MongoDB backend
             const { data } = await userApi.getProfile(firebaseUser.uid);
@@ -47,17 +48,20 @@ export function AuthProvider({ children }) {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 setUser(firebaseUser);
-                // Auto-sync profile to MongoDB on login
+                // Fetch full profile first to check onboarding status
+                await fetchProfile(firebaseUser);
+                
+                // Then sync basic info to MongoDB if needed (don't overwrite name)
                 try {
                     await userApi.updateProfile({
                         firebaseId: firebaseUser.uid,
                         email: firebaseUser.email,
-                        display_name: firebaseUser.displayName || 'User'
+                        // Only send display name if Firebase has one (e.g. Google login)
+                        ...(firebaseUser.displayName ? { display_name: firebaseUser.displayName } : {})
                     });
                 } catch (err) {
-                    console.warn('Initial profile sync to MongoDB failed, will retry later.');
+                    console.warn('Profile sync failed');
                 }
-                await fetchProfile(firebaseUser);
             } else {
                 setUser(null);
                 setProfile(null);
