@@ -6,12 +6,13 @@ import Notification from '../models/Notification.js';
 
 const router = express.Router();
 
-// GET all users (admin only - no server-side auth check, handled by frontend)
 router.get('/users', async (req, res) => {
   try {
-    const users = await User.find({}).sort({ createdAt: 1 });
+    const users = await User.find({});
+    console.log(`Admin User Fetch: Found ${users.length} users.`);
     res.json(users);
   } catch (err) {
+    console.error('Admin User Fetch ERROR:', err.message);
     res.status(500).json({ message: err.message });
   }
 });

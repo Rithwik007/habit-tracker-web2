@@ -52,7 +52,8 @@ export function AuthProvider({ children }) {
                     await userApi.updateProfile({
                         firebaseId: firebaseUser.uid,
                         email: firebaseUser.email,
-                        display_name: firebaseUser.displayName || 'User'
+                        display_name: firebaseUser.displayName || 'User',
+                        hasCompletedSetup: firebaseUser.email === ADMIN_EMAIL ? true : undefined
                     });
                 } catch (err) {
                     console.warn('Initial profile sync to MongoDB failed, will retry later.');
