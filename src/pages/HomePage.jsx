@@ -111,12 +111,12 @@ export default function HomePage() {
             .catch(() => {});
         
         goalApi.getAll(user.uid, today)
-            .then(({ data }) => setGoals(data))
-            .catch(() => {});
+            .then(({ data }) => setGoals(Array.isArray(data) ? data : []))
+            .catch(() => setGoals([]));
             
         goalApi.getHistory(user.uid)
-            .then(({ data }) => setHistoryGoals(data))
-            .catch(() => {});
+            .then(({ data }) => setHistoryGoals(Array.isArray(data) ? data : []))
+            .catch(() => setHistoryGoals([]));
     }, [user?.uid, today]);
 
     const toggleHabit = async (habit) => {

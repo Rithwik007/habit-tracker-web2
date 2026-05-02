@@ -92,9 +92,11 @@ export default function AdminPage() {
             setLoadingHabits(uid);
             try {
                 const { data } = await adminApi.getUserHabits(uid);
-                setUserHabits(prev => ({ ...prev, [uid]: data || [] }));
+                const safeHabits = Array.isArray(data) ? data : [];
+                setUserHabits(prev => ({ ...prev, [uid]: safeHabits }));
             } catch {
                 addToast('Failed to load habits for this user', 'error');
+                setUserHabits(prev => ({ ...prev, [uid]: [] }));
             } finally {
                 setLoadingHabits(null);
             }
