@@ -5,7 +5,7 @@ import Habit from './models/Habit.js';
 import Goal from './models/Goal.js';
 import dotenv from 'dotenv';
 
-dotenv.config();
+// dotenv.config() removed to use global config from server.js
 
 
 

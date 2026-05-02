@@ -2,6 +2,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import habitRoutes from './routes/habits.js';
 import userRoutes from './routes/users.js';
 import noteRoutes from './routes/notes.js';
@@ -9,9 +11,12 @@ import moodRoutes from './routes/moods.js';
 import adminRoutes from './routes/admin.js';
 import goalRoutes from './routes/goals.js';
 import startCronJobs from './cron.js';
-
 import webpush from 'web-push';
-dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Configure web-push with VAPID keys centrally
 if (process.env.VITE_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
