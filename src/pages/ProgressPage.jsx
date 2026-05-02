@@ -16,6 +16,7 @@ export default function ProgressPage() {
         checkDate.setHours(0, 0, 0, 0);
 
         for (const dateStr of sortedDates) {
+            if (!dateStr) continue;
             const [year, month, day] = dateStr.split('-');
             const logDate = new Date(year, month - 1, day);
             logDate.setHours(0, 0, 0, 0);

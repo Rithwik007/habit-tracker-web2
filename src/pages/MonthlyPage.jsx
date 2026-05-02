@@ -86,6 +86,7 @@ export default function MonthlyPage() {
                         >
                             {habits.map(habit => {
                                 const habitMonthCount = (habit.completions || []).filter(c => {
+                                    if (!c.date) return false;
                                     const [year, month] = c.date.split('-');
                                     return Number(year) === currentDate.getFullYear() && (Number(month) - 1) === currentDate.getMonth();
                                 }).length;
