@@ -15,7 +15,6 @@ const UserSchema = new mongoose.Schema({
       lastFired: { type: Date, default: null }
     }
   },
-  hasCompletedSetup: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 

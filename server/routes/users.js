@@ -1,7 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
 import Habit from '../models/Habit.js';
-import Notification from '../models/Notification.js';
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -18,7 +17,7 @@ router.get('/:firebaseId', async (req, res) => {
 
 // Update/Create Profile (supports photoURL and display_name)
 router.post('/profile', async (req, res) => {
-  const { firebaseId, email, display_name, photoURL, hasCompletedSetup } = req.body;
+  const { firebaseId, email, display_name, photoURL } = req.body;
 
   if (!firebaseId) {
     return res.status(400).json({ message: 'Missing firebaseId' });
@@ -28,7 +27,6 @@ router.post('/profile', async (req, res) => {
     const updateData = { email };
     if (display_name !== undefined) updateData.display_name = display_name;
     if (photoURL !== undefined) updateData.photoURL = photoURL;
-    if (hasCompletedSetup !== undefined) updateData.hasCompletedSetup = hasCompletedSetup;
 
     let user = await User.findOneAndUpdate(
       { firebaseId },
@@ -131,72 +129,9 @@ router.delete('/:firebaseId', async (req, res) => {
     // Delete all notes for this user
     await Note.deleteMany({ userId: firebaseId });
     
-    // Delete all notifications for this user
-    await Notification.deleteMany({ userId: firebaseId });
-    
-    // Delete all moods for this user
-    const MoodSchema = new mongoose.Schema({
-      userId: { type: String, required: true },
-      date: { type: String, required: true },
-      score: { type: Number, min: 1, max: 5, required: true },
-      updatedAt: { type: Date, default: Date.now }
-    });
-    const Mood = mongoose.models.Mood || mongoose.model('Mood', MoodSchema);
-    await Mood.deleteMany({ userId: firebaseId });
-
-    // Delete all goals for this user
-    const Goal = mongoose.models.Goal; // Already registered if imported in server.js
-    if (Goal) {
-      await Goal.deleteMany({ userId: firebaseId });
-    }
-
     res.json({ message: 'User and all associated data permanently deleted.' });
   } catch (err) {
     console.error('User deletion error:', err.message);
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// --- Notification History Endpoints ---
-
-// Get User Notifications
-router.get('/:firebaseId/notifications', async (req, res) => {
-  try {
-    const notifications = await Notification.find({ userId: req.params.firebaseId })
-      .sort({ createdAt: -1 })
-      .limit(50);
-    res.json(notifications);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Mark single notification read
-router.patch('/:firebaseId/notifications/:id/read', async (req, res) => {
-  try {
-    await Notification.findByIdAndUpdate(req.params.id, { isRead: true });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Mark all notifications read
-router.patch('/:firebaseId/notifications/read-all', async (req, res) => {
-  try {
-    await Notification.updateMany({ userId: req.params.firebaseId, isRead: false }, { isRead: true });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Clear all notifications
-router.delete('/:firebaseId/notifications', async (req, res) => {
-  try {
-    await Notification.deleteMany({ userId: req.params.firebaseId });
-    res.json({ success: true });
-  } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });

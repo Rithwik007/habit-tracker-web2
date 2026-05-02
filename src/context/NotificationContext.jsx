@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { useData } from './DataContext';
 import { userApi } from '../api';
@@ -27,11 +27,6 @@ export function NotificationProvider({ children }) {
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
   );
   const [prefs, setPrefs] = useState({});
-  const [inAppNotifications, setInAppNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [latestPopup, setLatestPopup] = useState(null);
-  const shownIds = useRef(new Set());
-  const isFirstLoad = useRef(true);
   const isSupported = typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
 
   // Load prefs from profile (MongoDB) when user/profile changes
@@ -86,8 +81,6 @@ export function NotificationProvider({ children }) {
       setPermission(result);
       if (result === 'granted') {
         await subscribeToPush();
-      } else if (result === 'denied') {
-        alert('Notification permission denied. Background alerts will not work unless you allow them in your browser settings.');
       }
       return result;
     } catch (err) {
@@ -144,99 +137,6 @@ export function NotificationProvider({ children }) {
     });
   }, []);
 
-  const fetchInAppNotifications = useCallback(async () => {
-    if (!user) return;
-    try {
-      const { data } = await userApi.getNotifications(user.uid);
-      const safeData = Array.isArray(data) ? data : [];
-      setInAppNotifications(safeData);
-      const unread = safeData.filter(n => !n.isRead);
-      setUnreadCount(unread.length);
-
-      // Real-time Popup Logic:
-      // If it's the first load, show the latest unread message.
-      // If it's a polling update, show any NEW unread message we haven't shown yet.
-      if (unread.length > 0) {
-        const latest = unread[0];
-        if (!shownIds.current.has(latest._id)) {
-          setLatestPopup(latest);
-          shownIds.current.add(latest._id);
-
-          // Also trigger a NATIVE system notification if permitted
-          if (Notification.permission === 'granted') {
-            new Notification(latest.title, {
-              body: latest.message,
-              icon: '/favicon.ico',
-              tag: latest._id
-            });
-          }
-        }
-      }
-      isFirstLoad.current = false;
-    } catch (err) {
-      console.error('Failed to fetch in-app notifications:', err);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      fetchInAppNotifications();
-      // Poll every 30 seconds for a "real-time" feel
-      const interval = setInterval(() => {
-        if (user) fetchInAppNotifications();
-      }, 30 * 1000);
-      return () => clearInterval(interval);
-    } else {
-      setInAppNotifications([]);
-      setUnreadCount(0);
-      setLatestPopup(null);
-      shownIds.current.clear();
-      isFirstLoad.current = true;
-    }
-  }, [user, fetchInAppNotifications]);
-
-  const markRead = async (id) => {
-    if (!user) return;
-    try {
-      await userApi.markNotificationRead(user.uid, id);
-      setInAppNotifications(prev => {
-        const safePrev = Array.isArray(prev) ? prev : [];
-        return safePrev.map(n => n._id === id ? { ...n, isRead: true } : n);
-      });
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      if (latestPopup?._id === id) setLatestPopup(null);
-    } catch (err) {
-      console.error('Failed to mark notification as read:', err);
-    }
-  };
-
-  const markAllRead = async () => {
-    if (!user) return;
-    try {
-      await userApi.markAllNotificationsRead(user.uid);
-      setInAppNotifications(prev => {
-        const safePrev = Array.isArray(prev) ? prev : [];
-        return safePrev.map(n => ({ ...n, isRead: true }));
-      });
-      setUnreadCount(0);
-      setLatestPopup(null);
-    } catch (err) {
-      console.error('Failed to mark all notifications as read:', err);
-    }
-  };
-
-  const clearAll = async () => {
-    if (!user) return;
-    try {
-      await userApi.clearNotifications(user.uid);
-      setInAppNotifications([]);
-      setUnreadCount(0);
-      setLatestPopup(null);
-    } catch (err) {
-      console.error('Failed to clear notifications:', err);
-    }
-  };
-
   return (
     <NotificationContext.Provider value={{
       permission,
@@ -246,14 +146,6 @@ export function NotificationProvider({ children }) {
       clearHabitNotif,
       testNotification,
       isSupported,
-      inAppNotifications,
-      unreadCount,
-      latestPopup,
-      setLatestPopup,
-      markRead,
-      markAllRead,
-      clearAll,
-      refreshNotifications: fetchInAppNotifications
     }}>
       {children}
     </NotificationContext.Provider>

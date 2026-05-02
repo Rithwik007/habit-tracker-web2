@@ -15,11 +15,9 @@ export default function ProtectedRoute({ children }) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // Redirect to setup ONLY if it's a brand new account (default name 'User') 
-    // AND they haven't finished the onboarding wizard yet.
-    const isBrandNew = !profile?.display_name || profile?.display_name === 'User';
-    const needsSetup = profile && profile.hasCompletedSetup === false && isBrandNew;
-    
+    // Redirect to setup if profile name is missing or the default 'User' (manual email signup)
+    // Google users will be routed directly by LoginPage, but manual signups need to be caught here.
+    const needsSetup = profile && (!profile.display_name || profile.display_name === 'User');
     if (needsSetup && location.pathname !== '/setup') {
         return <Navigate to="/setup" replace />;
     }

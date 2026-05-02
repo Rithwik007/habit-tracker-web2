@@ -5,9 +5,18 @@ import Habit from './models/Habit.js';
 import Goal from './models/Goal.js';
 import dotenv from 'dotenv';
 
-// dotenv.config() removed to use global config from server.js
+dotenv.config();
 
-
+// Configure web-push with VAPID keys
+if (process.env.VITE_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    'mailto:support@habit-tracker.com',
+    process.env.VITE_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+} else {
+  console.warn('VAPID keys not found in .env. Push notifications will not work.');
+}
 
 const startCronJobs = () => {
   // Run every minute: '0 * * * * *' (at the 0th second of every minute)
@@ -37,10 +46,9 @@ const startCronJobs = () => {
           const minutesSinceLast = lastFired ? (now - lastFired) / (1000 * 60) : 9999;
 
           if (minutesSinceLast >= water.interval) {
-            const userName = user.display_name || 'there';
             const payload = JSON.stringify({
               title: '💧 Hydration Alert',
-              body: `Hi ${userName}! [From: App]\nTime to drink some water! Stay healthy. 🌊`,
+              body: 'Time to drink some water! Stay healthy. 🌊',
               tag: 'system-water',
               data: { url: '/' }
             });
@@ -98,14 +106,13 @@ const startCronJobs = () => {
           }
 
           if (shouldNotify) {
-            const userName = user.display_name || 'there';
             const messageBody = habit.reminderMessage 
               ? habit.reminderMessage 
               : `Don't break the streak! It's time for ${habit.name} 🔥`;
 
             const payload = JSON.stringify({
               title: '⏰ Habit Reminder',
-              body: `Hi ${userName}! [From: App]\n${messageBody}`,
+              body: messageBody,
               tag: messageTag,
               data: { url: '/' }
             });
@@ -152,10 +159,9 @@ const startCronJobs = () => {
           }
 
           if (shouldNotifyGoal) {
-            const userName = user.display_name || 'there';
             const payload = JSON.stringify({
               title: '🎯 Goal Reminder',
-              body: `Hi ${userName}! [From: App]\nDon't forget your goal: ${goal.text}`,
+              body: `Don't forget your goal: ${goal.text}`,
               tag: goalMessageTag,
               data: { url: '/' }
             });

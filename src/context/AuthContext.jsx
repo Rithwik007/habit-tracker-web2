@@ -52,8 +52,7 @@ export function AuthProvider({ children }) {
                     await userApi.updateProfile({
                         firebaseId: firebaseUser.uid,
                         email: firebaseUser.email,
-                        display_name: firebaseUser.displayName || 'User',
-                        hasCompletedSetup: firebaseUser.email === ADMIN_EMAIL ? true : undefined
+                        display_name: firebaseUser.displayName || 'User'
                     });
                 } catch (err) {
                     console.warn('Initial profile sync to MongoDB failed, will retry later.');
@@ -109,26 +108,24 @@ export function AuthProvider({ children }) {
         return firebaseSignOut(auth);
     };
 
-    const updateProfile = async (displayName, photoURL, hasCompletedSetup) => {
+    const updateProfile = async (displayName, photoURL) => {
         if (!auth.currentUser) return { error: { message: 'Not authenticated' } };
         try {
             // Update Firebase Profile (name only — photo is stored in MongoDB)
             await firebaseUpdateProfile(auth.currentUser, { displayName });
 
-            // Update MongoDB Backend (includes photoURL and setup flag)
-            await userApi.updateProfile({
+            // Update MongoDB Backend (includes photoURL)
+            const updated = await userApi.updateProfile({
                 firebaseId: auth.currentUser.uid,
                 email: auth.currentUser.email,
                 display_name: displayName,
-                photoURL: photoURL !== undefined ? photoURL : (profile?.photoURL || ''),
-                hasCompletedSetup: hasCompletedSetup !== undefined ? hasCompletedSetup : (profile?.hasCompletedSetup || false)
+                photoURL: photoURL !== undefined ? photoURL : (profile?.photoURL || '')
             });
 
             setProfile(prev => ({
                 ...prev,
                 display_name: displayName,
-                photoURL: photoURL !== undefined ? photoURL : prev?.photoURL,
-                hasCompletedSetup: hasCompletedSetup !== undefined ? hasCompletedSetup : prev?.hasCompletedSetup
+                photoURL: photoURL !== undefined ? photoURL : prev?.photoURL
             }));
             return { error: null };
         } catch (err) {

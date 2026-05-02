@@ -1,18 +1,35 @@
 import express from 'express';
-import webpush from 'web-push';
-import User from '../models/User.js';
-import Habit from '../models/Habit.js';
-import Notification from '../models/Notification.js';
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
+// Re-use existing User model if already compiled
+const UserSchema = new mongoose.Schema({
+  firebaseId: { type: String, required: true, unique: true },
+  email: String,
+  display_name: String,
+  photoURL: String,
+  isAdmin: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const User = mongoose.models.User || mongoose.model('User', UserSchema);
+
+const HabitSchema = new mongoose.Schema({
+  userId: String,
+  name: String,
+  completions: [{ date: String, value: Number }],
+  createdAt: { type: Date, default: Date.now }
+});
+
+const Habit = mongoose.models.Habit || mongoose.model('Habit', HabitSchema);
+
+// GET all users (admin only - no server-side auth check, handled by frontend)
 router.get('/users', async (req, res) => {
   try {
-    const users = await User.find({});
-    console.log(`Admin User Fetch: Found ${users.length} users.`);
+    const users = await User.find({}).sort({ createdAt: 1 });
     res.json(users);
   } catch (err) {
-    console.error('Admin User Fetch ERROR:', err.message);
     res.status(500).json({ message: err.message });
   }
 });
@@ -45,87 +62,7 @@ router.delete('/user/:uid', async (req, res) => {
     
     await Note.deleteMany({ userId: uid });
     
-    // Delete all moods for this user
-    const MoodSchema = new mongoose.Schema({
-      userId: { type: String, required: true },
-      date: { type: String, required: true },
-      score: { type: Number, min: 1, max: 5, required: true },
-      updatedAt: { type: Date, default: Date.now }
-    });
-    const Mood = mongoose.models.Mood || mongoose.model('Mood', MoodSchema);
-    await Mood.deleteMany({ userId: uid });
-
-    // Delete all goals for this user
-    const Goal = mongoose.models.Goal;
-    if (Goal) {
-      await Goal.deleteMany({ userId: uid });
-    }
-    
-    // Delete all notifications for this user
-    await Notification.deleteMany({ userId: uid });
-    
     res.json({ message: 'User deleted' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// POST send custom notification
-router.post('/notify', async (req, res) => {
-  const { userIds, title, message } = req.body;
-  
-  if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-    return res.status(400).json({ message: 'No users selected' });
-  }
-  if (!title || !message) {
-    return res.status(400).json({ message: 'Title and message are required' });
-  }
-
-  try {
-    const users = await User.find({ 
-      firebaseId: { $in: userIds }, 
-      pushSubscription: { $exists: true, $ne: null } 
-    });
-    
-    let sentCount = 0;
-    let failedCount = 0;
-
-    console.log(`Attempting to send push to ${users.length} users...`);
-    for (const user of users) {
-      if (!user.pushSubscription) continue;
-
-      const userName = user.display_name || 'there';
-      const formattedMessage = `Hi ${userName}! [From: Admin]\n${message}`;
-
-      const payload = JSON.stringify({
-        title: title,
-        body: formattedMessage,
-        tag: `admin-broadcast-${Date.now()}`,
-        data: { url: '/' }
-      });
-
-      try {
-        await webpush.sendNotification(user.pushSubscription, payload);
-        sentCount++;
-      } catch (err) {
-        console.error(`Push failed for user ${user.email}:`, err.message);
-        failedCount++;
-        if (err.statusCode === 410 || err.statusCode === 404) {
-          await User.updateOne({ _id: user._id }, { $unset: { pushSubscription: 1 } });
-        }
-      }
-    }
-
-    const notificationsToInsert = userIds.map(uid => ({
-      userId: uid,
-      title: title,
-      message: message,
-      sender: 'Admin'
-    }));
-    await Notification.insertMany(notificationsToInsert);
-
-    console.log(`Broadcast finished: ${sentCount} sent, ${failedCount} failed.`);
-    res.json({ message: `Sent to ${sentCount} devices. (${failedCount} failed/unavailable)` });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

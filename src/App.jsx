@@ -13,7 +13,6 @@ import RegisterPage from './pages/RegisterPage';
 import SetupPage from './pages/SetupPage';
 import AdminPage from './pages/AdminPage';
 import ProtectedRoute from './components/ProtectedRoute';
-import AdminMessagePopup from './components/AdminMessagePopup';
 
 export default function App() {
   const location = useLocation();
@@ -41,9 +40,6 @@ export default function App() {
           </Routes>
         </AnimatePresence>
       </main>
-      <AnimatePresence>
-        <AdminMessagePopup />
-      </AnimatePresence>
     </div>
   );
 }
