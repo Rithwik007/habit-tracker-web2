@@ -15,12 +15,14 @@ export default function ProtectedRoute({ children }) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // Redirect to setup if onboarding hasn't been completed yet
-    // We only evaluate this once we're sure we have the backend profile data (profileConfirmed)
-    // We also check habitCount - if they already have habits, they don't need initial setup.
-    const isNewUser = !profile.display_name || profile.display_name === 'User';
+    // Strict check for new users only:
+    // 1. Must have confirmed profile data from DB
+    // 2. Must NOT have completed onboarding flag
+    // 3. Must have NO habits created yet
+    // 4. Must still have the default/empty display name
+    const isDefaultName = !profile.display_name || profile.display_name === 'User';
     const hasNoHabits = (profile.habitCount || 0) === 0;
-    const needsSetup = profile && profile.profileConfirmed && !profile.onboardingCompleted && hasNoHabits && isNewUser;
+    const needsSetup = profile?.profileConfirmed && !profile.onboardingCompleted && hasNoHabits && isDefaultName;
     if (needsSetup && location.pathname !== '/setup') {
         return <Navigate to="/setup" replace />;
     }

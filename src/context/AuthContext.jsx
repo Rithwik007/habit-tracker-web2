@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
             // First, use the data from Firebase (fastest)
             setProfile(prev => ({
                 id: firebaseUser.uid,
-                display_name: firebaseUser.displayName || 'User',
+                display_name: firebaseUser.displayName || prev?.display_name || '',
                 email: firebaseUser.email,
                 onboardingCompleted: prev?.onboardingCompleted ?? false,
                 profileConfirmed: false // Mark as placeholder
