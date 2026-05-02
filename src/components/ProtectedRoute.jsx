@@ -15,8 +15,11 @@ export default function ProtectedRoute({ children }) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // Redirect to setup if profile hasn't completed onboarding wizard
-    const needsSetup = profile && !profile.hasCompletedSetup;
+    // Redirect to setup ONLY if it's a brand new account (default name 'User') 
+    // AND they haven't finished the onboarding wizard yet.
+    const isBrandNew = !profile.display_name || profile.display_name === 'User';
+    const needsSetup = profile && profile.hasCompletedSetup === false && isBrandNew;
+    
     if (needsSetup && location.pathname !== '/setup') {
         return <Navigate to="/setup" replace />;
     }
