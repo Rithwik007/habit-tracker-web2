@@ -19,8 +19,8 @@ export default function ProtectedRoute({ children }) {
     // We only force setup if:
     // 1. Profile is confirmed by DB
     // 2. onboardingCompleted flag is false
-    // 3. AND they have ZERO habits (this is the strongest signal of a truly new account)
-    const hasNoHabits = (profile.habitCount || 0) === 0;
+    // 3. AND they have EXACTLY ZERO habits (not undefined)
+    const hasNoHabits = profile.habitCount === 0; 
     const needsSetup = profile?.profileConfirmed && !profile.onboardingCompleted && hasNoHabits;
     if (needsSetup && location.pathname !== '/setup') {
         return <Navigate to="/setup" replace />;
