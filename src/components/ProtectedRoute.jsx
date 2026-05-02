@@ -16,7 +16,9 @@ export default function ProtectedRoute({ children }) {
     }
 
     // Redirect to setup if onboarding hasn't been completed yet
-    const needsSetup = profile && !profile.onboardingCompleted;
+    // For legacy users, we also check if they already have a custom display name to avoid bothering them.
+    const isNewUser = !profile.display_name || profile.display_name === 'User';
+    const needsSetup = profile && !profile.onboardingCompleted && isNewUser;
     if (needsSetup && location.pathname !== '/setup') {
         return <Navigate to="/setup" replace />;
     }
