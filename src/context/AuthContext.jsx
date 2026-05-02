@@ -31,13 +31,14 @@ export function AuthProvider({ children }) {
                 id: firebaseUser.uid,
                 display_name: firebaseUser.displayName || 'User',
                 email: firebaseUser.email,
-                onboardingCompleted: prev?.onboardingCompleted ?? false // Preserve if already known
+                onboardingCompleted: prev?.onboardingCompleted ?? false,
+                profileConfirmed: false // Mark as placeholder
             }));
 
             // Then try to get extra info from our MongoDB backend
             const { data } = await userApi.getProfile(firebaseUser.uid);
             if (data) {
-                setProfile(prev => ({ ...prev, ...data }));
+                setProfile(prev => ({ ...prev, ...data, profileConfirmed: true }));
             }
         } catch (err) {
             console.warn('Backend profile fetch failed, using firebase data instead');
@@ -133,7 +134,8 @@ export function AuthProvider({ children }) {
                 ...prev,
                 display_name: displayName || prev?.display_name,
                 photoURL: photoURL !== undefined ? photoURL : prev?.photoURL,
-                onboardingCompleted: onboardingCompleted !== undefined ? onboardingCompleted : prev?.onboardingCompleted
+                onboardingCompleted: onboardingCompleted !== undefined ? onboardingCompleted : prev?.onboardingCompleted,
+                profileConfirmed: true
             }));
             return { error: null };
         } catch (err) {

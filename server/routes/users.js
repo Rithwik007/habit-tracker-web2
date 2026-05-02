@@ -10,7 +10,13 @@ const router = express.Router();
 router.get('/:firebaseId', async (req, res) => {
   try {
     const user = await User.findOne({ firebaseId: req.params.firebaseId });
-    res.json(user);
+    const habitCount = await Habit.countDocuments({ userId: req.params.firebaseId });
+    
+    if (!user) {
+      return res.json({ onboardingCompleted: false, habitCount });
+    }
+    
+    res.json({ ...user.toObject(), habitCount });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

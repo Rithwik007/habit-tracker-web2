@@ -16,9 +16,11 @@ export default function ProtectedRoute({ children }) {
     }
 
     // Redirect to setup if onboarding hasn't been completed yet
-    // For legacy users, we also check if they already have a custom display name to avoid bothering them.
+    // We only evaluate this once we're sure we have the backend profile data (profileConfirmed)
+    // We also check habitCount - if they already have habits, they don't need initial setup.
     const isNewUser = !profile.display_name || profile.display_name === 'User';
-    const needsSetup = profile && !profile.onboardingCompleted && isNewUser;
+    const hasNoHabits = (profile.habitCount || 0) === 0;
+    const needsSetup = profile && profile.profileConfirmed && !profile.onboardingCompleted && hasNoHabits && isNewUser;
     if (needsSetup && location.pathname !== '/setup') {
         return <Navigate to="/setup" replace />;
     }
