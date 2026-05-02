@@ -25,16 +25,16 @@ const DEFAULT_HABITS = [
 ];
 
 export default function SetupPage() {
-    const [step, setStep] = useState(1);
-    const [displayName, setDisplayName] = useState('');
+    const { user, profile, updateProfile } = useAuth();
+    const { addToast } = useToast();
+    const navigate = useNavigate();
+
+    const [step, setStep] = useState(profile?.display_name && profile.display_name !== 'User' ? 2 : 1);
+    const [displayName, setDisplayName] = useState(profile?.display_name || user?.displayName || '');
     const [selectedHabits, setSelectedHabits] = useState([]);
     const [customHabits, setCustomHabits] = useState([]);
     const [customInput, setCustomInput] = useState('');
     const [loading, setLoading] = useState(false);
-    
-    const { user, updateProfile } = useAuth();
-    const { addToast } = useToast();
-    const navigate = useNavigate();
 
     const toggleDefault = (habit) => {
         if (selectedHabits.find(h => h.name === habit.name)) {

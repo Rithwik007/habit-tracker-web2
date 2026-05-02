@@ -24,6 +24,7 @@ export function DataProvider({ children }) {
         setHabitsLoading(prev => prev); // don't flash loading if we already have data
         try {
             const { data } = await habitApi.getAll(user.uid);
+            console.log(`Fetched ${data?.length || 0} habits for user ${user.uid}`);
             setHabits(Array.isArray(data) ? data : []);
             lastFetchedAt.current = Date.now();
         } catch (e) {

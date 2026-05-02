@@ -27,26 +27,16 @@ async function dumpData() {
     console.log('Connected to MongoDB');
 
     const users = await User.find({}).lean();
-    const allData = [];
+    console.log(`Total users found: ${users.length}`);
 
     for (const user of users) {
       const habits = await Habit.find({ userId: user.firebaseId }).lean();
-      allData.push({
-        user: {
-          name: user.display_name || 'N/A',
-          email: user.email,
-          onboarded: user.onboardingCompleted || false,
-          created: user.createdAt
-        },
-        habits: habits.map(h => ({
-          name: h.name,
-          completions: h.completions?.length || 0,
-          created: h.createdAt
-        }))
-      });
+      console.log(`User: ${user.display_name} (${user.email}) - ID: ${user.firebaseId} - Habits: ${habits.length}`);
+      if (user.display_name?.includes('School') || user.email?.includes('School')) {
+          console.log('!!! MATCH FOUND !!!');
+      }
     }
 
-    console.log(JSON.stringify(allData, null, 2));
     process.exit(0);
   } catch (err) {
     console.error(err);

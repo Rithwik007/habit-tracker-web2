@@ -15,14 +15,13 @@ export default function ProtectedRoute({ children }) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // Strict check for new users only:
-    // 1. Must have confirmed profile data from DB
-    // 2. Must NOT have completed onboarding flag
-    // 3. Must have NO habits created yet
-    // 4. Must still have the default/empty display name
-    const isDefaultName = !profile.display_name || profile.display_name === 'User';
+    // New User Check:
+    // We only force setup if:
+    // 1. Profile is confirmed by DB
+    // 2. onboardingCompleted flag is false
+    // 3. AND they have ZERO habits (this is the strongest signal of a truly new account)
     const hasNoHabits = (profile.habitCount || 0) === 0;
-    const needsSetup = profile?.profileConfirmed && !profile.onboardingCompleted && hasNoHabits && isDefaultName;
+    const needsSetup = profile?.profileConfirmed && !profile.onboardingCompleted && hasNoHabits;
     if (needsSetup && location.pathname !== '/setup') {
         return <Navigate to="/setup" replace />;
     }
