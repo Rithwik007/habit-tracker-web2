@@ -13,9 +13,9 @@ export default function AdminMessagePopup() {
   };
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 1200, background: 'rgba(0,0,0,0.8)' }}>
+    <div className="modal-overlay">
       <motion.div 
-        className="card" 
+        className="modal-content" 
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}

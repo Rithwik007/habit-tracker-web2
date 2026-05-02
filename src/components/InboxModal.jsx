@@ -6,9 +6,9 @@ export default function InboxModal({ onClose }) {
   const { inAppNotifications, unreadCount, markRead, markAllRead } = useNotification();
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100 }}>
+    <div className="modal-overlay" onClick={onClose}>
       <motion.div 
-        className="modal-content" 
+        className="modal-content custom-scrollbar" 
         onClick={e => e.stopPropagation()}
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}

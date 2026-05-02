@@ -1,6 +1,7 @@
 import express from 'express';
 import User from '../models/User.js';
 import Habit from '../models/Habit.js';
+import Notification from '../models/Notification.js';
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -130,15 +131,6 @@ router.delete('/:firebaseId', async (req, res) => {
     await Note.deleteMany({ userId: firebaseId });
     
     // Delete all notifications for this user
-    const NotificationSchema = new mongoose.Schema({
-      userId: { type: String, required: true },
-      title: { type: String, required: true },
-      message: { type: String, required: true },
-      sender: { type: String, default: 'Admin' },
-      isRead: { type: Boolean, default: false },
-      createdAt: { type: Date, default: Date.now }
-    });
-    const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
     await Notification.deleteMany({ userId: firebaseId });
 
     res.json({ message: 'User and all associated data permanently deleted.' });
@@ -153,16 +145,6 @@ router.delete('/:firebaseId', async (req, res) => {
 // Get User Notifications
 router.get('/:firebaseId/notifications', async (req, res) => {
   try {
-    const NotificationSchema = new mongoose.Schema({
-      userId: { type: String, required: true },
-      title: { type: String, required: true },
-      message: { type: String, required: true },
-      sender: { type: String, default: 'Admin' },
-      isRead: { type: Boolean, default: false },
-      createdAt: { type: Date, default: Date.now }
-    });
-    const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
-    
     const notifications = await Notification.find({ userId: req.params.firebaseId })
       .sort({ createdAt: -1 })
       .limit(50);
@@ -175,16 +157,6 @@ router.get('/:firebaseId/notifications', async (req, res) => {
 // Mark single notification read
 router.patch('/:firebaseId/notifications/:id/read', async (req, res) => {
   try {
-    const NotificationSchema = new mongoose.Schema({
-      userId: { type: String, required: true },
-      title: { type: String, required: true },
-      message: { type: String, required: true },
-      sender: { type: String, default: 'Admin' },
-      isRead: { type: Boolean, default: false },
-      createdAt: { type: Date, default: Date.now }
-    });
-    const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
-
     await Notification.findByIdAndUpdate(req.params.id, { isRead: true });
     res.json({ success: true });
   } catch (err) {
@@ -195,16 +167,6 @@ router.patch('/:firebaseId/notifications/:id/read', async (req, res) => {
 // Mark all notifications read
 router.patch('/:firebaseId/notifications/read-all', async (req, res) => {
   try {
-    const NotificationSchema = new mongoose.Schema({
-      userId: { type: String, required: true },
-      title: { type: String, required: true },
-      message: { type: String, required: true },
-      sender: { type: String, default: 'Admin' },
-      isRead: { type: Boolean, default: false },
-      createdAt: { type: Date, default: Date.now }
-    });
-    const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
-
     await Notification.updateMany({ userId: req.params.firebaseId, isRead: false }, { isRead: true });
     res.json({ success: true });
   } catch (err) {
