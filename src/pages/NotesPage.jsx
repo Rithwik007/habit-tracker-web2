@@ -19,9 +19,10 @@ export default function NotesPage() {
         if (!user) return;
         try {
             const { data } = await noteApi.getAll(user.uid);
-            setNotes(data || []);
+            setNotes(Array.isArray(data) ? data : []);
         } catch (e) {
             console.error(e);
+            setNotes([]);
         } finally {
             setLoading(false);
         }

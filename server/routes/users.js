@@ -31,15 +31,17 @@ router.post('/profile', async (req, res) => {
   }
 
   try {
-    const updateData = { email };
-    if (display_name !== undefined) updateData.display_name = display_name;
-    if (photoURL !== undefined) updateData.photoURL = photoURL;
-    if (onboardingCompleted !== undefined) updateData.onboardingCompleted = onboardingCompleted;
+    // Build only the fields we want to SET — never overwrite fields not in this request
+    const setFields = { email };
+    if (display_name !== undefined) setFields.display_name = display_name;
+    if (photoURL !== undefined) setFields.photoURL = photoURL;
+    // ONLY update onboardingCompleted if explicitly passed — never reset it
+    if (onboardingCompleted !== undefined) setFields.onboardingCompleted = onboardingCompleted;
 
     let user = await User.findOneAndUpdate(
       { firebaseId },
-      updateData,
-      { new: true, upsert: true }
+      { $set: setFields },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
     );
     res.json(user);
   } catch (err) {

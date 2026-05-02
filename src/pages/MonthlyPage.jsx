@@ -98,7 +98,8 @@ export default function MonthlyPage() {
                                             const dateStr = formatLocalDate(date);
                                             const isDone = (habit.completions || []).some(c => c.date === dateStr);
                                             const isToday = dateStr === todayStr;
-                                            const isFuture = date > new Date();
+                                            // Compare date strings to avoid timezone/midnight issues
+                                            const isFuture = dateStr > todayStr;
                                             return (
                                                 <td key={d}>
                                                     <div

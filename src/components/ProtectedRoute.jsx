@@ -5,22 +5,32 @@ export default function ProtectedRoute({ children }) {
     const { user, profile, loading } = useAuth();
     const location = useLocation();
 
+    // Phase 1: Firebase auth is still initializing
     if (loading) {
-        return (
-            <div className="loading-screen">Verifying session...</div>
-        );
+        return <div className="loading-screen">Verifying session...</div>;
     }
 
+    // Phase 2: Not logged in
     if (!user) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // Only show setup if the DB has confirmed this user hasn't onboarded yet.
-    // We wait for profileConfirmed so we don't redirect before the DB data arrives.
-    // All existing users have been migrated to have onboardingCompleted: true.
-    const needsSetup = profile?.profileConfirmed === true && profile?.onboardingCompleted !== true;
+    // Phase 3: Logged in but still waiting for MongoDB profile (max ~3s)
+    // profileConfirmed is set to true once the DB responds (or fails gracefully)
+    if (!profile?.profileConfirmed) {
+        return <div className="loading-screen">Loading your profile...</div>;
+    }
+
+    // Phase 4: Check if this is a brand new user who needs onboarding
+    // All existing users have been migrated with onboardingCompleted: true
+    const needsSetup = profile.onboardingCompleted !== true;
     if (needsSetup && location.pathname !== '/setup') {
         return <Navigate to="/setup" replace />;
+    }
+
+    // Phase 5: Prevent an already-onboarded user from revisiting /setup
+    if (!needsSetup && location.pathname === '/setup') {
+        return <Navigate to="/" replace />;
     }
 
     return children;

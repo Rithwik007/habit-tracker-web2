@@ -8,6 +8,7 @@ import noteRoutes from './routes/notes.js';
 import moodRoutes from './routes/moods.js';
 import adminRoutes from './routes/admin.js';
 import goalRoutes from './routes/goals.js';
+import cronRoutes from './routes/cron.js';
 import startCronJobs from './cron.js';
 
 dotenv.config();
@@ -29,8 +30,9 @@ app.use('/api/notes', noteRoutes);
 app.use('/api/moods', moodRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/goals', goalRoutes);
+app.use('/api', cronRoutes); // Exposes /api/cron-notify and /api/ping
 
-// Start background jobs
+// Start internal background jobs (also runs every minute if server stays awake)
 startCronJobs();
 
 app.listen(PORT, () => {

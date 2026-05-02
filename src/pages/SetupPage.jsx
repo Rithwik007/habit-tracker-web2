@@ -65,11 +65,16 @@ export default function SetupPage() {
             setStep(1);
             return;
         }
-        
+
+        const allHabits = [...selectedHabits, ...customHabits];
+        if (allHabits.length === 0) {
+            addToast('Please select or add at least one habit to track', 'warning');
+            return;
+        }
+
         setLoading(true);
         try {
             // 1. Create Habits first (to ensure they are there when the user lands on home)
-            const allHabits = [...selectedHabits, ...customHabits];
             for (const h of allHabits) {
                 await habitApi.create({
                     userId: user.uid,
@@ -83,7 +88,7 @@ export default function SetupPage() {
             const { error } = await updateProfile(displayName.trim(), undefined, true);
             if (error) throw error;
 
-            addToast('Welcome to Habit Mastery!');
+            addToast('Welcome to Habit Mastery! 🎉');
             navigate('/', { replace: true });
         } catch (err) {
             console.error(err);

@@ -1,4 +1,5 @@
 import { useData } from '../context/DataContext';
+import { formatLocalDate } from '../hooks/useMidnightRefresh';
 
 export default function ProgressPage() {
     const { habits, habitsLoading } = useData();
@@ -7,25 +8,37 @@ export default function ProgressPage() {
     const calculateStreak = (completions) => {
         if (!completions || completions.length === 0) return 0;
 
-        const sortedDates = completions
-            .map(c => c.date)
-            .sort((a, b) => new Date(b) - new Date(a));
+        // Deduplicate and sort dates descending
+        const uniqueDates = [...new Set(completions.map(c => c.date).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+
+        if (uniqueDates.length === 0) return 0;
 
         let streak = 0;
-        let checkDate = new Date();
-        checkDate.setHours(0, 0, 0, 0);
+        // Use today's date string to be consistent with stored YYYY-MM-DD format
+        const todayStr = formatLocalDate(new Date());
+        let expectedDate = todayStr;
 
-        for (const dateStr of sortedDates) {
-            if (!dateStr) continue;
-            const [year, month, day] = dateStr.split('-');
-            const logDate = new Date(year, month - 1, day);
-            logDate.setHours(0, 0, 0, 0);
-            const diff = Math.floor((checkDate - logDate) / (1000 * 60 * 60 * 24));
-
-            if (diff <= 1) {
+        for (const dateStr of uniqueDates) {
+            if (dateStr === expectedDate) {
                 streak++;
-                checkDate = logDate;
-            } else {
+                // Move expected date to previous day
+                const prev = new Date(dateStr + 'T12:00:00'); // use noon to avoid DST issues
+                prev.setDate(prev.getDate() - 1);
+                expectedDate = formatLocalDate(prev);
+            } else if (dateStr < expectedDate) {
+                // Allow for today not being completed yet — check if yesterday starts a streak
+                if (streak === 0) {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayStr = formatLocalDate(yesterday);
+                    if (dateStr === yesterdayStr) {
+                        streak++;
+                        const prev = new Date(dateStr + 'T12:00:00');
+                        prev.setDate(prev.getDate() - 1);
+                        expectedDate = formatLocalDate(prev);
+                        continue;
+                    }
+                }
                 break;
             }
         }

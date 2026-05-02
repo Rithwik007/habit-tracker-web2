@@ -1,28 +1,10 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import User from '../models/User.js';
+import Habit from '../models/Habit.js';
+import Goal from '../models/Goal.js';
 
 const router = express.Router();
-
-// Re-use existing User model if already compiled
-const UserSchema = new mongoose.Schema({
-  firebaseId: { type: String, required: true, unique: true },
-  email: String,
-  display_name: String,
-  photoURL: String,
-  isAdmin: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
-});
-
-const User = mongoose.models.User || mongoose.model('User', UserSchema);
-
-const HabitSchema = new mongoose.Schema({
-  userId: String,
-  name: String,
-  completions: [{ date: String, value: Number }],
-  createdAt: { type: Date, default: Date.now }
-});
-
-const Habit = mongoose.models.Habit || mongoose.model('Habit', HabitSchema);
 
 // GET all users (admin only - no server-side auth check, handled by frontend)
 router.get('/users', async (req, res) => {
@@ -44,25 +26,24 @@ router.get('/user-habits/:uid', async (req, res) => {
   }
 });
 
-// DELETE a user and all their data
+// DELETE a user and ALL their data (habits, goals, notes, moods)
 router.delete('/user/:uid', async (req, res) => {
   const uid = req.params.uid;
   try {
+    // Delete all habits
     await Habit.deleteMany({ userId: uid });
+    // Delete all goals
+    await Goal.deleteMany({ userId: uid });
+    // Delete user profile
     await User.deleteOne({ firebaseId: uid });
-    
-    // Note model uses mongoose.models cache since we redefine it in notes.js
-    const NoteSchema = new mongoose.Schema({
-      userId: { type: String, required: true },
-      date: { type: String, required: true },
-      content: { type: String, default: '' },
-      updatedAt: { type: Date, default: Date.now }
-    });
-    const Note = mongoose.models.Note || mongoose.model('Note', NoteSchema);
-    
-    await Note.deleteMany({ userId: uid });
-    
-    res.json({ message: 'User deleted' });
+
+    // Notes and Moods use inline schemas — safely access via model cache
+    const Note = mongoose.models.Note;
+    const Mood = mongoose.models.Mood;
+    if (Note) await Note.deleteMany({ userId: uid });
+    if (Mood) await Mood.deleteMany({ userId: uid });
+
+    res.json({ message: 'User and all associated data deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

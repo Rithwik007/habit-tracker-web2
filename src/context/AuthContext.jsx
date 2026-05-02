@@ -26,22 +26,24 @@ export function AuthProvider({ children }) {
 
     const fetchProfile = useCallback(async (firebaseUser) => {
         try {
-            // First, use the data from Firebase (fastest)
+            // Optimistic: set profile from Firebase data immediately (fast)
             setProfile(prev => ({
                 id: firebaseUser.uid,
                 display_name: firebaseUser.displayName || prev?.display_name || '',
                 email: firebaseUser.email,
                 onboardingCompleted: prev?.onboardingCompleted ?? false,
-                profileConfirmed: false // Mark as placeholder
+                profileConfirmed: false // Mark as placeholder until DB responds
             }));
 
-            // Then try to get extra info from our MongoDB backend
+            // Then get full profile from MongoDB (includes onboardingCompleted, habitCount, etc.)
             const { data } = await userApi.getProfile(firebaseUser.uid);
             if (data) {
                 setProfile(prev => ({ ...prev, ...data, profileConfirmed: true }));
             }
         } catch (err) {
-            console.warn('Backend profile fetch failed, using firebase data instead');
+            console.warn('Backend profile fetch failed — using Firebase data. App will proceed.');
+            // CRITICAL: set profileConfirmed: true so the app is not stuck loading forever
+            setProfile(prev => prev ? { ...prev, profileConfirmed: true } : null);
         }
     }, []);
 
