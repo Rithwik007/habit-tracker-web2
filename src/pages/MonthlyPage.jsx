@@ -25,8 +25,8 @@ export default function MonthlyPage() {
         setHabits(prev => prev.map(h => {
             if (h._id !== habitId) return h;
             const completions = nextState
-                ? [...(h.completions || []), { date: dateStr, value: 1 }]
-                : (h.completions || []).filter(c => c.date !== dateStr);
+                ? [...(Array.isArray(h.completions) ? h.completions : []), { date: dateStr, value: 1 }]
+                : (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== dateStr);
             return { ...h, completions };
         }));
 
@@ -85,7 +85,7 @@ export default function MonthlyPage() {
                             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }}
                         >
                             {habits.map(habit => {
-                                const habitMonthCount = (habit.completions || []).filter(c => {
+                                const habitMonthCount = (Array.isArray(habit.completions) ? habit.completions : []).filter(c => {
                                     if (!c.date) return false;
                                     const [year, month] = c.date.split('-');
                                     return Number(year) === currentDate.getFullYear() && (Number(month) - 1) === currentDate.getMonth();

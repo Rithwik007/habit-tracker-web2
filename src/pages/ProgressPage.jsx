@@ -34,7 +34,7 @@ export default function ProgressPage() {
 
     if (habitsLoading) return <div className="loading-screen">🔥 Calculating Streaks...</div>;
 
-    const habitStreaks = habits.map(h => ({
+    const habitStreaks = (Array.isArray(habits) ? habits : []).map(h => ({
         ...h,
         streak: calculateStreak(h.completions)
     })).sort((a, b) => b.streak - a.streak);
@@ -47,8 +47,8 @@ export default function ProgressPage() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(today.getDate() - 30);
 
-    const totalCompletionsLast30 = habits.reduce((sum, h) => {
-        return sum + (h.completions || []).filter(c => new Date(c.date) >= thirtyDaysAgo).length;
+    const totalCompletionsLast30 = (Array.isArray(habits) ? habits : []).reduce((sum, h) => {
+        return sum + (Array.isArray(h.completions) ? h.completions : []).filter(c => new Date(c.date) >= thirtyDaysAgo).length;
     }, 0);
     const maxPossible = habits.length * 30;
     const avgScore = maxPossible > 0 ? Math.round((totalCompletionsLast30 / maxPossible) * 100) : 0;

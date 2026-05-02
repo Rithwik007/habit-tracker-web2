@@ -22,8 +22,8 @@ function UserPerformanceChart({ habits, selectedMonth, selectedYear }) {
         const d = new Date(selectedYear, selectedMonth, i);
         if (d > today) break;
         const dateStr = formatLocalDate(d);
-        const completedCount = habits.filter(h =>
-            (h.completions || []).some(c => c.date === dateStr)
+        const completedCount = (Array.isArray(habits) ? habits : []).filter(h =>
+            (Array.isArray(h.completions) ? h.completions : []).some(c => c.date === dateStr)
         ).length;
         const pct = habits.length > 0 ? Math.round((completedCount / habits.length) * 100) : 0;
         dailyData.push({

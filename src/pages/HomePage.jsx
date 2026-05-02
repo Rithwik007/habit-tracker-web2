@@ -101,8 +101,8 @@ export default function HomePage() {
     // Build today's logs from cached habits
     useEffect(() => {
         const logsMap = {};
-        habits.forEach(habit => {
-            if (habit.completions?.some(c => c.date === today)) {
+        (Array.isArray(habits) ? habits : []).forEach(habit => {
+            if (Array.isArray(habit.completions) && habit.completions.some(c => c.date === today)) {
                 logsMap[habit._id] = true;
             }
         });
@@ -117,12 +117,12 @@ export default function HomePage() {
             .catch(() => {});
         
         goalApi.getAll(user.uid, today)
-            .then(({ data }) => setGoals(data))
-            .catch(() => {});
+            .then(({ data }) => setGoals(Array.isArray(data) ? data : []))
+            .catch(() => setGoals([]));
             
         goalApi.getHistory(user.uid)
-            .then(({ data }) => setHistoryGoals(data))
-            .catch(() => {});
+            .then(({ data }) => setHistoryGoals(Array.isArray(data) ? data : []))
+            .catch(() => setHistoryGoals([]));
     }, [user?.uid, today]);
 
     const toggleHabit = async (habit) => {
@@ -135,8 +135,8 @@ export default function HomePage() {
         setHabits(prev => prev.map(h => {
             if (h._id !== habitId) return h;
             const completions = next
-                ? [...(h.completions || []), { date: today, value: 1 }]
-                : (h.completions || []).filter(c => c.date !== today);
+                ? [...(Array.isArray(h.completions) ? h.completions : []), { date: today, value: 1 }]
+                : (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today);
             return { ...h, completions };
         }));
 
@@ -150,8 +150,8 @@ export default function HomePage() {
             setHabits(prev => prev.map(h => {
                 if (h._id !== habitId) return h;
                 const completions = current
-                    ? [...(h.completions || []), { date: today, value: 1 }]
-                    : (h.completions || []).filter(c => c.date !== today);
+                    ? [...(Array.isArray(h.completions) ? h.completions : []), { date: today, value: 1 }]
+                    : (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today);
                 return { ...h, completions };
             }));
         }
@@ -211,8 +211,8 @@ export default function HomePage() {
                 nagTime: goalHasDeadline ? (parseInt(goalNagTime, 10) || 0) : 0,
                 date: today
             });
-            setGoals(prev => [...prev, data]);
-            setHistoryGoals(prev => [data, ...prev]);
+            setGoals(prev => [...(Array.isArray(prev) ? prev : []), data]);
+            setHistoryGoals(prev => [data, ...(Array.isArray(prev) ? prev : [])]);
             addToast('🎯 Goal added!');
         } catch (e) {
             addToast('Failed to add goal', 'error');
@@ -246,8 +246,8 @@ export default function HomePage() {
 
     if (habitsLoading) return <div className="loading-screen">⏳ Loading...</div>;
 
-    const completed = habits.filter(h => logs[h._id]).length;
-    const pct = habits.length > 0 ? Math.round((completed / habits.length) * 100) : 0;
+    const completed = (Array.isArray(habits) ? habits : []).filter(h => logs[h._id]).length;
+    const pct = habits?.length > 0 ? Math.round((completed / habits.length) * 100) : 0;
 
     return (
         <div className="fade-in">
@@ -291,7 +291,7 @@ export default function HomePage() {
                             onClick={() => setGoalTab('history')}
                         >📜 History</span>
                     </div>
-                    {goalTab === 'today' && <span className="badge badge-primary">{goals.filter(g => g.completed).length} / {goals.length} done</span>}
+                    {goalTab === 'today' && <span className="badge badge-primary">{(Array.isArray(goals) ? goals : []).filter(g => g.completed).length} / {goals.length || 0} done</span>}
                 </div>
                 
                 {goalTab === 'today' ? (
