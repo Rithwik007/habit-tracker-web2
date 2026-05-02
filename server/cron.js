@@ -46,9 +46,10 @@ const startCronJobs = () => {
           const minutesSinceLast = lastFired ? (now - lastFired) / (1000 * 60) : 9999;
 
           if (minutesSinceLast >= water.interval) {
+            const userName = user.display_name || 'there';
             const payload = JSON.stringify({
               title: '💧 Hydration Alert',
-              body: 'Time to drink some water! Stay healthy. 🌊',
+              body: `Hi ${userName}! [From: App]\nTime to drink some water! Stay healthy. 🌊`,
               tag: 'system-water',
               data: { url: '/' }
             });
@@ -106,13 +107,14 @@ const startCronJobs = () => {
           }
 
           if (shouldNotify) {
+            const userName = user.display_name || 'there';
             const messageBody = habit.reminderMessage 
               ? habit.reminderMessage 
               : `Don't break the streak! It's time for ${habit.name} 🔥`;
 
             const payload = JSON.stringify({
               title: '⏰ Habit Reminder',
-              body: messageBody,
+              body: `Hi ${userName}! [From: App]\n${messageBody}`,
               tag: messageTag,
               data: { url: '/' }
             });
@@ -159,9 +161,10 @@ const startCronJobs = () => {
           }
 
           if (shouldNotifyGoal) {
+            const userName = user.display_name || 'there';
             const payload = JSON.stringify({
               title: '🎯 Goal Reminder',
-              body: `Don't forget your goal: ${goal.text}`,
+              body: `Hi ${userName}! [From: App]\nDon't forget your goal: ${goal.text}`,
               tag: goalMessageTag,
               data: { url: '/' }
             });

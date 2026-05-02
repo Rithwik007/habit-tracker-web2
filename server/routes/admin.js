@@ -92,9 +92,12 @@ router.post('/notify', async (req, res) => {
     for (const user of users) {
       if (!user.pushSubscription) continue;
 
+      const userName = user.display_name || 'there';
+      const formattedMessage = `Hi ${userName}! [From: Admin]\n${message}`;
+
       const payload = JSON.stringify({
         title: title,
-        body: message,
+        body: formattedMessage,
         tag: `admin-broadcast-${Date.now()}`,
         data: { url: '/' }
       });
