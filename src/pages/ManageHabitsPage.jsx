@@ -14,10 +14,6 @@ export default function ManageHabitsPage() {
     const [newHabit, setNewHabit] = useState('');
     const [editingId, setEditingId] = useState(null);
     const [editValue, setEditValue] = useState('');
-    const [editMessage, setEditMessage] = useState('');
-    const [editDeadline, setEditDeadline] = useState('');
-    const [editNag, setEditNag] = useState(0);
-    const [editNagEnabled, setEditNagEnabled] = useState(false);
     const { addToast } = useToast();
 
     const addHabit = async () => {
@@ -49,12 +45,7 @@ export default function ManageHabitsPage() {
     const saveEdit = async (id) => {
         if (!editValue.trim()) return;
         try {
-            await habitApi.update(id, { 
-                name: editValue.trim(),
-                reminderMessage: editMessage.trim(),
-                deadlineTime: editDeadline,
-                naggingInterval: editNagEnabled ? Number(editNag) : 0
-            });
+            await habitApi.update(id, { name: editValue.trim() });
             setEditingId(null);
             refreshHabits();
             addToast('Habit updated!');
@@ -119,10 +110,6 @@ export default function ManageHabitsPage() {
                                         onClick={() => { 
                                             setEditingId(habit._id); 
                                             setEditValue(habit.name);
-                                            setEditMessage(habit.reminderMessage || '');
-                                            setEditDeadline(habit.deadlineTime || '');
-                                            setEditNag(habit.naggingInterval || 0);
-                                            setEditNagEnabled((habit.naggingInterval || 0) > 0);
                                         }}>Edit</button>
                                 )}
                                 <button className="delete-btn" onClick={() => deleteHabit(habit._id)}>Remove</button>
