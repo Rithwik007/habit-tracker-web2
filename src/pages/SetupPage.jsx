@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { habitApi } from '../api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,6 +27,7 @@ const DEFAULT_HABITS = [
 
 export default function SetupPage() {
     const { user, updateProfile } = useAuth();
+    const { refreshHabits } = useData();
     const { addToast } = useToast();
     const navigate = useNavigate();
 
@@ -74,6 +76,9 @@ export default function SetupPage() {
             for (const hName of habitsToCreate) {
                 await habitApi.create({ name: hName, userId: user.uid });
             }
+
+            // 3. Refresh Data Context before navigating
+            await refreshHabits();
 
             addToast('Welcome to Habit Mastery!');
             navigate('/', { replace: true });

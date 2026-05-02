@@ -15,13 +15,7 @@ const MOODS = [
     { score: 5, emoji: '🤩', label: 'Amazing' },
 ];
 
-const DEFAULT_HABITS = [
-    "Wake up at 8:00 AM", "Oat Meal", "Gym", "Dsa", "web development",
-    "no wasting money", "Apply Sunscreen", "No Junk Food",
-    "less Screen time (5 hrs)", "Parents", "Bathing",
-    "Bread Peanut Butter", "Eggs or chicken", "College Work",
-    "sleep at 11 PM", "8 hours sleep"
-];
+
 
 function GoalInputForm({ onAdd }) {
     const [text, setText] = useState('');
@@ -179,27 +173,7 @@ export default function HomePage() {
         }
     };
 
-    const seedHabits = async () => {
-        if (!confirm('This will delete ALL your current habits and reset to the default set. Are you sure?')) return;
-        setSeeding(true);
-        try {
-            // 1. Delete all current habits
-            for (const habit of habits) {
-                await habitApi.delete(habit._id);
-            }
 
-            // 2. Load defaults
-            for (const name of DEFAULT_HABITS) {
-                await habitApi.create({ name, userId: user.uid, targetValue: 1, unit: 'times' });
-            }
-            refreshHabits();
-            addToast('Habits reset to default!');
-        } catch (e) {
-            addToast('Seeding failed', 'error');
-        } finally {
-            setSeeding(false);
-        }
-    };
 
     const addGoal = async (goalText, goalTime, goalNagTime, goalHasDeadline) => {
         if (!goalText.trim()) return;
@@ -396,24 +370,7 @@ export default function HomePage() {
 
                 {habits.length === 0 ? (
                     <div className="empty-state" style={{ padding: '40px 0' }}>
-                        <p style={{ marginBottom: 20, color: 'var(--text-dim)' }}>No habits yet. Add some!</p>
-                        <div className="manage-form" style={{ maxWidth: '500px', margin: '0 auto 24px', justifyContent: 'center' }}>
-                            <input
-                                className="manage-input"
-                                type="text"
-                                placeholder="Enter a habit name..."
-                                id="quick-add-habit"
-                                onKeyDown={e => e.key === 'Enter' && (addCustomHabit(e.target.value), e.target.value = '')}
-                            />
-                            <button className="add-btn" onClick={() => {
-                                const el = document.getElementById('quick-add-habit');
-                                addCustomHabit(el.value); el.value = '';
-                            }}>+ Add</button>
-                        </div>
-                        <button className="add-btn" onClick={seedHabits} disabled={seeding}
-                            style={{ background: 'var(--success)', padding: '12px 24px', width: 'fit-content' }}>
-                            {seeding ? 'Seeding...' : '🚀 Load Default Habits'}
-                        </button>
+                        <p style={{ marginBottom: 20, color: 'var(--text-dim)' }}>No habits found. Manage them in the sidebar.</p>
                     </div>
                 ) : (
                     <motion.div

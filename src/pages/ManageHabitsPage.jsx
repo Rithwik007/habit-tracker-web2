@@ -6,13 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import NotificationSettingsPanel from '../components/NotificationSettingsPanel';
 
-const DEFAULT_HABITS = [
-    "Wake up at 8:00 AM", "Oat Meal", "Gym", "Dsa", "web development",
-    "no wasting money", "Apply Sunscreen", "No Junk Food",
-    "less Screen time (5 hrs)", "Parents", "Bathing",
-    "Bread Peanut Butter", "Eggs or chicken", "College Work",
-    "sleep at 11 PM", "8 hours sleep"
-];
+
 
 export default function ManageHabitsPage() {
     const { user } = useAuth();

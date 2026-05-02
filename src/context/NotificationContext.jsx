@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useData } from './DataContext';
 import { userApi } from '../api';
@@ -30,7 +30,8 @@ export function NotificationProvider({ children }) {
   const [inAppNotifications, setInAppNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [latestPopup, setLatestPopup] = useState(null);
-  const [hasShownPopup, setHasShownPopup] = useState(false);
+  const shownIds = useRef(new Set());
+  const isFirstLoad = useRef(true);
   const isSupported = typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
 
   // Load prefs from profile (MongoDB) when user/profile changes
@@ -149,27 +150,36 @@ export function NotificationProvider({ children }) {
       const unread = data.filter(n => !n.isRead);
       setUnreadCount(unread.length);
 
-      // Identify latest unread admin message for popup
-      if (!hasShownPopup && unread.length > 0) {
-        setLatestPopup(unread[0]); // Data is sorted by newest first
-        setHasShownPopup(true);
+      // Real-time Popup Logic:
+      // If it's the first load, show the latest unread message.
+      // If it's a polling update, show any NEW unread message we haven't shown yet.
+      if (unread.length > 0) {
+        const latest = unread[0];
+        if (!shownIds.current.has(latest._id)) {
+          // If first load, only show if we haven't seen it
+          // If not first load, this is a "real-time" arrival
+          setLatestPopup(latest);
+          shownIds.current.add(latest._id);
+        }
       }
+      isFirstLoad.current = false;
     } catch (err) {
       console.error('Failed to fetch in-app notifications:', err);
     }
-  }, [user, hasShownPopup]);
+  }, [user]);
 
   useEffect(() => {
     if (user) {
       fetchInAppNotifications();
-      // Poll every 5 minutes
-      const interval = setInterval(fetchInAppNotifications, 5 * 60 * 1000);
+      // Poll every 30 seconds for a "real-time" feel
+      const interval = setInterval(fetchInAppNotifications, 30 * 1000);
       return () => clearInterval(interval);
     } else {
       setInAppNotifications([]);
       setUnreadCount(0);
       setLatestPopup(null);
-      setHasShownPopup(false);
+      shownIds.current.clear();
+      isFirstLoad.current = true;
     }
   }, [user, fetchInAppNotifications]);
 
