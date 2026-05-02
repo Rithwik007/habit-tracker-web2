@@ -39,12 +39,31 @@ export default function LeetCodeGraph() {
     const weeks = [];
     let currentWeek = [];
     let cursor = new Date(startDate);
+    
+    // Pad first week of the year
     for (let i = 0; i < cursor.getDay(); i++) currentWeek.push(null);
+    
     while (cursor <= endDate) {
         currentWeek.push(new Date(cursor));
-        if (currentWeek.length === 7) { weeks.push(currentWeek); currentWeek = []; }
+        
+        const nextDay = new Date(cursor);
+        nextDay.setDate(cursor.getDate() + 1);
+        
+        // If the week is full (7 days) OR it's the last day of the month
+        if (currentWeek.length === 7 || cursor.getMonth() !== nextDay.getMonth()) {
+            // Pad the end of the week if necessary
+            while (currentWeek.length < 7) currentWeek.push(null);
+            weeks.push(currentWeek);
+            currentWeek = [];
+            
+            // If it was the last day of the month, pad the beginning of the next week
+            if (nextDay <= endDate && cursor.getMonth() !== nextDay.getMonth()) {
+                for (let i = 0; i < nextDay.getDay(); i++) currentWeek.push(null);
+            }
+        }
         cursor.setDate(cursor.getDate() + 1);
     }
+    
     if (currentWeek.length > 0) {
         while (currentWeek.length < 7) currentWeek.push(null);
         weeks.push(currentWeek);
