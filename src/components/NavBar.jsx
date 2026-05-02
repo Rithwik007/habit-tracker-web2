@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import ProfileModal from './ProfileModal';
+import InboxModal from './InboxModal';
+import { Bell } from 'lucide-react';
 
 const links = [
     { to: '/', icon: '✅', label: "Today's Habits" },
@@ -15,8 +18,10 @@ const links = [
 
 export default function NavBar() {
     const { user, profile, isAdmin } = useAuth();
+    const { unreadCount } = useNotification();
     const [expanded, setExpanded] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
+    const [showInbox, setShowInbox] = useState(false);
 
     const displayName = profile?.display_name || user?.displayName || user?.email?.split('@')[0] || 'User';
     const photoURL = profile?.photoURL || user?.photoURL || null;
@@ -51,6 +56,28 @@ export default function NavBar() {
                     ))}
                 </div>
 
+                {/* Notification Bell */}
+                <div 
+                    className="nav-link" 
+                    style={{ marginTop: 'auto', marginBottom: '10px', cursor: 'pointer', position: 'relative' }}
+                    onClick={() => setShowInbox(true)}
+                    title="Notifications"
+                >
+                    <span className="nav-icon"><Bell size={20} /></span>
+                    <span className="nav-label">Notifications</span>
+                    {unreadCount > 0 && (
+                        <div style={{
+                            position: 'absolute', top: '10px', left: '25px',
+                            background: 'var(--danger)', color: 'white', fontSize: '0.65rem',
+                            minWidth: '18px', height: '18px', borderRadius: '10px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontWeight: 700, border: '2px solid var(--bg-dark)', padding: '0 4px'
+                        }}>
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                        </div>
+                    )}
+                </div>
+
                 {/* Profile at Bottom */}
                 <div className="nav-profile" onClick={() => setShowProfile(true)}>
                     <div className="nav-avatar">
@@ -67,6 +94,9 @@ export default function NavBar() {
             </nav>
 
             {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
+            <AnimatePresence>
+                {showInbox && <InboxModal onClose={() => setShowInbox(false)} />}
+            </AnimatePresence>
         </>
     );
 }

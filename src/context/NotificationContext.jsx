@@ -27,6 +27,10 @@ export function NotificationProvider({ children }) {
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
   );
   const [prefs, setPrefs] = useState({});
+  const [inAppNotifications, setInAppNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [latestPopup, setLatestPopup] = useState(null);
+  const [hasShownPopup, setHasShownPopup] = useState(false);
   const isSupported = typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
 
   // Load prefs from profile (MongoDB) when user/profile changes
@@ -137,6 +141,62 @@ export function NotificationProvider({ children }) {
     });
   }, []);
 
+  const fetchInAppNotifications = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data } = await userApi.getNotifications(user.uid);
+      setInAppNotifications(data || []);
+      const unread = data.filter(n => !n.isRead);
+      setUnreadCount(unread.length);
+
+      // Identify latest unread admin message for popup
+      if (!hasShownPopup && unread.length > 0) {
+        setLatestPopup(unread[0]); // Data is sorted by newest first
+        setHasShownPopup(true);
+      }
+    } catch (err) {
+      console.error('Failed to fetch in-app notifications:', err);
+    }
+  }, [user, hasShownPopup]);
+
+  useEffect(() => {
+    if (user) {
+      fetchInAppNotifications();
+      // Poll every 5 minutes
+      const interval = setInterval(fetchInAppNotifications, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    } else {
+      setInAppNotifications([]);
+      setUnreadCount(0);
+      setLatestPopup(null);
+      setHasShownPopup(false);
+    }
+  }, [user, fetchInAppNotifications]);
+
+  const markRead = async (id) => {
+    if (!user) return;
+    try {
+      await userApi.markNotificationRead(user.uid, id);
+      setInAppNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      if (latestPopup?._id === id) setLatestPopup(null);
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
+  };
+
+  const markAllRead = async () => {
+    if (!user) return;
+    try {
+      await userApi.markAllNotificationsRead(user.uid);
+      setInAppNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+      setLatestPopup(null);
+    } catch (err) {
+      console.error('Failed to mark all notifications as read:', err);
+    }
+  };
+
   return (
     <NotificationContext.Provider value={{
       permission,
@@ -146,6 +206,13 @@ export function NotificationProvider({ children }) {
       clearHabitNotif,
       testNotification,
       isSupported,
+      inAppNotifications,
+      unreadCount,
+      latestPopup,
+      setLatestPopup,
+      markRead,
+      markAllRead,
+      refreshNotifications: fetchInAppNotifications
     }}>
       {children}
     </NotificationContext.Provider>

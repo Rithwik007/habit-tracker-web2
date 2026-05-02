@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import webpush from 'web-push';
+import Notification from '../models/Notification.js';
 
 const router = express.Router();
 
@@ -112,6 +113,14 @@ router.post('/notify', async (req, res) => {
         }
       }
     }
+
+    const notificationsToInsert = userIds.map(uid => ({
+      userId: uid,
+      title: title,
+      message: message,
+      sender: 'Admin'
+    }));
+    await Notification.insertMany(notificationsToInsert);
 
     res.json({ message: `Successfully sent to ${sentCount} active devices. (${failedCount} unavailable)` });
   } catch (err) {

@@ -22,7 +22,10 @@ export const userApi = {
   updateNotifPrefs: (firebaseId, notifPrefs) => api.patch(`/users/${firebaseId}/notifPrefs`, { notifPrefs }),
   updatePushSubscription: (firebaseId, subscription) => api.post(`/users/${firebaseId}/push-subscription`, { subscription }),
   updateSystemReminders: (firebaseId, systemReminders) => api.patch(`/users/${firebaseId}/systemReminders`, { systemReminders }),
-  deleteUser: (firebaseId) => api.delete(`/users/${firebaseId}`)
+  deleteUser: (firebaseId) => api.delete(`/users/${firebaseId}`),
+  getNotifications: (firebaseId) => api.get(`/users/${firebaseId}/notifications`),
+  markNotificationRead: (firebaseId, notifId) => api.patch(`/users/${firebaseId}/notifications/${notifId}/read`),
+  markAllNotificationsRead: (firebaseId) => api.patch(`/users/${firebaseId}/notifications/read-all`)
 };
 
 export const noteApi = {
