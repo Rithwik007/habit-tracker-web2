@@ -6,19 +6,12 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import NotificationSettingsPanel from '../components/NotificationSettingsPanel';
 
-const DEFAULT_HABITS = [
-    "Wake up at 8:00 AM", "Oat Meal", "Gym", "Dsa", "web development",
-    "no wasting money", "Apply Sunscreen", "No Junk Food",
-    "less Screen time (5 hrs)", "Parents", "Bathing",
-    "Bread Peanut Butter", "Eggs or chicken", "College Work",
-    "sleep at 11 PM", "8 hours sleep"
-];
+// Page for managing habits and notification settings
 
 export default function ManageHabitsPage() {
     const { user } = useAuth();
     const { habits, habitsLoading, refreshHabits } = useData();
     const [newHabit, setNewHabit] = useState('');
-    const [seeding, setSeeding] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [editValue, setEditValue] = useState('');
     const [editMessage, setEditMessage] = useState('');
@@ -51,27 +44,7 @@ export default function ManageHabitsPage() {
         }
     };
 
-    const seedDefault = async () => {
-        if (!confirm('This will delete ALL your current habits and reset to the default set. Are you sure?')) return;
-        setSeeding(true);
-        try {
-            // 1. Delete all current habits
-            for (const habit of habits) {
-                await habitApi.delete(habit._id);
-            }
-            
-            // 2. Load defaults
-            for (const name of DEFAULT_HABITS) {
-                await habitApi.create({ name, userId: user.uid });
-            }
-            refreshHabits();
-            addToast('Habits reset to default!');
-        } catch (e) {
-            addToast('Error seeding habits', 'error');
-        } finally {
-            setSeeding(false);
-        }
-    };
+    // Removing seedDefault function
 
     const saveEdit = async (id) => {
         if (!editValue.trim()) return;
@@ -111,12 +84,6 @@ export default function ManageHabitsPage() {
                         onKeyDown={e => e.key === 'Enter' && addHabit()}
                     />
                     <button className="add-btn" onClick={addHabit}>+ Add Habit</button>
-                </div>
-                <div style={{ marginTop: 12 }}>
-                    <button className="add-btn" onClick={seedDefault} disabled={seeding}
-                        style={{ background: 'var(--success-bg)', color: 'var(--success)', border: '1px solid var(--success-border)' }}>
-                        {seeding ? '⏳ Loading...' : '🚀 Reload Default Set'}
-                    </button>
                 </div>
             </div>
 

@@ -15,13 +15,7 @@ const MOODS = [
     { score: 5, emoji: '🤩', label: 'Amazing' },
 ];
 
-const DEFAULT_HABITS = [
-    "Wake up at 8:00 AM", "Oat Meal", "Gym", "Dsa", "web development",
-    "no wasting money", "Apply Sunscreen", "No Junk Food",
-    "less Screen time (5 hrs)", "Parents", "Bathing",
-    "Bread Peanut Butter", "Eggs or chicken", "College Work",
-    "sleep at 11 PM", "8 hours sleep"
-];
+// Main dashboard page
 
 function GoalInputForm({ onAdd }) {
     const [text, setText] = useState('');
@@ -176,28 +170,6 @@ export default function HomePage() {
             refreshHabits();
         } catch (e) {
             addToast('Failed to add habit', 'error');
-        }
-    };
-
-    const seedHabits = async () => {
-        if (!confirm('This will delete ALL your current habits and reset to the default set. Are you sure?')) return;
-        setSeeding(true);
-        try {
-            // 1. Delete all current habits
-            for (const habit of habits) {
-                await habitApi.delete(habit._id);
-            }
-
-            // 2. Load defaults
-            for (const name of DEFAULT_HABITS) {
-                await habitApi.create({ name, userId: user.uid, targetValue: 1, unit: 'times' });
-            }
-            refreshHabits();
-            addToast('Habits reset to default!');
-        } catch (e) {
-            addToast('Seeding failed', 'error');
-        } finally {
-            setSeeding(false);
         }
     };
 
@@ -410,10 +382,9 @@ export default function HomePage() {
                                 addCustomHabit(el.value); el.value = '';
                             }}>+ Add</button>
                         </div>
-                        <button className="add-btn" onClick={seedHabits} disabled={seeding}
-                            style={{ background: 'var(--success)', padding: '12px 24px', width: 'fit-content' }}>
-                            {seeding ? 'Seeding...' : '🚀 Load Default Habits'}
-                        </button>
+                        <div className="empty-state">
+                        No disciplines tracked for today.
+                    </div>
                     </div>
                 ) : (
                     <motion.div

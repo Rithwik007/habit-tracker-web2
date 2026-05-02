@@ -1,6 +1,7 @@
 import express from 'express';
 import User from '../models/User.js';
 import Habit from '../models/Habit.js';
+import Goal from '../models/Goal.js';
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -15,9 +16,9 @@ router.get('/:firebaseId', async (req, res) => {
   }
 });
 
-// Update/Create Profile (supports photoURL and display_name)
+// Update/Create Profile (supports photoURL, display_name, and onboarding status)
 router.post('/profile', async (req, res) => {
-  const { firebaseId, email, display_name, photoURL } = req.body;
+  const { firebaseId, email, display_name, photoURL, onboardingCompleted } = req.body;
 
   if (!firebaseId) {
     return res.status(400).json({ message: 'Missing firebaseId' });
@@ -27,6 +28,7 @@ router.post('/profile', async (req, res) => {
     const updateData = { email };
     if (display_name !== undefined) updateData.display_name = display_name;
     if (photoURL !== undefined) updateData.photoURL = photoURL;
+    if (onboardingCompleted !== undefined) updateData.onboardingCompleted = onboardingCompleted;
 
     let user = await User.findOneAndUpdate(
       { firebaseId },
@@ -128,6 +130,19 @@ router.delete('/:firebaseId', async (req, res) => {
     
     // Delete all notes for this user
     await Note.deleteMany({ userId: firebaseId });
+    
+    // Delete all goals for this user
+    await Goal.deleteMany({ userId: firebaseId });
+    
+    // Delete all moods for this user (Mood model defined inline like in moods.js)
+    const MoodSchema = new mongoose.Schema({
+      userId: { type: String, required: true },
+      date: { type: String, required: true },
+      score: { type: Number, min: 1, max: 5, required: true },
+      updatedAt: { type: Date, default: Date.now }
+    });
+    const Mood = mongoose.models.Mood || mongoose.model('Mood', MoodSchema);
+    await Mood.deleteMany({ userId: firebaseId });
     
     res.json({ message: 'User and all associated data permanently deleted.' });
   } catch (err) {
