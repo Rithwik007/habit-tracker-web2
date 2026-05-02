@@ -25,7 +25,8 @@ export const userApi = {
   deleteUser: (firebaseId) => api.delete(`/users/${firebaseId}`),
   getNotifications: (firebaseId) => api.get(`/users/${firebaseId}/notifications`),
   markNotificationRead: (firebaseId, notifId) => api.patch(`/users/${firebaseId}/notifications/${notifId}/read`),
-  markAllNotificationsRead: (firebaseId) => api.patch(`/users/${firebaseId}/notifications/read-all`)
+  markAllNotificationsRead: (firebaseId) => api.patch(`/users/${firebaseId}/notifications/read-all`),
+  clearNotifications: (firebaseId) => api.delete(`/users/${firebaseId}/notifications`)
 };
 
 export const noteApi = {

@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children }) {
 
     // Redirect to setup ONLY if it's a brand new account (default name 'User') 
     // AND they haven't finished the onboarding wizard yet.
-    const isBrandNew = !profile.display_name || profile.display_name === 'User';
+    const isBrandNew = !profile?.display_name || profile?.display_name === 'User';
     const needsSetup = profile && profile.hasCompletedSetup === false && isBrandNew;
     
     if (needsSetup && location.pathname !== '/setup') {

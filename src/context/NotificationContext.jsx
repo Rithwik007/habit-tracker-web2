@@ -197,6 +197,18 @@ export function NotificationProvider({ children }) {
     }
   };
 
+  const clearAll = async () => {
+    if (!user) return;
+    try {
+      await userApi.clearNotifications(user.uid);
+      setInAppNotifications([]);
+      setUnreadCount(0);
+      setLatestPopup(null);
+    } catch (err) {
+      console.error('Failed to clear notifications:', err);
+    }
+  };
+
   return (
     <NotificationContext.Provider value={{
       permission,
@@ -212,6 +224,7 @@ export function NotificationProvider({ children }) {
       setLatestPopup,
       markRead,
       markAllRead,
+      clearAll,
       refreshNotifications: fetchInAppNotifications
     }}>
       {children}

@@ -191,4 +191,14 @@ router.patch('/:firebaseId/notifications/read-all', async (req, res) => {
   }
 });
 
+// Clear all notifications
+router.delete('/:firebaseId/notifications', async (req, res) => {
+  try {
+    await Notification.deleteMany({ userId: req.params.firebaseId });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 export default router;

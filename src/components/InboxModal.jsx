@@ -3,7 +3,7 @@ import { useNotification } from '../context/NotificationContext';
 import { X, CheckCheck, MessageSquare, Bell } from 'lucide-react';
 
 export default function InboxModal({ onClose }) {
-  const { inAppNotifications, unreadCount, markRead, markAllRead } = useNotification();
+  const { inAppNotifications, unreadCount, markRead, markAllRead, clearAll } = useNotification();
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -30,7 +30,18 @@ export default function InboxModal({ onClose }) {
           <button className="close-btn" onClick={onClose}><X size={20} /></button>
         </div>
 
-        <div style={{ padding: '0 20px 15px', display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ padding: '0 20px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {inAppNotifications.length > 0 && (
+            <button 
+              onClick={() => window.confirm('Clear all notifications?') && clearAll()}
+              style={{ 
+                background: 'none', border: 'none', color: 'var(--danger)', 
+                fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600
+              }}
+            >
+              Clear All
+            </button>
+          )}
           {unreadCount > 0 && (
             <button 
               onClick={markAllRead}
