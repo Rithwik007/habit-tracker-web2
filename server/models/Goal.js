@@ -6,6 +6,8 @@ const GoalSchema = new mongoose.Schema({
   time: { type: String, default: '' },
   date: { type: String, required: true }, // YYYY-MM-DD
   nagTime: { type: Number, default: 0 }, // in minutes
+  lastReminderSentAt: { type: String, default: '' },
+  lastNaggedAt: { type: Date, default: null },
   completed: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });

@@ -46,11 +46,12 @@ export function DataProvider({ children }) {
         }
     }, [user?.uid, fetchHabits]);
 
-    // Keep Atlas alive — ping every 4 minutes to prevent cold start
+    // Keep Render backend alive — ping every 4 minutes to prevent cold start
     useEffect(() => {
         if (!user?.uid) return;
         const interval = setInterval(() => {
-            habitApi.getAll(user.uid).catch(() => {}); // silent ping
+            fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ping`)
+                .catch(() => {}); // silent ping
         }, 4 * 60 * 1000);
         return () => clearInterval(interval);
     }, [user?.uid]);

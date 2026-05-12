@@ -84,29 +84,31 @@ const startCronJobs = () => {
           let shouldNotify = false;
           let messageTag = `habit-${habit._id}`;
 
-          // 1. Check Standard Start Time Trigger
           const pref = prefs[habit._id.toString()];
-          if (pref?.enabled && pref.time === currentTimeStr) {
+          if (!pref?.enabled || !pref.time) continue;
+
+          const [deadlineH, deadlineM] = pref.time.split(':').map(Number);
+          const currentH = Number(currentHours);
+          const currentM = Number(currentMinutes);
+
+          const totalDeadlineMins = deadlineH * 60 + deadlineM;
+          const totalCurrentMins = currentH * 60 + currentM;
+
+          // 1. Check Standard Start Time Trigger (Stateful)
+          if (totalCurrentMins >= totalDeadlineMins && habit.lastReminderSentAt !== todayStr) {
             shouldNotify = true;
+            await Habit.updateOne({ _id: habit._id }, { $set: { lastReminderSentAt: todayStr } });
           }
 
-          // 2. Check Overdue Nagging (Using Standard Reminder Time as Deadline)
-          if (!shouldNotify && pref?.enabled && habit.naggingInterval > 0 && pref.time) {
-            const [deadlineH, deadlineM] = pref.time.split(':').map(Number);
-            const currentH = Number(currentHours);
-            const currentM = Number(currentMinutes);
+          // 2. Check Overdue Nagging (Stateful)
+          if (!shouldNotify && habit.naggingInterval > 0 && totalCurrentMins >= totalDeadlineMins) {
+            const lastNagged = habit.lastNaggedAt ? new Date(habit.lastNaggedAt) : null;
+            const minutesSinceLastNag = lastNagged ? (now - lastNagged) / (1000 * 60) : 9999;
 
-            const totalDeadlineMins = deadlineH * 60 + deadlineM;
-            const totalCurrentMins = currentH * 60 + currentM;
-
-            // If we are past the reminder time
-            if (totalCurrentMins > totalDeadlineMins) {
-              const diff = totalCurrentMins - totalDeadlineMins;
-              // If we land exactly on a nagging interval
-              if (diff % habit.naggingInterval === 0) {
-                shouldNotify = true;
-                messageTag = `nag-${habit._id}-${totalCurrentMins}`; 
-              }
+            if (minutesSinceLastNag >= habit.naggingInterval) {
+              shouldNotify = true;
+              messageTag = `nag-${habit._id}-${now.getTime()}`; 
+              await Habit.updateOne({ _id: habit._id }, { $set: { lastNaggedAt: now } });
             }
           }
 
@@ -138,41 +140,41 @@ const startCronJobs = () => {
           if (!goal.time) continue; // No deadline, no notification
           
           let shouldNotifyGoal = false;
-          let goalMessageTag = `goal-${goal._id}`;
-          
-          const [deadlineH, deadlineM] = goal.time.split(':').map(Number);
-          const currentH = Number(currentHours);
-          const currentM = Number(currentMinutes);
+          if (!goal.time) continue;
 
-          const totalDeadlineMins = deadlineH * 60 + deadlineM;
-          const totalCurrentMins = currentH * 60 + currentM;
+          const [dH, dM] = goal.time.split(':').map(Number);
+          const totalDeadline = dH * 60 + dM;
+          const totalCurrent = Number(currentHours) * 60 + Number(currentMinutes);
 
-          // 1. Check Standard Deadline Trigger
-          if (totalCurrentMins === totalDeadlineMins) {
-            shouldNotifyGoal = true;
+          let shouldNotify = false;
+          let tag = `goal-${goal._id}`;
+
+          // 1. Check Standard Start Time (Stateful)
+          if (totalCurrent >= totalDeadline && goal.lastReminderSentAt !== todayStr) {
+            shouldNotify = true;
+            await Goal.updateOne({ _id: goal._id }, { $set: { lastReminderSentAt: todayStr } });
           }
-          
-          // 2. Check Overdue Nagging
-          if (!shouldNotifyGoal && goal.nagTime > 0) {
-            if (totalCurrentMins > totalDeadlineMins) {
-              const diff = totalCurrentMins - totalDeadlineMins;
-              if (diff % goal.nagTime === 0) {
-                shouldNotifyGoal = true;
-                goalMessageTag = `goal-nag-${goal._id}-${totalCurrentMins}`; 
-              }
+
+          // 2. Check Overdue Nagging (Stateful)
+          if (!shouldNotify && goal.nagTime > 0 && totalCurrent >= totalDeadline) {
+            const lastNagged = goal.lastNaggedAt ? new Date(goal.lastNaggedAt) : null;
+            const minutesSinceLastNag = lastNagged ? (now - lastNagged) / (1000 * 60) : 9999;
+
+            if (minutesSinceLastNag >= goal.nagTime) {
+              shouldNotify = true;
+              tag = `goal-nag-${goal._id}-${now.getTime()}`;
+              await Goal.updateOne({ _id: goal._id }, { $set: { lastNaggedAt: now } });
             }
           }
 
-          if (shouldNotifyGoal) {
-            const payload = JSON.stringify({
-              title: '🎯 Goal Reminder',
-              body: `Don't forget your goal: ${goal.text}`,
-              tag: goalMessageTag,
-              data: { url: '/' }
-            });
-
+          if (shouldNotify) {
             try {
-              await webpush.sendNotification(user.pushSubscription, payload);
+              await webpush.sendNotification(user.pushSubscription, JSON.stringify({
+                title: '🎯 Goal Reminder',
+                body: `Don't forget your goal: ${goal.text}`,
+                tag,
+                data: { url: '/' }
+              }));
             } catch (err) {
               if (err.statusCode === 410 || err.statusCode === 404) {
                 await User.updateOne({ _id: user._id }, { $unset: { pushSubscription: 1 } });

@@ -84,27 +84,33 @@ router.get('/cron-notify', async (req, res) => {
         if (isCompletedToday) continue;
 
         const pref = prefs[habit._id.toString()];
-        if (!pref?.enabled) continue;
+        if (!pref?.enabled || !pref.time) continue;
+
+        const [deadlineH, deadlineM] = pref.time.split(':').map(Number);
+        const currentH = Number(currentHours);
+        const currentM = Number(currentMinutes);
+
+        const totalDeadline = deadlineH * 60 + deadlineM;
+        const totalCurrent = currentH * 60 + currentM;
 
         let shouldNotify = false;
         let messageTag = `habit-${habit._id}`;
 
-        // Check if reminder time matches (within the cron window)
-        if (pref.time === currentTimeStr) {
+        // 1. Check Standard Start Time Trigger (Stateful)
+        if (totalCurrent >= totalDeadline && habit.lastReminderSentAt !== todayStr) {
           shouldNotify = true;
+          await Habit.updateOne({ _id: habit._id }, { $set: { lastReminderSentAt: todayStr } });
         }
 
-        // Check nagging (overdue)
-        if (!shouldNotify && habit.naggingInterval > 0 && pref.time) {
-          const [dH, dM] = pref.time.split(':').map(Number);
-          const totalDeadline = dH * 60 + dM;
-          const totalCurrent = Number(currentHours) * 60 + Number(currentMinutes);
-          if (totalCurrent > totalDeadline) {
-            const diff = totalCurrent - totalDeadline;
-            if (diff % habit.naggingInterval === 0) {
-              shouldNotify = true;
-              messageTag = `nag-${habit._id}-${totalCurrent}`;
-            }
+        // 2. Check Overdue Nagging (Stateful)
+        if (!shouldNotify && habit.naggingInterval > 0 && totalCurrent >= totalDeadline) {
+          const lastNagged = habit.lastNaggedAt ? new Date(habit.lastNaggedAt) : null;
+          const minutesSinceLastNag = lastNagged ? (now - lastNagged) / (1000 * 60) : 9999;
+
+          if (minutesSinceLastNag >= habit.naggingInterval) {
+            shouldNotify = true;
+            messageTag = `nag-${habit._id}-${now.getTime()}`; 
+            await Habit.updateOne({ _id: habit._id }, { $set: { lastNaggedAt: now } });
           }
         }
 

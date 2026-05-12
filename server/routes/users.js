@@ -16,7 +16,12 @@ router.get('/:firebaseId', async (req, res) => {
       return res.json({ onboardingCompleted: false, habitCount });
     }
     
-    res.json({ ...user.toObject(), habitCount });
+    const userObj = user.toObject();
+    if (!userObj.notifPrefs) {
+      userObj.notifPrefs = {};
+    }
+    
+    res.json({ ...userObj, habitCount });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

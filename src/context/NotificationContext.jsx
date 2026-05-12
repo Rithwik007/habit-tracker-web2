@@ -29,29 +29,20 @@ export function NotificationProvider({ children }) {
   const [prefs, setPrefs] = useState({});
   const isSupported = typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
 
-  // Load prefs from profile (MongoDB) when user/profile changes
+  // Load prefs strictly from profile (MongoDB) when user/profile changes
   useEffect(() => {
     if (!user) {
       setPrefs({});
       return;
     }
 
-    if (profile?.notifPrefs && Object.keys(profile.notifPrefs).length > 0) {
+    if (profile?.notifPrefs) {
       const loaded = profile.notifPrefs instanceof Map
         ? Object.fromEntries(profile.notifPrefs)
         : profile.notifPrefs;
       setPrefs(loaded);
-      localStorage.setItem(`notif_prefs_${user.uid}`, JSON.stringify(loaded));
     } else {
-      const cached = localStorage.getItem(`notif_prefs_${user.uid}`);
-      if (cached && cached !== '{}') {
-        const parsed = JSON.parse(cached);
-        setPrefs(parsed);
-        // Sync back to DB to heal
-        userApi.updateNotifPrefs(user.uid, parsed).catch(e => console.warn('Heal sync failed', e));
-      } else {
-        setPrefs({});
-      }
+      setPrefs({});
     }
   }, [user, profile?.notifPrefs]);
 
@@ -109,7 +100,6 @@ export function NotificationProvider({ children }) {
   const savePrefs = useCallback(async (newPrefs) => {
     if (!user) return;
     setPrefs(newPrefs);
-    localStorage.setItem(`notif_prefs_${user.uid}`, JSON.stringify(newPrefs));
     try {
       await userApi.updateNotifPrefs(user.uid, newPrefs);
     } catch (err) {
