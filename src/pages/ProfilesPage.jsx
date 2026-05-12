@@ -8,6 +8,8 @@ export default function ProfilesPage() {
     const { user } = useAuth();
     const { profiles, activeProfile, refreshProfiles, refreshHabits } = useData();
 
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+
     const [name, setName] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -18,6 +20,10 @@ export default function ProfilesPage() {
     const handleCreateOrUpdate = async (e) => {
         e.preventDefault();
         if (!name.trim() || !user?.uid) return;
+        if (startDate && endDate && startDate > endDate) {
+            alert('End date must be after start date');
+            return;
+        }
 
         setLoading(true);
         try {
@@ -159,6 +165,7 @@ export default function ProfilesPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                     {profiles.map(p => {
                         const isActive = p._id === activeProfile?._id;
+                        const isScheduledFuture = p.startDate && p.startDate > todayStr;
                         return (
                             <motion.div key={p._id} className="streak-item" style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} layout>
                                 <div>
@@ -166,6 +173,7 @@ export default function ProfilesPage() {
                                         {p.name}
                                         {p.isDefault && <span style={{ fontSize: '0.7rem', background: 'var(--primary)', padding: '2px 8px', borderRadius: '12px' }}>Default</span>}
                                         {isActive && <span style={{ fontSize: '0.7rem', background: '#10B981', padding: '2px 8px', borderRadius: '12px' }}>Active Now</span>}
+                                        {isScheduledFuture && !isActive && <span style={{ fontSize: '0.7rem', background: '#3B82F6', padding: '2px 8px', borderRadius: '12px' }}>Scheduled</span>}
                                     </h3>
                                     <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                         {p.startDate ? `${p.startDate} to ${p.endDate || 'Forever'}` : 'Not scheduled'}

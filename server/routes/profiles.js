@@ -24,6 +24,7 @@ router.post('/', async (req, res) => {
   try {
     const { userId, name, startDate, endDate, autoRevertToDefault } = req.body;
     if (!userId || !name) return res.status(400).json({ message: 'userId and name are required' });
+    if (startDate && endDate && startDate > endDate) return res.status(400).json({ message: 'End date must be after start date' });
 
     const newProfile = await HabitProfile.create({
       userId,
@@ -44,6 +45,18 @@ router.post('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   try {
     const { name, startDate, endDate, autoRevertToDefault } = req.body;
+    
+    // Validate dates with existing profile data if only one is provided
+    const profile = await HabitProfile.findById(req.params.id);
+    if (!profile) return res.status(404).json({ message: 'Profile not found' });
+    
+    const finalStartDate = startDate !== undefined ? startDate : profile.startDate;
+    const finalEndDate = endDate !== undefined ? endDate : profile.endDate;
+    
+    if (finalStartDate && finalEndDate && finalStartDate > finalEndDate) {
+      return res.status(400).json({ message: 'End date must be after start date' });
+    }
+
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (startDate !== undefined) updateData.startDate = startDate;

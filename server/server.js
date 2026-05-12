@@ -28,6 +28,9 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB Atlas');
     
+    // Ensure all indexes are synchronized
+    await Promise.all([User.syncIndexes(), Habit.syncIndexes(), HabitProfile.syncIndexes()]);
+    
     // --- ONE-TIME MIGRATION LOGIC ---
     try {
       const users = await User.find({});

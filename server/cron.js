@@ -42,7 +42,11 @@ const startCronJobs = () => {
         // --- PART A0: AUTO-SWITCH PROFILES ---
         try {
           const scheduledProfile = await HabitProfile.findOne({ userId: user.firebaseId, startDate: todayStr });
-          if (scheduledProfile && user.activeProfileId?.toString() !== scheduledProfile._id.toString()) {
+          const hasAlreadyActivatedToday = scheduledProfile && user.profileHistory.some(h => 
+             h.profileId.toString() === scheduledProfile._id.toString() && h.activatedAt === todayStr
+          );
+
+          if (scheduledProfile && user.activeProfileId?.toString() !== scheduledProfile._id.toString() && !hasAlreadyActivatedToday) {
              await switchProfile(user.firebaseId, scheduledProfile._id, todayStr);
              user.activeProfileId = scheduledProfile._id;
           } else if (user.activeProfileId) {

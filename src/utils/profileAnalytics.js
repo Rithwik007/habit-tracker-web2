@@ -1,7 +1,11 @@
 import { formatLocalDate } from '../hooks/useMidnightRefresh';
 
 export function getActiveProfileOnDate(dateStr, profileHistory) {
-    if (!profileHistory || !Array.isArray(profileHistory)) return null;
+    if (!profileHistory || !Array.isArray(profileHistory) || profileHistory.length === 0) return null;
+
+    // If the date we're checking is BEFORE the earliest known date, the user didn't exist yet!
+    const earliestActivation = profileHistory.reduce((min, h) => h.activatedAt < min ? h.activatedAt : min, profileHistory[0].activatedAt);
+    if (dateStr < earliestActivation) return null;
 
     // Find entry where activatedAt <= dateStr and (deactivatedAt is null or >= dateStr)
     // Reverse first to find the LAST activation of the day in case of multiple switches

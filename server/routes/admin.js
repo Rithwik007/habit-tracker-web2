@@ -33,6 +33,18 @@ router.get('/users', async (req, res) => {
   }
 });
 
+// GET migration counts
+router.get('/migration-check', async (req, res) => {
+  try {
+    const usersCount = await User.countDocuments();
+    const profilesCount = await mongoose.models.HabitProfile.countDocuments();
+    const orphanedHabitsCount = await Habit.countDocuments({ profileId: { $exists: false } });
+    res.json({ users: usersCount, profiles: profilesCount, orphanedHabits: orphanedHabitsCount });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // GET habits for a specific user (for admin to view their analytics)
 router.get('/user-habits/:uid', async (req, res) => {
   try {
