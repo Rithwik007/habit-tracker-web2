@@ -1,13 +1,29 @@
 import express from 'express';
 import Habit from '../models/Habit.js';
 
+import User from '../models/User.js';
+
 const router = express.Router();
 
-// Get all habits for a user
+// Get all habits for a user across ALL profiles (for analytics)
+router.get('/all/:userId', async (req, res) => {
+  try {
+    const habits = await Habit.find({ userId: req.params.userId });
+    res.json(habits);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get all habits for a user's ACTIVE profile
 router.get('/:userId', async (req, res) => {
   try {
-    console.log(`Fetching habits for user: ${req.params.userId}`);
-    const habits = await Habit.find({ userId: req.params.userId });
+    const user = await User.findOne({ firebaseId: req.params.userId });
+    if (!user || !user.activeProfileId) {
+      return res.json([]);
+    }
+    
+    const habits = await Habit.find({ userId: req.params.userId, profileId: user.activeProfileId });
     res.json(habits);
   } catch (err) {
     console.error('GET Habits Error:', err);
@@ -15,10 +31,16 @@ router.get('/:userId', async (req, res) => {
   }
 });
 
-// Create a habit
+// Create a habit (auto-assigns to active profile)
 router.post('/', async (req, res) => {
-  const habit = new Habit(req.body);
   try {
+    const user = await User.findOne({ firebaseId: req.body.userId });
+    if (!user || !user.activeProfileId) {
+      return res.status(400).json({ message: 'User has no active profile' });
+    }
+    
+    const habitData = { ...req.body, profileId: user.activeProfileId };
+    const habit = new Habit(habitData);
     const newHabit = await habit.save();
     res.status(201).json(newHabit);
   } catch (err) {

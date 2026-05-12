@@ -1,56 +1,41 @@
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import { formatLocalDate } from '../hooks/useMidnightRefresh';
+import { calculateStreakForHabit, getDailyConsistencyScore } from '../utils/profileAnalytics';
+import { useState, useEffect, useMemo } from 'react';
+import { habitApi } from '../api';
 
 export default function ProgressPage() {
-    const { habits, habitsLoading } = useData();
+    const { user, profile } = useAuth();
+    const { habits, habitsLoading, profiles } = useData();
+    const [allHabits, setAllHabits] = useState([]);
+    const [loadingAll, setLoadingAll] = useState(true);
 
-    // Calculate streak from completions array in the habit document
-    const calculateStreak = (completions) => {
-        if (!completions || completions.length === 0) return 0;
+    useEffect(() => {
+        if (!user?.uid) return;
+        setLoadingAll(true);
+        habitApi.getAllAcrossProfiles(user.uid)
+            .then(res => setAllHabits(res.data))
+            .catch(err => console.error(err))
+            .finally(() => setLoadingAll(false));
+    }, [user?.uid]);
 
-        // Deduplicate and sort dates descending
-        const uniqueDates = [...new Set(completions.map(c => c.date).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+    const allCompletions = useMemo(() => {
+        return allHabits.flatMap(h => (h.completions || []).map(c => ({ habitId: h._id, date: c.date })));
+    }, [allHabits]);
 
-        if (uniqueDates.length === 0) return 0;
+    if (habitsLoading || loadingAll) return <div className="loading-screen">🔥 Calculating Streaks...</div>;
 
-        let streak = 0;
-        // Use today's date string to be consistent with stored YYYY-MM-DD format
-        const todayStr = formatLocalDate(new Date());
-        let expectedDate = todayStr;
+    const profileHistory = profile?.profileHistory || [];
 
-        for (const dateStr of uniqueDates) {
-            if (dateStr === expectedDate) {
-                streak++;
-                // Move expected date to previous day
-                const prev = new Date(dateStr + 'T12:00:00'); // use noon to avoid DST issues
-                prev.setDate(prev.getDate() - 1);
-                expectedDate = formatLocalDate(prev);
-            } else if (dateStr < expectedDate) {
-                // Allow for today not being completed yet — check if yesterday starts a streak
-                if (streak === 0) {
-                    const yesterday = new Date();
-                    yesterday.setDate(yesterday.getDate() - 1);
-                    const yesterdayStr = formatLocalDate(yesterday);
-                    if (dateStr === yesterdayStr) {
-                        streak++;
-                        const prev = new Date(dateStr + 'T12:00:00');
-                        prev.setDate(prev.getDate() - 1);
-                        expectedDate = formatLocalDate(prev);
-                        continue;
-                    }
-                }
-                break;
-            }
-        }
-        return streak;
-    };
-
-    if (habitsLoading) return <div className="loading-screen">🔥 Calculating Streaks...</div>;
-
-    const habitStreaks = (Array.isArray(habits) ? habits : []).map(h => ({
-        ...h,
-        streak: calculateStreak(h.completions)
-    })).sort((a, b) => b.streak - a.streak);
+    const habitStreaks = (Array.isArray(habits) ? habits : []).map(h => {
+        const { currentStreak, longestStreak } = calculateStreakForHabit(h, profileHistory, h.completions);
+        return {
+            ...h,
+            streak: currentStreak,
+            longestStreak
+        };
+    }).sort((a, b) => b.streak - a.streak);
 
     const activeStreaks = habitStreaks.filter(h => h.streak > 0).length;
     const bestStreak = Math.max(...habitStreaks.map(h => h.streak), 0);
@@ -90,7 +75,66 @@ export default function ProgressPage() {
 
             <div className="card">
                 <div className="card-header">
-                    <span className="card-title">🔥 Streak Leaderboard</span>
+                    <span className="card-title">🌍 Profile Breakdown</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    {useMemo(() => {
+                        return profiles.map(p => {
+                            // Calculate stats for this profile
+                            const pHistory = profileHistory.filter(h => h.profileId === p._id);
+                            const pHabits = allHabits.filter(h => h.profileId === p._id);
+                            
+                            let totalDaysActive = 0;
+                            let validDaysCount = 0;
+                            let sumRate = 0;
+
+                            const pStart = new Date(p.createdAt || new Date());
+                            const todayStrFormat = formatLocalDate(new Date());
+                            const endCursor = new Date(todayStrFormat + 'T12:00:00');
+                            let cursor = new Date(pStart);
+                            
+                            while (cursor <= endCursor) {
+                                const dStr = formatLocalDate(cursor);
+                                const score = getDailyConsistencyScore(dStr, profileHistory, allHabits, allCompletions);
+                                if (score && score.activeProfileId === p._id) {
+                                    totalDaysActive++;
+                                    if (score.total > 0) {
+                                        validDaysCount++;
+                                        sumRate += score.rate;
+                                    }
+                                }
+                                cursor.setDate(cursor.getDate() + 1);
+                            }
+
+                            const avgRate = validDaysCount > 0 ? Math.round((sumRate / validDaysCount) * 100) : 0;
+                            
+                            let bestProfileStreak = 0;
+                            pHabits.forEach(h => {
+                                const { longestStreak } = calculateStreakForHabit(h, profileHistory, h.completions);
+                                if (longestStreak > bestProfileStreak) bestProfileStreak = longestStreak;
+                            });
+
+                            return (
+                                <div key={p._id} className="streak-item" style={{ padding: '15px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                        <h3 style={{ margin: 0 }}>{p.name}</h3>
+                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{totalDaysActive} days active</span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '20px', fontSize: '0.9rem' }}>
+                                        <div><strong>{avgRate}%</strong> avg consistency</div>
+                                        <div><strong>{bestProfileStreak}</strong> best streak</div>
+                                        <div><strong>{pHabits.length}</strong> habits</div>
+                                    </div>
+                                </div>
+                            );
+                        });
+                    }, [profiles, profileHistory, allHabits, allCompletions])}
+                </div>
+            </div>
+
+            <div className="card" style={{ marginTop: '30px' }}>
+                <div className="card-header">
+                    <span className="card-title">🔥 Streak Leaderboard (Active Profile)</span>
                 </div>
                 <div className="streak-list">
                     {habitStreaks.map((h, index) => (

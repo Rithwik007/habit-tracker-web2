@@ -16,6 +16,12 @@ const UserSchema = new mongoose.Schema({
     }
   },
   onboardingCompleted: { type: Boolean, default: false },
+  activeProfileId: { type: mongoose.Schema.Types.ObjectId, ref: 'HabitProfile', default: null },
+  profileHistory: [{
+    profileId: { type: mongoose.Schema.Types.ObjectId, ref: 'HabitProfile' },
+    activatedAt: { type: String },    // YYYY-MM-DD
+    deactivatedAt: { type: String, default: null }   // YYYY-MM-DD, null means currently active
+  }],
   createdAt: { type: Date, default: Date.now }
 });
 

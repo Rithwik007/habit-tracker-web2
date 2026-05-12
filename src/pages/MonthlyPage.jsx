@@ -5,10 +5,11 @@ import useMidnightRefresh, { formatLocalDate } from '../hooks/useMidnightRefresh
 import LeetCodeGraph from '../components/LeetCodeGraph';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { getActiveProfileOnDate } from '../utils/profileAnalytics';
 
 export default function MonthlyPage() {
-    const { user } = useAuth();
-    const { habits, habitsLoading, refreshHabits, setHabits } = useData();
+    const { user, profile } = useAuth();
+    const { habits, habitsLoading, refreshHabits, setHabits, profiles } = useData();
     const [currentDate, setCurrentDate] = useState(new Date());
     const todayStr = useMidnightRefresh(() => setCurrentDate(new Date()));
 
@@ -76,7 +77,29 @@ export default function MonthlyPage() {
                         <thead>
                             <tr>
                                 <th>Habit</th>
-                                {daysArr.map(d => <th key={d}><span>{d}</span></th>)}
+                                {daysArr.map(d => {
+                                    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
+                                    const dateStr = formatLocalDate(date);
+                                    const prevDateStr = formatLocalDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), d - 1));
+                                    
+                                    const history = profile?.profileHistory || [];
+                                    const activeProfileId = getActiveProfileOnDate(dateStr, history);
+                                    const prevActiveProfileId = getActiveProfileOnDate(prevDateStr, history);
+                                    
+                                    const isSwitchDate = activeProfileId && activeProfileId !== prevActiveProfileId;
+                                    const profileName = isSwitchDate ? profiles.find(p => p._id === activeProfileId)?.name : null;
+
+                                    return (
+                                        <th key={d} style={{ position: 'relative' }}>
+                                            {isSwitchDate && profileName && (
+                                                <div style={{ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.65rem', color: 'var(--primary-light)', whiteSpace: 'nowrap', zIndex: 10, background: 'var(--bg-card)', padding: '2px 4px', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                                                    → {profileName}
+                                                </div>
+                                            )}
+                                            <span>{d}</span>
+                                        </th>
+                                    );
+                                })}
                                 <th style={{ textAlign: 'center', paddingLeft: '10px', minWidth: '60px', color: 'var(--primary-light)' }}>Count</th>
                             </tr>
                         </thead>
@@ -98,12 +121,16 @@ export default function MonthlyPage() {
                                             const dateStr = formatLocalDate(date);
                                             const isDone = (habit.completions || []).some(c => c.date === dateStr);
                                             const isToday = dateStr === todayStr;
-                                            // Compare date strings to avoid timezone/midnight issues
                                             const isFuture = dateStr > todayStr;
+                                            
+                                            // Profile context logic
+                                            const activeProfileId = getActiveProfileOnDate(dateStr, profile?.profileHistory || []);
+
                                             return (
-                                                <td key={d}>
+                                                <td key={d} style={{ position: 'relative' }}>
                                                     <div
                                                         className={`grid-cell${isDone ? ' done' : ''}${isToday ? ' today' : ''}${isFuture ? ' future' : ''}`}
+                                                        style={!isDone && activeProfileId ? { background: 'rgba(255, 255, 255, 0.03)' } : {}}
                                                         onClick={() => !isFuture && toggleCell(habit._id, dateStr)}
                                                     >
                                                         {isDone && (

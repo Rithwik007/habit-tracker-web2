@@ -9,6 +9,7 @@ const api = axios.create({
 
 export const habitApi = {
   getAll: (userId) => api.get(`/habits/${userId}`),
+  getAllAcrossProfiles: (userId) => api.get(`/habits/all/${userId}`),
   create: (habitData) => api.post('/habits', habitData),
   update: (id, habitData) => api.put(`/habits/${id}`, habitData),
   delete: (id) => api.delete(`/habits/${id}`),
@@ -49,6 +50,14 @@ export const goalApi = {
   create: (goalData) => api.post('/goals', goalData),
   toggle: (id) => api.put(`/goals/${id}/toggle`),
   delete: (id) => api.delete(`/goals/${id}`)
+};
+
+export const profileApi = {
+  getAll: (userId) => api.get(`/profiles?userId=${userId}`),
+  create: (profileData) => api.post('/profiles', profileData),
+  update: (id, profileData) => api.patch(`/profiles/${id}`, profileData),
+  delete: (id) => api.delete(`/profiles/${id}`),
+  activate: (id, userId) => api.post(`/profiles/${id}/activate`, { userId })
 };
 
 export default api;

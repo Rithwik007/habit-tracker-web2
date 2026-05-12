@@ -3,6 +3,8 @@ import webpush from 'web-push';
 import User from './models/User.js';
 import Habit from './models/Habit.js';
 import Goal from './models/Goal.js';
+import HabitProfile from './models/HabitProfile.js';
+import { switchProfile } from './utils/switchProfile.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -33,10 +35,28 @@ const startCronJobs = () => {
       const currentTimeStr = `${currentHours}:${currentMinutes}`;
       const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(now);
 
-      // 1. Find all users with a push subscription
-      const users = await User.find({ pushSubscription: { $exists: true, $ne: null } });
+      // 1. Find all users
+      const users = await User.find({});
       
       for (const user of users) {
+        // --- PART A0: AUTO-SWITCH PROFILES ---
+        try {
+          const scheduledProfile = await HabitProfile.findOne({ userId: user.firebaseId, startDate: todayStr });
+          if (scheduledProfile && user.activeProfileId?.toString() !== scheduledProfile._id.toString()) {
+             await switchProfile(user.firebaseId, scheduledProfile._id, todayStr);
+             user.activeProfileId = scheduledProfile._id;
+          } else if (user.activeProfileId) {
+             const activeProfile = await HabitProfile.findById(user.activeProfileId);
+             if (activeProfile && activeProfile.endDate && activeProfile.endDate < todayStr && activeProfile.autoRevertToDefault) {
+                const defaultProfile = await HabitProfile.findOne({ userId: user.firebaseId, isDefault: true });
+                if (defaultProfile && user.activeProfileId.toString() !== defaultProfile._id.toString()) {
+                   await switchProfile(user.firebaseId, defaultProfile._id, todayStr);
+                   user.activeProfileId = defaultProfile._id;
+                }
+             }
+          }
+        } catch (e) { console.error('Auto-switch error:', e); }
+
         if (!user.pushSubscription) continue;
 
         // --- PART A: SYSTEM REMINDERS (Water, etc.) ---
@@ -75,7 +95,7 @@ const startCronJobs = () => {
         }
         
         // Find habits to check for this user
-        const habits = await Habit.find({ userId: user.firebaseId });
+        const habits = await Habit.find({ userId: user.firebaseId, profileId: user.activeProfileId });
         
         for (const habit of habits) {
           const isCompletedToday = habit.completions?.some(c => c.date === todayStr);

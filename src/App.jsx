@@ -12,6 +12,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import SetupPage from './pages/SetupPage';
 import AdminPage from './pages/AdminPage';
+import ProfilesPage from './pages/ProfilesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="/notes" element={<ProtectedRoute><PageWrapper><NotesPage /></PageWrapper></ProtectedRoute>} />
             <Route path="/manage" element={<ProtectedRoute><PageWrapper><ManageHabitsPage /></PageWrapper></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><PageWrapper><AdminPage /></PageWrapper></ProtectedRoute>} />
+            <Route path="/profiles" element={<ProtectedRoute><PageWrapper><ProfilesPage /></PageWrapper></ProtectedRoute>} />
           </Routes>
         </AnimatePresence>
       </main>

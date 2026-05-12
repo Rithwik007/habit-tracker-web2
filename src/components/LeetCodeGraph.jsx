@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+import { habitApi } from '../api';
+import { getDailyConsistencyScore } from '../utils/profileAnalytics';
 
 const formatLocalDate = (date) => {
     const d = new Date(date);
@@ -7,7 +10,10 @@ const formatLocalDate = (date) => {
 };
 
 export default function LeetCodeGraph() {
-    const { habits, habitsLoading } = useData();
+    const { user, profile } = useAuth();
+    const { habitsLoading, profiles } = useData();
+    const [allHabits, setAllHabits] = useState([]);
+    const [loadingAll, setLoadingAll] = useState(true);
     const [dataTracker, setDataTracker] = useState({});
     const [hoveredCell, setHoveredCell] = useState(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -22,18 +28,39 @@ export default function LeetCodeGraph() {
     const endStr = formatLocalDate(endDate);
 
     useEffect(() => {
-        if (habitsLoading) return;
+        if (!user?.uid) return;
+        setLoadingAll(true);
+        habitApi.getAllAcrossProfiles(user.uid)
+            .then(res => setAllHabits(res.data))
+            .catch(err => console.error(err))
+            .finally(() => setLoadingAll(false));
+    }, [user?.uid]);
+
+    const allCompletions = useMemo(() => {
+        return allHabits.flatMap(h => (h.completions || []).map(c => ({ habitId: h._id, date: c.date })));
+    }, [allHabits]);
+
+    useEffect(() => {
+        if (loadingAll || !profile) return;
+        const history = profile.profileHistory || [];
         const logCounts = {};
-        (habits || []).forEach(habit => {
-            (habit.completions || []).forEach(c => {
-                const d = new Date(c.date);
-                if (d.getFullYear() === selectedYear) {
-                    logCounts[c.date] = (logCounts[c.date] || 0) + 1;
-                }
-            });
-        });
+
+        // Precalculate for all dates in the year to avoid heavy lifting in render
+        let cursor = new Date(startDate);
+        const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(now);
+        
+        while (cursor <= endDate) {
+            const dateStr = formatLocalDate(cursor);
+            if (dateStr > todayStr) {
+                logCounts[dateStr] = null;
+            } else {
+                logCounts[dateStr] = getDailyConsistencyScore(dateStr, history, allHabits, allCompletions);
+            }
+            cursor.setDate(cursor.getDate() + 1);
+        }
+
         setDataTracker(logCounts);
-    }, [selectedYear, habits, habitsLoading]);
+    }, [selectedYear, loadingAll, profile, allHabits, allCompletions, startDate, endDate]);
 
     // Build grid
     const weeks = [];
@@ -71,22 +98,26 @@ export default function LeetCodeGraph() {
 
     const todayStr = formatLocalDate(new Date());
 
-    const getColorLevel = (count) => {
-        if (!count) return 'level-0';
-        if (count === 1) return 'level-1';
-        if (count <= 3) return 'level-2';
-        if (count <= 5) return 'level-3';
-        return 'level-4';
+    const getColorLevel = (scoreObj) => {
+        if (!scoreObj) return 'inactive'; // new state: no profile active
+        if (scoreObj.rate === 0) return 'level-0';
+        if (scoreObj.rate < 0.25) return 'level-1';
+        if (scoreObj.rate < 0.5) return 'level-2';
+        if (scoreObj.rate < 0.75) return 'level-3';
+        return 'level-4'; // 100%
     };
 
-    const handleMouseEnter = (e, dateObj, count) => {
+    const handleMouseEnter = (e, dateObj, scoreObj) => {
         if (!dateObj) return;
         const rect = e.target.getBoundingClientRect();
         setTooltipPos({ x: rect.left + window.scrollX + rect.width / 2, y: rect.top + window.scrollY - 10 });
-        setHoveredCell({ date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), count: count || 0 });
+        setHoveredCell({ 
+            date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), 
+            scoreObj 
+        });
     };
 
-    if (habitsLoading) return <div className="leetcode-graph-skeleton skeleton-pulse"></div>;
+    if (habitsLoading || loadingAll) return <div className="leetcode-graph-skeleton skeleton-pulse"></div>;
 
     return (
         <div className="leetcode-graph-container card fade-in">
@@ -115,12 +146,15 @@ export default function LeetCodeGraph() {
                                 {week.map((day, dIdx) => {
                                     if (!day) return <div key={dIdx} className="leetcode-cell empty"></div>;
                                     const dateStr = formatLocalDate(day);
-                                    const count = dataTracker[dateStr];
+                                    const scoreObj = dataTracker[dateStr];
+                                    const colorClass = dateStr > todayStr ? 'future' : getColorLevel(scoreObj);
+                                    
                                     return (
                                         <div key={dIdx} className="leetcode-cell-wrapper">
                                             <div
-                                                className={`leetcode-cell ${getColorLevel(count)} ${dateStr > todayStr ? 'future' : ''}`}
-                                                onMouseEnter={e => handleMouseEnter(e, day, count)}
+                                                className={`leetcode-cell ${colorClass}`}
+                                                style={scoreObj === null && dateStr <= todayStr ? { background: 'rgba(255, 255, 255, 0.05)' } : {}}
+                                                onMouseEnter={e => handleMouseEnter(e, day, scoreObj)}
                                                 onMouseLeave={() => setHoveredCell(null)}
                                             />
                                         </div>
@@ -164,7 +198,17 @@ export default function LeetCodeGraph() {
 
             {hoveredCell && (
                 <div className="leetcode-tooltip" style={{ left: tooltipPos.x, top: tooltipPos.y }}>
-                    <strong>{hoveredCell.count}</strong> habits completed on {hoveredCell.date}
+                    <div style={{ marginBottom: '4px', opacity: 0.8 }}>{hoveredCell.date}</div>
+                    {hoveredCell.scoreObj ? (
+                        <>
+                            <div><strong>{hoveredCell.scoreObj.completed} of {hoveredCell.scoreObj.total}</strong> habits completed</div>
+                            <div style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '2px' }}>
+                                Profile: {profiles.find(p => p._id === hoveredCell.scoreObj.activeProfileId)?.name || 'Unknown'}
+                            </div>
+                        </>
+                    ) : (
+                        <div>No profile active</div>
+                    )}
                 </div>
             )}
         </div>

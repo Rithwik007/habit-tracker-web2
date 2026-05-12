@@ -10,6 +10,7 @@ const links = [
     { to: '/progress', icon: '🏆', label: 'Progress' },
     { to: '/notes', icon: '📝', label: 'Add Note' },
     { to: '/manage', icon: '⚙️', label: 'Manage Habits' },
+    { to: '/profiles', icon: '🌍', label: 'Habit Profiles' },
     { to: '/admin', icon: '🛡️', label: 'Admin' },
 ];
 
