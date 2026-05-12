@@ -67,17 +67,17 @@ export default function AdminPage() {
     const [selectedYear, setSelectedYear] = useState(now.getFullYear());
 
     const fetchUsers = useCallback(async () => {
-        if (!isAdmin) return;
+        if (!isAdmin || !user?.uid) return;
         setLoading(true);
         try {
-            const { data } = await adminApi.getAllUsers();
+            const { data } = await adminApi.getAllUsers(user.uid);
             setUsers(data || []);
         } catch (e) {
             addToast('Failed to load users', 'error');
         } finally {
             setLoading(false);
         }
-    }, [isAdmin, addToast]);
+    }, [isAdmin, user?.uid, addToast]);
 
     useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -87,7 +87,7 @@ export default function AdminPage() {
         if (!userHabits[uid]) {
             setLoadingHabits(uid);
             try {
-                const { data } = await adminApi.getUserHabits(uid);
+                const { data } = await adminApi.getUserHabits(uid, user.uid);
                 setUserHabits(prev => ({ ...prev, [uid]: data || [] }));
             } catch {
                 addToast('Failed to load habits for this user', 'error');
@@ -102,7 +102,7 @@ export default function AdminPage() {
         if (!confirm(`Delete user "${displayName}" and all their data? This cannot be undone.`)) return;
         setDeleting(uid);
         try {
-            await adminApi.deleteUser(uid);
+            await adminApi.deleteUser(uid, user.uid);
             addToast('User deleted successfully');
             await fetchUsers();
         } catch (e) {

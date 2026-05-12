@@ -21,4 +21,6 @@ const HabitSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+HabitSchema.index({ userId: 1 });
+
 export default mongoose.model('Habit', HabitSchema);

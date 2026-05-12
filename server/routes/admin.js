@@ -6,6 +6,23 @@ import Goal from '../models/Goal.js';
 
 const router = express.Router();
 
+const requireAdmin = (req, res, next) => {
+  const adminUid = process.env.ADMIN_UID;
+  if (!adminUid) {
+    console.error('ADMIN_UID not configured in environment variables.');
+    return res.status(500).json({ message: 'Server misconfiguration' });
+  }
+  
+  const clientUid = req.headers['x-admin-uid'];
+  if (!clientUid || clientUid !== adminUid) {
+    return res.status(403).json({ message: 'Forbidden: Admin access required' });
+  }
+  
+  next();
+};
+
+router.use(requireAdmin);
+
 // GET all users (admin only - no server-side auth check, handled by frontend)
 router.get('/users', async (req, res) => {
   try {

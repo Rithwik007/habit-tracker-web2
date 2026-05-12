@@ -45,7 +45,10 @@ router.post('/profile', async (req, res) => {
 
     let user = await User.findOneAndUpdate(
       { firebaseId },
-      { $set: setFields },
+      { 
+        $set: setFields,
+        $setOnInsert: { notifPrefs: {} }
+      },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
     res.json(user);

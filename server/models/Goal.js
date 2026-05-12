@@ -12,4 +12,6 @@ const GoalSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+GoalSchema.index({ userId: 1, date: 1, completed: 1 });
+
 export default mongoose.model('Goal', GoalSchema);

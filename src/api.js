@@ -38,9 +38,9 @@ export const moodApi = {
 };
 
 export const adminApi = {
-  getAllUsers: () => api.get('/admin/users'),
-  getUserHabits: (uid) => api.get(`/admin/user-habits/${uid}`),
-  deleteUser: (uid) => api.delete(`/admin/user/${uid}`)
+  getAllUsers: (adminUid) => api.get('/admin/users', { headers: { 'x-admin-uid': adminUid } }),
+  getUserHabits: (uid, adminUid) => api.get(`/admin/user-habits/${uid}`, { headers: { 'x-admin-uid': adminUid } }),
+  deleteUser: (uid, adminUid) => api.delete(`/admin/user/${uid}`, { headers: { 'x-admin-uid': adminUid } })
 };
 
 export const goalApi = {
