@@ -1,21 +1,37 @@
 import { formatLocalDate } from '../hooks/useMidnightRefresh';
 
-export function getActiveProfileOnDate(dateStr, profileHistory) {
-    if (!profileHistory || !Array.isArray(profileHistory) || profileHistory.length === 0) return null;
-
-    // If the date we're checking is BEFORE the earliest known date, the user didn't exist yet!
-    const earliestActivation = profileHistory.reduce((min, h) => h.activatedAt < min ? h.activatedAt : min, profileHistory[0].activatedAt);
-    if (dateStr < earliestActivation) return null;
+export function getActiveProfileOnDate(dateStr, profileHistory, profiles = []) {
+    if (!profileHistory || !Array.isArray(profileHistory)) return null;
 
     // Find entry where activatedAt <= dateStr and (deactivatedAt is null or >= dateStr)
-    // Reverse first to find the LAST activation of the day in case of multiple switches
     const entry = [...profileHistory].reverse().find(h => {
         const isAfterStart = h.activatedAt <= dateStr;
         const isBeforeEnd = h.deactivatedAt === null || h.deactivatedAt >= dateStr;
         return isAfterStart && isBeforeEnd;
     });
     
-    return entry ? entry.profileId : null;
+    if (entry) return entry.profileId;
+
+    // PREDICTION LOGIC for future dates or gaps
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+    if (dateStr >= todayStr && profiles.length > 0) {
+        // Check for specifically scheduled profiles first
+        const scheduled = profiles.filter(p => !p.isDefault && p.startDate)
+            .sort((a, b) => a.startDate.localeCompare(b.startDate));
+        
+        for (const p of scheduled) {
+            if (dateStr >= p.startDate && (!p.endDate || dateStr <= p.endDate)) {
+                return p._id;
+            }
+        }
+
+        // Check if currently active profile has an end date
+        // Note: this part requires knowing the "current" active profile, 
+        // but for heatmap we just want to know if it's the default profile fallback.
+        return profiles.find(p => p.isDefault)?._id;
+    }
+
+    return null;
 }
 
 export function getDailyConsistencyScore(dateStr, profileHistory, allHabits, allCompletions) {
@@ -112,4 +128,37 @@ export function calculateBatchConsistency(profileHistory, allHabits, allCompleti
     }, {});
 
     return { habitsByProfile, completionsByDate };
+}
+
+export function calculateYearlyStats(selectedYear, profileHistory, allHabits, allCompletions, profiles) {
+    const { habitsByProfile, completionsByDate } = calculateBatchConsistency(profileHistory, allHabits, allCompletions);
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+    const stats = {};
+
+    let cursor = new Date(selectedYear, 0, 1);
+    const end = new Date(selectedYear, 11, 31);
+
+    while (cursor <= end) {
+        const dateStr = formatLocalDate(cursor);
+        const activeProfileId = getActiveProfileOnDate(dateStr, profileHistory, profiles);
+        
+        if (activeProfileId) {
+            const pHabits = habitsByProfile[activeProfileId.toString()] || [];
+            if (pHabits.length > 0) {
+                const doneOnDate = Array.from(completionsByDate[dateStr] || []).filter(hId => pHabits.some(ph => ph._id === hId));
+                stats[dateStr] = {
+                    rate: doneOnDate.length / pHabits.length,
+                    completed: doneOnDate.length,
+                    total: pHabits.length,
+                    activeProfileId
+                };
+            } else {
+                stats[dateStr] = { rate: 0, completed: 0, total: 0, activeProfileId };
+            }
+        } else {
+            stats[dateStr] = null;
+        }
+        cursor.setDate(cursor.getDate() + 1);
+    }
+    return stats;
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import { habitApi } from '../api';
 import useMidnightRefresh, { formatLocalDate } from '../hooks/useMidnightRefresh';
@@ -9,61 +9,28 @@ import { getActiveProfileOnDate } from '../utils/profileAnalytics';
 
 export default function MonthlyPage() {
     const { user, profile } = useAuth();
-    const { habits, habitsLoading, refreshHabits, setHabits, profiles, activeProfile } = useData();
+    const { habits, habitsLoading, setHabits, profiles, activeProfile } = useData();
     const [currentDate, setCurrentDate] = useState(new Date());
     const todayStr = useMidnightRefresh(() => setCurrentDate(new Date()));
     const history = profile?.profileHistory || [];
-
-    const getEffectiveProfileId = (dateStr) => {
-        // 1. Check actual history first
-        const histId = getActiveProfileOnDate(dateStr, history);
-        
-        // If it's a future date, or the history says it's active but we have a scheduled end date coming up
-        if (dateStr >= todayStr) {
-            // Check if any profile is specifically scheduled for this date
-            const scheduled = [...profiles].filter(p => !p.isDefault && p.startDate)
-                .sort((a, b) => a.startDate.localeCompare(b.startDate));
-            
-            for (const p of scheduled) {
-                if (dateStr >= p.startDate && (!p.endDate || dateStr <= p.endDate)) {
-                    return p._id;
-                }
-            }
-            
-            // If the CURRENTLY active profile has an end date, and dateStr is after it, return default
-            const currentActive = profiles.find(p => p._id === activeProfile?._id);
-            if (currentActive && currentActive.endDate && dateStr > currentActive.endDate) {
-                return profiles.find(p => p.isDefault)?._id;
-            }
-        }
-
-        return histId || profiles.find(p => p.isDefault)?._id;
-    };
-
-    const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    const daysInMonth = monthEnd.getDate();
 
     const toggleCell = async (habitId, dateStr) => {
         const habit = habits.find(h => h._id === habitId);
         const alreadyDone = habit?.completions?.some(c => c.date === dateStr);
         const nextState = alreadyDone ? 0 : 1;
 
-        // Optimistically update
         setHabits(prev => prev.map(h => {
             if (h._id !== habitId) return h;
             const completions = nextState
-                ? [...(Array.isArray(h.completions) ? h.completions : []), { date: dateStr, value: 1 }]
-                : (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== dateStr);
+                ? [...(h.completions || []), { date: dateStr, value: 1 }]
+                : (h.completions || []).filter(c => c.date !== dateStr);
             return { ...h, completions };
         }));
 
         try {
             await habitApi.toggleCompletion(habitId, dateStr, nextState);
-            // Optional: refreshHabits() to ensure total sync later
         } catch (e) {
             console.error('Toggle error:', e);
-            // Revert on error
             setHabits(prev => prev.map(h => {
                 if (h._id !== habitId) return h;
                 const completions = alreadyDone
@@ -78,9 +45,26 @@ export default function MonthlyPage() {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
     };
 
-    if (habitsLoading) return <div className="loading-screen">⏳ Loading...</div>;
+    const monthDays = useMemo(() => {
+        const dCount = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+        return Array.from({ length: dCount }, (_, i) => {
+            const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), i + 1);
+            const dStr = formatLocalDate(date);
+            return { dStr, day: i + 1 };
+        });
+    }, [currentDate]);
 
-    const daysArr = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    // Pre-calculate profile switches for the header
+    const dayMeta = useMemo(() => {
+        return monthDays.map((md, idx) => {
+            const currentPId = getActiveProfileOnDate(md.dStr, history, profiles);
+            const prevPId = idx > 0 ? getActiveProfileOnDate(monthDays[idx-1].dStr, history, profiles) : null;
+            const isSwitch = currentPId && currentPId !== prevPId;
+            return { ...md, activePId: currentPId, isSwitch };
+        });
+    }, [monthDays, history, profiles]);
+
+    if (habitsLoading) return <div className="loading-screen">⏳ Loading...</div>;
 
     return (
         <div className="fade-in">
@@ -104,66 +88,44 @@ export default function MonthlyPage() {
                         <thead>
                             <tr>
                                 <th>Habit</th>
-                                {daysArr.map(d => {
-                                    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
-                                    const dateStr = formatLocalDate(date);
-                                    const prevDateStr = formatLocalDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), d - 1));
-                                    
-                                    const history = profile?.profileHistory || [];
-                                    const activeProfileId = getEffectiveProfileId(dateStr);
-                                    const prevActiveProfileId = getEffectiveProfileId(prevDateStr);
-                                    
-                                    const isSwitchDate = activeProfileId && activeProfileId !== prevActiveProfileId;
-                                    const activeP = profiles.find(p => p._id === activeProfileId);
-                                    const profileName = isSwitchDate ? activeP?.name : null;
-
+                                {dayMeta.map(dm => {
+                                    const activeP = profiles.find(p => p._id === dm.activePId);
                                     return (
-                                        <th key={d} style={{ position: 'relative' }}>
-                                            {isSwitchDate && profileName && (
-                                                <div style={{ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.65rem', color: 'var(--primary-light)', whiteSpace: 'nowrap', zIndex: 10, background: 'var(--bg-card)', padding: '2px 4px', borderRadius: '4px', border: '1px solid var(--border)' }}>
-                                                    → {profileName}
-                                                </div>
+                                        <th key={dm.day} style={{ position: 'relative' }}>
+                                            {dm.isSwitch && activeP && (
+                                                <div className="switch-badge">→ {activeP.name}</div>
                                             )}
-                                            <span>{d}</span>
+                                            <span>{dm.day}</span>
                                         </th>
                                     );
                                 })}
-                                <th style={{ textAlign: 'center', paddingLeft: '10px', minWidth: '60px', color: 'var(--primary-light)' }}>Count</th>
+                                <th className="total-col">Count</th>
                             </tr>
                         </thead>
-                        <motion.tbody
-                            initial="hidden" animate="show"
-                            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }}
-                        >
+                        <motion.tbody initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.03 } } }}>
                             {habits.map(habit => {
-                                const habitMonthCount = (Array.isArray(habit.completions) ? habit.completions : []).filter(c => {
-                                    if (!c.date) return false;
-                                    const [year, month] = c.date.split('-');
-                                    return Number(year) === currentDate.getFullYear() && (Number(month) - 1) === currentDate.getMonth();
+                                const habitMonthCount = (habit.completions || []).filter(c => {
+                                    const [y, m] = (c.date || '').split('-');
+                                    return Number(y) === currentDate.getFullYear() && (Number(m) - 1) === currentDate.getMonth();
                                 }).length;
+
                                 return (
-                                    <motion.tr key={habit._id} variants={{ hidden: { opacity: 0, x: -15 }, show: { opacity: 1, x: 0 } }}>
-                                        <td>{habit.name}</td>
-                                        {daysArr.map(d => {
-                                            const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
-                                            const dateStr = formatLocalDate(date);
-                                            const isDone = (habit.completions || []).some(c => c.date === dateStr);
-                                            const isToday = dateStr === todayStr;
-                                            const isFuture = dateStr > todayStr;
-                                            
-                                            // Profile context logic
-                                            const activeProfileIdOnDate = getEffectiveProfileId(dateStr);
-                                            const isHabitInActiveProfile = habit.profileId === activeProfileIdOnDate;
+                                    <motion.tr key={habit._id} variants={{ hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0 } }}>
+                                        <td className="habit-name-cell">{habit.name}</td>
+                                        {dayMeta.map(dm => {
+                                            const isDone = (habit.completions || []).some(c => c.date === dm.dStr);
+                                            const isFuture = dm.dStr > todayStr;
+                                            const isHabitActive = habit.profileId === dm.activePId;
 
                                             return (
-                                                <td key={d} style={{ position: 'relative' }}>
+                                                <td key={dm.day}>
                                                     <div
-                                                        className={`grid-cell${isDone ? ' done' : ''}${isToday ? ' today' : ''}${isFuture ? ' future' : ''}`}
-                                                        style={!isDone && isHabitInActiveProfile ? { background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)' } : {}}
-                                                        onClick={() => !isFuture && toggleCell(habit._id, dateStr)}
+                                                        className={`grid-cell${isDone ? ' done' : ''}${dm.dStr === todayStr ? ' today' : ''}${isFuture ? ' future' : ''}`}
+                                                        style={!isDone && isHabitActive ? { background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.2)' } : {}}
+                                                        onClick={() => !isFuture && toggleCell(habit._id, dm.dStr)}
                                                     >
                                                         {isDone && (
-                                                            <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
+                                                            <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
                                                                 <polyline points="20 6 9 17 4 12" />
                                                             </svg>
                                                         )}
@@ -171,9 +133,7 @@ export default function MonthlyPage() {
                                                 </td>
                                             );
                                         })}
-                                        <td style={{ textAlign: 'center', fontWeight: '800', fontSize: '0.9rem', color: 'var(--primary-light)', paddingLeft: '10px' }}>
-                                            {habitMonthCount}
-                                        </td>
+                                        <td className="total-val">{habitMonthCount}</td>
                                     </motion.tr>
                                 );
                             })}
@@ -181,6 +141,12 @@ export default function MonthlyPage() {
                     </table>
                 </div>
             </div>
+            <style>{`
+                .switch-badge { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; color: var(--primary-light); white-space: nowrap; z-index: 5; background: var(--bg-card); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border); font-weight: 700; }
+                .total-col { text-align: center; color: var(--primary-light); padding-left: 10px; }
+                .total-val { text-align: center; font-weight: 800; color: var(--primary-light); }
+                .habit-name-cell { font-weight: 500; font-size: 0.9rem; }
+            `}</style>
         </div>
     );
 }

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { habitApi } from '../api';
-import { getDailyConsistencyScore } from '../utils/profileAnalytics';
+import { calculateYearlyStats } from '../utils/profileAnalytics';
 
 const formatLocalDate = (date) => {
     const d = new Date(date);
@@ -14,7 +14,6 @@ export default function LeetCodeGraph() {
     const { habitsLoading, profiles } = useData();
     const [allHabits, setAllHabits] = useState([]);
     const [loadingAll, setLoadingAll] = useState(true);
-    const [dataTracker, setDataTracker] = useState({});
     const [hoveredCell, setHoveredCell] = useState(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
@@ -23,15 +22,14 @@ export default function LeetCodeGraph() {
     const availableYears = [currentYear, currentYear - 1, currentYear - 2];
     const [selectedYear, setSelectedYear] = useState(currentYear);
 
-    const startDate = new Date(selectedYear, 0, 1);
-    const endDate = new Date(selectedYear, 11, 31);
-    const endStr = formatLocalDate(endDate);
+    const startDate = useMemo(() => new Date(selectedYear, 0, 1), [selectedYear]);
+    const endDate = useMemo(() => new Date(selectedYear, 11, 31), [selectedYear]);
 
     useEffect(() => {
         if (!user?.uid) return;
         setLoadingAll(true);
         habitApi.getAllAcrossProfiles(user.uid)
-            .then(res => setAllHabits(res.data))
+            .then(res => setAllHabits(res.data || []))
             .catch(err => console.error(err))
             .finally(() => setLoadingAll(false));
     }, [user?.uid]);
@@ -40,71 +38,49 @@ export default function LeetCodeGraph() {
         return allHabits.flatMap(h => (h.completions || []).map(c => ({ habitId: h._id, date: c.date })));
     }, [allHabits]);
 
-    useEffect(() => {
-        if (loadingAll || !profile) return;
-        const history = profile.profileHistory || [];
-        const logCounts = {};
+    const dataTracker = useMemo(() => {
+        if (loadingAll || !profile) return {};
+        return calculateYearlyStats(selectedYear, profile.profileHistory || [], allHabits, allCompletions, profiles);
+    }, [selectedYear, loadingAll, profile, allHabits, allCompletions, profiles]);
 
-        // Precalculate for all dates in the year to avoid heavy lifting in render
+    const weeks = useMemo(() => {
+        const w = [];
+        let currentWeek = [];
         let cursor = new Date(startDate);
-        const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(now);
+        
+        for (let i = 0; i < cursor.getDay(); i++) currentWeek.push(null);
         
         while (cursor <= endDate) {
-            const dateStr = formatLocalDate(cursor);
-            if (dateStr > todayStr) {
-                logCounts[dateStr] = null;
-            } else {
-                logCounts[dateStr] = getDailyConsistencyScore(dateStr, history, allHabits, allCompletions);
+            currentWeek.push(new Date(cursor));
+            const nextDay = new Date(cursor);
+            nextDay.setDate(cursor.getDate() + 1);
+            
+            if (currentWeek.length === 7 || cursor.getMonth() !== nextDay.getMonth()) {
+                while (currentWeek.length < 7) currentWeek.push(null);
+                w.push(currentWeek);
+                currentWeek = [];
+                if (nextDay <= endDate && cursor.getMonth() !== nextDay.getMonth()) {
+                    for (let i = 0; i < nextDay.getDay(); i++) currentWeek.push(null);
+                }
             }
             cursor.setDate(cursor.getDate() + 1);
         }
-
-        setDataTracker(logCounts);
-    }, [selectedYear, loadingAll, profile, allHabits, allCompletions, startDate, endDate]);
-
-    // Build grid
-    const weeks = [];
-    let currentWeek = [];
-    let cursor = new Date(startDate);
-    
-    // Pad first week of the year
-    for (let i = 0; i < cursor.getDay(); i++) currentWeek.push(null);
-    
-    while (cursor <= endDate) {
-        currentWeek.push(new Date(cursor));
-        
-        const nextDay = new Date(cursor);
-        nextDay.setDate(cursor.getDate() + 1);
-        
-        // If the week is full (7 days) OR it's the last day of the month
-        if (currentWeek.length === 7 || cursor.getMonth() !== nextDay.getMonth()) {
-            // Pad the end of the week if necessary
+        if (currentWeek.length > 0) {
             while (currentWeek.length < 7) currentWeek.push(null);
-            weeks.push(currentWeek);
-            currentWeek = [];
-            
-            // If it was the last day of the month, pad the beginning of the next week
-            if (nextDay <= endDate && cursor.getMonth() !== nextDay.getMonth()) {
-                for (let i = 0; i < nextDay.getDay(); i++) currentWeek.push(null);
-            }
+            w.push(currentWeek);
         }
-        cursor.setDate(cursor.getDate() + 1);
-    }
-    
-    if (currentWeek.length > 0) {
-        while (currentWeek.length < 7) currentWeek.push(null);
-        weeks.push(currentWeek);
-    }
+        return w;
+    }, [startDate, endDate]);
 
     const todayStr = formatLocalDate(new Date());
 
-    const getColorLevel = (scoreObj) => {
-        if (!scoreObj) return 'inactive'; // new state: no profile active
+    const getColorLevel = (scoreObj, dateStr) => {
+        if (!scoreObj) return dateStr > todayStr ? 'level-predict' : 'inactive';
         if (scoreObj.rate === 0) return 'level-0';
         if (scoreObj.rate < 0.25) return 'level-1';
         if (scoreObj.rate < 0.5) return 'level-2';
         if (scoreObj.rate < 0.75) return 'level-3';
-        return 'level-4'; // 100%
+        return 'level-4';
     };
 
     const handleMouseEnter = (e, dateObj, scoreObj) => {
@@ -135,9 +111,8 @@ export default function LeetCodeGraph() {
                 <div className="leetcode-grid">
                     {weeks.map((week, wIdx) => {
                         let isStartOfMonth = false;
-                        if (wIdx === 0) {
-                            isStartOfMonth = true;
-                        } else {
+                        if (wIdx === 0) isStartOfMonth = true;
+                        else {
                             const hasFirstDay = week.some(d => d !== null && d.getDate() === 1);
                             if (hasFirstDay) isStartOfMonth = true;
                         }
@@ -147,13 +122,12 @@ export default function LeetCodeGraph() {
                                     if (!day) return <div key={dIdx} className="leetcode-cell empty"></div>;
                                     const dateStr = formatLocalDate(day);
                                     const scoreObj = dataTracker[dateStr];
-                                    const colorClass = dateStr > todayStr ? 'future' : getColorLevel(scoreObj);
+                                    const colorClass = dateStr > todayStr ? 'future' : getColorLevel(scoreObj, dateStr);
                                     
                                     return (
                                         <div key={dIdx} className="leetcode-cell-wrapper">
                                             <div
                                                 className={`leetcode-cell ${colorClass}`}
-                                                style={scoreObj === null && dateStr <= todayStr ? { background: 'rgba(255, 255, 255, 0.05)' } : {}}
                                                 onMouseEnter={e => handleMouseEnter(e, day, scoreObj)}
                                                 onMouseLeave={() => setHoveredCell(null)}
                                             />
@@ -171,13 +145,11 @@ export default function LeetCodeGraph() {
                         weeks.forEach(week => {
                             const hasFirstDay = week.find(d => d !== null && d.getDate() === 1);
                             let m = lastMonth;
-                            if (hasFirstDay) {
-                                m = hasFirstDay.getMonth();
-                            } else if (lastMonth === -1) {
-                                const firstValidDay = week.find(d => d !== null);
-                                if (firstValidDay) m = firstValidDay.getMonth();
+                            if (hasFirstDay) m = hasFirstDay.getMonth();
+                            else if (lastMonth === -1) {
+                                const fvd = week.find(d => d !== null);
+                                if (fvd) m = fvd.getMonth();
                             }
-
                             if (m !== lastMonth) {
                                 if (lastMonth !== -1) monthLabels.push({ m: lastMonth, c: count });
                                 lastMonth = m;
@@ -201,16 +173,20 @@ export default function LeetCodeGraph() {
                     <div style={{ marginBottom: '4px', opacity: 0.8 }}>{hoveredCell.date}</div>
                     {hoveredCell.scoreObj ? (
                         <>
-                            <div><strong>{hoveredCell.scoreObj.completed} of {hoveredCell.scoreObj.total}</strong> habits completed</div>
+                            <div><strong>{hoveredCell.scoreObj.completed} of {hoveredCell.scoreObj.total}</strong> habits</div>
                             <div style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '2px' }}>
-                                Profile: {profiles.find(p => p._id === hoveredCell.scoreObj.activeProfileId)?.name || 'Unknown'}
+                                Profile: {profiles.find(p => p._id === hoveredCell.scoreObj.activeProfileId)?.name || 'Default'}
                             </div>
                         </>
                     ) : (
-                        <div>No profile active</div>
+                        <div>Default Profile Fallback</div>
                     )}
                 </div>
             )}
+            <style>{`
+                .leetcode-cell.future { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); }
+                .leetcode-cell.level-predict { background: rgba(99, 102, 241, 0.1); border: 1px dashed rgba(99, 102, 241, 0.3); }
+            `}</style>
         </div>
     );
 }
