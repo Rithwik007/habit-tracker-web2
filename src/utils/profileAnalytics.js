@@ -92,3 +92,24 @@ export function calculateStreakForHabit(habit, profileHistory, completions) {
 
     return { currentStreak, longestStreak };
 }
+
+export function calculateBatchConsistency(profileHistory, allHabits, allCompletions) {
+    if (!profileHistory || profileHistory.length === 0) return { habitsByProfile: {}, completionsByDate: {} };
+
+    // Index habits by profileId
+    const habitsByProfile = allHabits.reduce((acc, h) => {
+        const pId = h.profileId.toString();
+        if (!acc[pId]) acc[pId] = [];
+        acc[pId].push(h);
+        return acc;
+    }, {});
+
+    // Index completions by date
+    const completionsByDate = allCompletions.reduce((acc, c) => {
+        if (!acc[c.date]) acc[c.date] = new Set();
+        acc[c.date].add(c.habitId.toString());
+        return acc;
+    }, {});
+
+    return { habitsByProfile, completionsByDate };
+}

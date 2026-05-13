@@ -96,15 +96,27 @@ router.delete('/:id', async (req, res) => {
     await HabitProfile.findByIdAndDelete(req.params.id);
     await Habit.deleteMany({ profileId: profile._id });
     
-    // Clean up notifPrefs from User model
-    if (user && user.notifPrefs && habitIds.length > 0) {
+    // Clean up User model: notifPrefs AND profileHistory
+    if (user) {
       let isModified = false;
-      for (const id of habitIds) {
-        if (user.notifPrefs.has(id)) {
-          user.notifPrefs.delete(id);
-          isModified = true;
+      
+      // 1. Clean up notifPrefs
+      if (user.notifPrefs && habitIds.length > 0) {
+        for (const id of habitIds) {
+          if (user.notifPrefs.has(id)) {
+            user.notifPrefs.delete(id);
+            isModified = true;
+          }
         }
       }
+      
+      // 2. Clean up profileHistory entries for this profile
+      if (user.profileHistory && user.profileHistory.length > 0) {
+        const initialCount = user.profileHistory.length;
+        user.profileHistory = user.profileHistory.filter(h => h.profileId.toString() !== profile._id.toString());
+        if (user.profileHistory.length !== initialCount) isModified = true;
+      }
+      
       if (isModified) {
         await user.save();
       }
