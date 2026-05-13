@@ -24,6 +24,47 @@ export default function ProgressPage() {
         return allHabits.flatMap(h => (h.completions || []).map(c => ({ habitId: h._id, date: c.date })));
     }, [allHabits]);
 
+    const profileHistory = profile?.profileHistory || [];
+
+    const profileBreakdown = useMemo(() => {
+        return profiles.map(p => {
+            // Calculate stats for this profile
+            const pHabits = allHabits.filter(h => h.profileId === p._id);
+            
+            let totalDaysActive = 0;
+            let validDaysCount = 0;
+            let sumRate = 0;
+
+            const pStart = new Date(p.createdAt || new Date());
+            const todayStrFormat = formatLocalDate(new Date());
+            const endCursor = new Date(todayStrFormat + 'T12:00:00');
+            let cursor = new Date(pStart);
+            
+            while (cursor <= endCursor) {
+                const dStr = formatLocalDate(cursor);
+                const score = getDailyConsistencyScore(dStr, profileHistory, allHabits, allCompletions);
+                if (score && score.activeProfileId === p._id) {
+                    totalDaysActive++;
+                    if (score.total > 0) {
+                        validDaysCount++;
+                        sumRate += score.rate;
+                    }
+                }
+                cursor.setDate(cursor.getDate() + 1);
+            }
+
+            const avgRate = validDaysCount > 0 ? Math.round((sumRate / validDaysCount) * 100) : 0;
+            
+            let bestProfileStreak = 0;
+            pHabits.forEach(h => {
+                const { longestStreak } = calculateStreakForHabit(h, profileHistory, h.completions);
+                if (longestStreak > bestProfileStreak) bestProfileStreak = longestStreak;
+            });
+
+            return { ...p, totalDaysActive, avgRate, bestProfileStreak, habitCount: pHabits.length };
+        });
+    }, [profiles, profileHistory, allHabits, allCompletions]);
+
     if (habitsLoading || loadingAll) return <div className="loading-screen">🔥 Calculating Streaks...</div>;
 
     const profileHistory = profile?.profileHistory || [];
@@ -78,57 +119,19 @@ export default function ProgressPage() {
                     <span className="card-title">🌍 Profile Breakdown</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    {useMemo(() => {
-                        return profiles.map(p => {
-                            // Calculate stats for this profile
-                            const pHistory = profileHistory.filter(h => h.profileId === p._id);
-                            const pHabits = allHabits.filter(h => h.profileId === p._id);
-                            
-                            let totalDaysActive = 0;
-                            let validDaysCount = 0;
-                            let sumRate = 0;
-
-                            const pStart = new Date(p.createdAt || new Date());
-                            const todayStrFormat = formatLocalDate(new Date());
-                            const endCursor = new Date(todayStrFormat + 'T12:00:00');
-                            let cursor = new Date(pStart);
-                            
-                            while (cursor <= endCursor) {
-                                const dStr = formatLocalDate(cursor);
-                                const score = getDailyConsistencyScore(dStr, profileHistory, allHabits, allCompletions);
-                                if (score && score.activeProfileId === p._id) {
-                                    totalDaysActive++;
-                                    if (score.total > 0) {
-                                        validDaysCount++;
-                                        sumRate += score.rate;
-                                    }
-                                }
-                                cursor.setDate(cursor.getDate() + 1);
-                            }
-
-                            const avgRate = validDaysCount > 0 ? Math.round((sumRate / validDaysCount) * 100) : 0;
-                            
-                            let bestProfileStreak = 0;
-                            pHabits.forEach(h => {
-                                const { longestStreak } = calculateStreakForHabit(h, profileHistory, h.completions);
-                                if (longestStreak > bestProfileStreak) bestProfileStreak = longestStreak;
-                            });
-
-                            return (
-                                <div key={p._id} className="streak-item" style={{ padding: '15px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                                        <h3 style={{ margin: 0 }}>{p.name}</h3>
-                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{totalDaysActive} days active</span>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '20px', fontSize: '0.9rem' }}>
-                                        <div><strong>{avgRate}%</strong> avg consistency</div>
-                                        <div><strong>{bestProfileStreak}</strong> best streak</div>
-                                        <div><strong>{pHabits.length}</strong> habits</div>
-                                    </div>
-                                </div>
-                            );
-                        });
-                    }, [profiles, profileHistory, allHabits, allCompletions])}
+                    {profileBreakdown.map(p => (
+                        <div key={p._id} className="streak-item" style={{ padding: '15px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                <h3 style={{ margin: 0 }}>{p.name}</h3>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{p.totalDaysActive} days active</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '20px', fontSize: '0.9rem' }}>
+                                <div><strong>{p.avgRate}%</strong> avg consistency</div>
+                                <div><strong>{p.bestProfileStreak}</strong> best streak</div>
+                                <div><strong>{p.habitCount}</strong> habits</div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
 

@@ -185,7 +185,8 @@ export function AuthProvider({ children }) {
             signOut, 
             updateProfile, 
             deleteUser,
-            resetPassword
+            resetPassword,
+            refreshProfile: () => user && fetchProfile(user)
         }}>
             {children}
         </AuthContext.Provider>

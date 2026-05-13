@@ -68,7 +68,7 @@ function ProfileCard({ p, isActive, onActivate, onEdit, onDelete, profiles }) {
 }
 
 export default function ProfilesPage() {
-    const { user } = useAuth();
+    const { user, refreshProfile } = useAuth();
     const { profiles, activeProfile, refreshProfiles, refreshHabits } = useData();
 
     const [name, setName] = useState('');
@@ -79,30 +79,13 @@ export default function ProfilesPage() {
     const [editingId, setEditingId] = useState(null);
     const [dateError, setDateError] = useState('');
     const [formOpen, setFormOpen] = useState(false);
-    const [defaultHabits, setDefaultHabits] = useState([]);
-    const [selectedDefaultHabits, setSelectedDefaultHabits] = useState([]);
     const [selectedPresetHabits, setSelectedPresetHabits] = useState([]);
     const [customHabits, setCustomHabits] = useState([]);
     const [customHabitInput, setCustomHabitInput] = useState('');
-    const [habitsLoaded, setHabitsLoaded] = useState(false);
 
     useEffect(() => {
         if (!formOpen || editingId) return;
-        const defaultProfile = profiles.find(p => p.isDefault);
-        if (!defaultProfile) {
-            setHabitsLoaded(true);
-            return;
-        }
-        setHabitsLoaded(false);
-        // Use getAllAcrossProfiles so we get Default habits even if it's not the active profile
-        habitApi.getAllAcrossProfiles(user.uid)
-            .then(res => {
-                const all = res.data || [];
-                const defHabits = all.filter(h => String(h.profileId) === String(defaultProfile._id));
-                setDefaultHabits(defHabits);
-            })
-            .catch(() => setDefaultHabits([]))
-            .finally(() => setHabitsLoaded(true));
+        // Simplified wizard: No longer fetching default habits
     }, [formOpen, profiles, user?.uid, editingId]);
 
 const resetForm = () => {
@@ -113,12 +96,9 @@ const resetForm = () => {
         setEditingId(null);
         setDateError('');
         setFormOpen(false);
-        setDefaultHabits([]);
-        setSelectedDefaultHabits([]);
         setSelectedPresetHabits([]);
         setCustomHabits([]);
         setCustomHabitInput('');
-        setHabitsLoaded(false);
     };
 
     const handleCreateOrUpdate = async (e) => {
@@ -150,9 +130,8 @@ const resetForm = () => {
                 });
                 profileId = created.data._id;
                 
-                // Merge all selected habits: from default profile + presets + custom ones
+                // Merge selected habits: presets + custom ones
                 const allToSeed = [
-                    ...selectedDefaultHabits.map(h => ({ name: h.name, icon: h.icon, color: h.color })),
                     ...selectedPresetHabits,
                     ...customHabits
                 ];
@@ -162,6 +141,7 @@ const resetForm = () => {
                 }
             }
             await refreshProfiles();
+            await refreshProfile(); // Refresh Auth context for real-time update
             resetForm();
         } catch (err) {
             const msg = err?.response?.data?.message || 'Error saving profile';
@@ -198,6 +178,7 @@ const resetForm = () => {
         if (p._id === activeProfile?._id) return;
         try {
             await profileApi.activate(p._id, user.uid);
+            await refreshProfile(); // Refresh Auth context for real-time update
             await refreshProfiles();
             refreshHabits();
         } catch (err) {
@@ -296,49 +277,7 @@ const resetForm = () => {
                                 { /* Habit seeding UI – only on create */ }
                                 {!editingId && (
                                     <div style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
-                                        {/* 1. From Default Profile */}
-                                        <label style={{ marginBottom: '8px', display: 'block', fontWeight: 600, fontSize: '0.9rem' }}>
-                                            📦 From Default Profile
-                                        </label>
-                                        {!habitsLoaded ? (
-                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px' }}>
-                                                <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                                                Loading habits…
-                                            </div>
-                                        ) : defaultHabits.length === 0 ? (
-                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>No habits in Default profile to copy.</div>
-                                        ) : (
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-                                                {defaultHabits.map(h => (
-                                                    <button
-                                                        type="button"
-                                                        key={h._id}
-                                                        onClick={() => {
-                                                            const exists = selectedDefaultHabits.find(s => s._id === h._id);
-                                                            if (exists) {
-                                                                setSelectedDefaultHabits(prev => prev.filter(s => s._id !== h._id));
-                                                            } else {
-                                                                setSelectedDefaultHabits(prev => [...prev, h]);
-                                                            }
-                                                        }}
-                                                        style={{
-                                                            padding: '6px 12px',
-                                                            borderRadius: '20px',
-                                                            background: selectedDefaultHabits.find(s => s._id === h._id) ? 'var(--primary)' : 'rgba(255,255,255,0.04)',
-                                                            color: selectedDefaultHabits.find(s => s._id === h._id) ? 'white' : 'var(--text-dim)',
-                                                            border: `1px solid ${selectedDefaultHabits.find(s => s._id === h._id) ? 'var(--primary)' : 'var(--border)'}`,
-                                                            cursor: 'pointer',
-                                                            fontSize: '0.75rem',
-                                                            transition: 'all 0.2s'
-                                                        }}
-                                                    >
-                                                        {h.icon} {h.name}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {/* 2. Suggested Disciplines */}
+                                        {/* 1. Suggested Disciplines */}
                                         <label style={{ marginBottom: '8px', display: 'block', fontWeight: 600, fontSize: '0.9rem' }}>
                                             🎯 Suggested Disciplines
                                         </label>
@@ -382,7 +321,7 @@ const resetForm = () => {
                                             ))}
                                         </div>
 
-                                        {/* 3. Custom Habits */}
+                                        {/* 2. Custom Habits */}
                                         <label style={{ marginBottom: '8px', display: 'block', fontWeight: 600, fontSize: '0.9rem' }}>
                                             ✍️ Add Custom Discipline
                                         </label>
