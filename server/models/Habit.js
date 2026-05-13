@@ -15,6 +15,8 @@ const HabitSchema = new mongoose.Schema({
     value: { type: Number, default: 1 }
   }],
   reminderMessage: { type: String, default: '' },
+  reminderEnabled: { type: Boolean, default: false },
+  reminderTime: { type: String, default: '08:00' },
   deadlineTime: { type: String, default: '' }, // e.g. "09:00"
   naggingInterval: { type: Number, default: 0 }, // in minutes, 0 means disabled
   lastReminderSentAt: { type: String, default: '' }, // stores "YYYY-MM-DD"

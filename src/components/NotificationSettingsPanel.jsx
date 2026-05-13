@@ -91,7 +91,6 @@ export default function NotificationSettingsPanel() {
           <div className="empty-state">No habits to configure reminders for.</div>
         )}
         {habits.map(habit => {
-          const pref = prefs[habit._id] || { enabled: false, time: '08:00' };
           const isExpanded = expandedId === habit._id;
           
           return (
@@ -105,17 +104,22 @@ export default function NotificationSettingsPanel() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <input
                     type="time"
-                    value={pref.time}
-                    onChange={e => setHabitNotif(habit._id, habit.name, pref.enabled, e.target.value)}
+                    value={habit.reminderTime || '08:00'}
+                    onChange={e => updateHabitSettings(habit._id, { reminderTime: e.target.value })}
                     className="notif-time-input"
-                    disabled={!pref.enabled}
+                    disabled={!habit.reminderEnabled}
                   />
                   <button
-                    className={`notif-toggle-btn ${pref.enabled ? 'active' : ''}`}
-                    onClick={() => setHabitNotif(habit._id, habit.name, !pref.enabled, pref.time)}
+                    className={`notif-toggle-btn ${habit.reminderEnabled ? 'active' : ''}`}
+                    onClick={() => {
+                       if (!habit.reminderEnabled && permission !== 'granted') {
+                          requestPermission();
+                       }
+                       updateHabitSettings(habit._id, { reminderEnabled: !habit.reminderEnabled });
+                    }}
                     disabled={permission !== 'granted'}
                   >
-                    {pref.enabled ? '🔔 ON' : '🔕 OFF'}
+                    {habit.reminderEnabled ? '🔔 ON' : '🔕 OFF'}
                   </button>
                 </div>
               </div>
@@ -126,13 +130,13 @@ export default function NotificationSettingsPanel() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>⏰ Overdue Nagging</span>
-                        {!pref.enabled && <span style={{ fontSize: '0.6rem', color: 'var(--warning)' }}>⚠️ Turn on standard reminder above to use this</span>}
+                        {!habit.reminderEnabled && <span style={{ fontSize: '0.6rem', color: 'var(--warning)' }}>⚠️ Turn on standard reminder above to use this</span>}
                       </div>
                       <button 
                         className={`notif-toggle-btn ${habit.naggingInterval > 0 ? 'active' : ''}`}
                         onClick={() => updateHabitSettings(habit._id, { naggingInterval: habit.naggingInterval > 0 ? 0 : 30 })}
                         style={{ padding: '2px 8px', fontSize: '0.65rem' }}
-                        disabled={!pref.enabled}
+                        disabled={!habit.reminderEnabled}
                       >
                         {habit.naggingInterval > 0 ? 'ON' : 'OFF'}
                       </button>

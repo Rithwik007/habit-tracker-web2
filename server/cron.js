@@ -108,10 +108,10 @@ const startCronJobs = () => {
           let shouldNotify = false;
           let messageTag = `habit-${habit._id}`;
 
-          const pref = prefs[habit._id.toString()];
-          if (!pref?.enabled || !pref.time) continue;
+          // Use habit-local settings instead of User.notifPrefs map
+          if (!habit.reminderEnabled || !habit.reminderTime) continue;
 
-          const [deadlineH, deadlineM] = pref.time.split(':').map(Number);
+          const [deadlineH, deadlineM] = habit.reminderTime.split(':').map(Number);
           const currentH = Number(currentHours);
           const currentM = Number(currentMinutes);
 

@@ -31,41 +31,21 @@ mongoose.connect(process.env.MONGODB_URI)
     // Ensure all indexes are synchronized
     await Promise.all([User.syncIndexes(), Habit.syncIndexes(), HabitProfile.syncIndexes()]);
     
-    // --- ONE-TIME MIGRATION LOGIC ---
+    // --- ONE-TIME MIGRATION: LEGACY NOTIF PREFS TO HABIT MODEL ---
     try {
-      const users = await User.find({});
-      const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
-
+      const users = await User.find({ notifPrefs: { $exists: true, $ne: {} } });
       for (const user of users) {
-        let defaultProfile = await HabitProfile.findOne({ userId: user.firebaseId, isDefault: true });
-        
-        if (!defaultProfile) {
-          defaultProfile = await HabitProfile.create({
-            userId: user.firebaseId,
-            name: 'Default',
-            isDefault: true
-          });
-
-          // Use the user's actual account creation date instead of today
-          const createdDate = user.createdAt || new Date();
-          const creationStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(createdDate);
-
-          await User.updateOne(
-            { firebaseId: user.firebaseId },
-            { 
-              $set: { activeProfileId: defaultProfile._id },
-              $push: { profileHistory: { profileId: defaultProfile._id, activatedAt: creationStr, deactivatedAt: null } }
-            }
-          );
-          console.log(`[Migration] Created Default profile for ${user.firebaseId}`);
+        const prefs = user.notifPrefs instanceof Map ? Object.fromEntries(user.notifPrefs) : user.notifPrefs;
+        for (const [habitId, pref] of Object.entries(prefs)) {
+          if (pref && typeof pref === 'object' && mongoose.Types.ObjectId.isValid(habitId)) {
+            await Habit.updateOne(
+              { _id: habitId, reminderTime: '08:00', reminderEnabled: false }, // Only update if not already set
+              { $set: { reminderTime: pref.time || '08:00', reminderEnabled: !!pref.enabled } }
+            );
+          }
         }
-
-        // Run this outside the if-block to ensure orphaned habits are always caught
-        await Habit.updateMany(
-          { userId: user.firebaseId, profileId: { $exists: false } },
-          { $set: { profileId: defaultProfile._id } }
-        );
       }
+      console.log('[Migration] Synced legacy notifPrefs to individual habits');
     } catch (err) {
       console.error('Migration error:', err);
     }
