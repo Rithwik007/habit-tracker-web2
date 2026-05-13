@@ -57,7 +57,8 @@ export const profileApi = {
   create: (profileData) => api.post('/profiles', profileData),
   update: (id, profileData) => api.patch(`/profiles/${id}`, profileData),
   delete: (id) => api.delete(`/profiles/${id}`),
-  activate: (id, userId) => api.post(`/profiles/${id}/activate`, { userId })
+  activate: (id, userId) => api.post(`/profiles/${id}/activate`, { userId }),
+  seedHabits: (id, userId, habits) => api.post(`/profiles/${id}/seed-habits`, { userId, habits })
 };
 
 export default api;

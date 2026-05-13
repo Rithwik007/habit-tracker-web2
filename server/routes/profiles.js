@@ -136,4 +136,33 @@ router.post('/:id/activate', async (req, res) => {
   }
 });
 
+// POST seed habits into a profile (used when creating a new profile with pre-selected habits)
+router.post('/:id/seed-habits', async (req, res) => {
+  try {
+    const { userId, habits } = req.body; // habits: [{ name, icon, color }]
+    if (!userId || !Array.isArray(habits) || habits.length === 0) {
+      return res.status(400).json({ message: 'userId and at least one habit are required' });
+    }
+
+    const profile = await HabitProfile.findById(req.params.id);
+    if (!profile) return res.status(404).json({ message: 'Profile not found' });
+    if (profile.userId !== userId) return res.status(403).json({ message: 'Unauthorized' });
+
+    const created = await Habit.insertMany(
+      habits.map(h => ({
+        userId,
+        profileId: profile._id,
+        name: h.name,
+        icon: h.icon || '⭐',
+        color: h.color || '#6366F1',
+        completions: []
+      }))
+    );
+
+    res.json({ created: created.length });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 export default router;

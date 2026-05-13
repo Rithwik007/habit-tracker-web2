@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
-import { profileApi } from '../api';
+import { profileApi, habitApi } from '../api';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
@@ -78,8 +78,23 @@ export default function ProfilesPage() {
     const [editingId, setEditingId] = useState(null);
     const [dateError, setDateError] = useState('');
     const [formOpen, setFormOpen] = useState(false);
+    const [defaultHabits, setDefaultHabits] = useState([]);
+    const [selectedDefaultHabits, setSelectedDefaultHabits] = useState([]);
 
-    const resetForm = () => {
+    useEffect(() => {
+        if (!formOpen || editingId) return;
+        const defaultProfile = profiles.find(p => p.isDefault);
+        if (!defaultProfile) return;
+        habitApi.getAll(user.uid)
+            .then(res => {
+                const all = res.data || [];
+                const defHabits = all.filter(h => String(h.profileId) === String(defaultProfile._id));
+                setDefaultHabits(defHabits);
+            })
+            .catch(() => setDefaultHabits([]));
+    }, [formOpen, profiles, user?.uid, editingId]);
+
+const resetForm = () => {
         setName('');
         setStartDate('');
         setEndDate('');
@@ -87,6 +102,8 @@ export default function ProfilesPage() {
         setEditingId(null);
         setDateError('');
         setFormOpen(false);
+        setDefaultHabits([]);
+        setSelectedDefaultHabits([]);
     };
 
     const handleCreateOrUpdate = async (e) => {
@@ -99,6 +116,7 @@ export default function ProfilesPage() {
         setDateError('');
         setLoading(true);
         try {
+            let profileId;
             if (editingId) {
                 await profileApi.update(editingId, {
                     name,
@@ -106,14 +124,20 @@ export default function ProfilesPage() {
                     endDate: endDate || null,
                     autoRevertToDefault: autoRevert
                 });
+                profileId = editingId;
             } else {
-                await profileApi.create({
+                const created = await profileApi.create({
                     userId: user.uid,
                     name,
                     startDate: startDate || null,
                     endDate: endDate || null,
                     autoRevertToDefault: autoRevert
                 });
+                profileId = created.data._id;
+                // seed selected habits if any
+                if (selectedDefaultHabits.length > 0) {
+                    await profileApi.seedHabits(profileId, user.uid, selectedDefaultHabits);
+                }
             }
             await refreshProfiles();
             resetForm();
@@ -234,7 +258,6 @@ export default function ProfilesPage() {
                                         ⚠ {dateError}
                                     </div>
                                 )}
-
                                 <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--border)' }}>
                                     <input
                                         type="checkbox"
@@ -248,6 +271,43 @@ export default function ProfilesPage() {
                                         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>Automatically switch back to Default profile when End Date passes</div>
                                     </div>
                                 </div>
+                                {/* Habit seeding UI – only on create */}
+                                {!editingId && (
+                                    <div style={{ gridColumn: '1 / -1' }}>
+                                        <label style={{ marginBottom: '8px', display: 'block', fontWeight: 500 }}>Copy habits from Default profile</label>
+                                        {defaultHabits.length === 0 ? (
+                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading habits...</div>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                {defaultHabits.map(h => (
+                                                    <button
+                                                        type="button"
+                                                        key={h._id}
+                                                        onClick={() => {
+                                                            const exists = selectedDefaultHabits.find(s => s._id === h._id);
+                                                            if (exists) {
+                                                                setSelectedDefaultHabits(prev => prev.filter(s => s._id !== h._id));
+                                                            } else {
+                                                                setSelectedDefaultHabits(prev => [...prev, h]);
+                                                            }
+                                                        }}
+                                                        style={{
+                                                            padding: '6px 12px',
+                                                            borderRadius: '20px',
+                                                            background: selectedDefaultHabits.find(s => s._id === h._id) ? 'var(--primary)' : 'rgba(255,255,255,0.06)',
+                                                            color: selectedDefaultHabits.find(s => s._id === h._id) ? 'white' : 'var(--text-dim)',
+                                                            border: selectedDefaultHabits.find(s => s._id === h._id) ? '1px solid var(--primary)' : '1px solid var(--border)',
+                                                            cursor: 'pointer',
+                                                            fontSize: '0.78rem'
+                                                        }}
+                                                    >
+                                                        {h.icon} {h.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
