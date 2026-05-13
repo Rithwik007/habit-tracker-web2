@@ -10,4 +10,10 @@ const HabitProfileSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+// Indexes for fast cron lookups
+HabitProfileSchema.index({ userId: 1 });                          // list profiles per user
+HabitProfileSchema.index({ userId: 1, startDate: 1 });            // auto-switch: find scheduled profile for today
+HabitProfileSchema.index({ userId: 1, endDate: 1 });              // expiry-revert: find profiles whose endDate has passed
+HabitProfileSchema.index({ isDefault: 1, userId: 1 });            // fast default-profile lookup
+
 export default mongoose.model('HabitProfile', HabitProfileSchema);

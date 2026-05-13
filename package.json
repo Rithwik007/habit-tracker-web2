@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "server": "node server/server.js",
     "seed": "node server/seed.js",
-    "migrate": "node server/migrate-from-supabase.js"
+    "migrate": "node server/migrate-from-supabase.js",
+    "verify:deploy": "node scripts/verify-deployment.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
