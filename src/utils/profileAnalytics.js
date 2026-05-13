@@ -3,17 +3,27 @@ import { formatLocalDate } from '../hooks/useMidnightRefresh';
 export function getActiveProfileOnDate(dateStr, profileHistory, profiles = []) {
     if (!profileHistory || !Array.isArray(profileHistory)) return null;
 
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+
     // Find entry where activatedAt <= dateStr and (deactivatedAt is null or >= dateStr)
     const entry = [...profileHistory].reverse().find(h => {
         const isAfterStart = h.activatedAt <= dateStr;
-        const isBeforeEnd = h.deactivatedAt === null || h.deactivatedAt >= dateStr;
+        let isBeforeEnd = h.deactivatedAt === null || h.deactivatedAt >= dateStr;
+
+        // FIX: If this is the current active entry, check if it has a scheduled end date
+        if (h.deactivatedAt === null && dateStr >= todayStr && profiles.length > 0) {
+            const p = profiles.find(p => p._id.toString() === h.profileId.toString());
+            if (p && p.endDate && dateStr > p.endDate) {
+                isBeforeEnd = false;
+            }
+        }
+
         return isAfterStart && isBeforeEnd;
     });
     
     if (entry) return entry.profileId;
 
     // PREDICTION LOGIC for future dates or gaps
-    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
     if (dateStr >= todayStr && profiles.length > 0) {
         // Check for specifically scheduled profiles first
         const scheduled = profiles.filter(p => !p.isDefault && p.startDate)
@@ -25,9 +35,6 @@ export function getActiveProfileOnDate(dateStr, profileHistory, profiles = []) {
             }
         }
 
-        // Check if currently active profile has an end date
-        // Note: this part requires knowing the "current" active profile, 
-        // but for heatmap we just want to know if it's the default profile fallback.
         return profiles.find(p => p.isDefault)?._id;
     }
 

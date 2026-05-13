@@ -75,7 +75,8 @@ export default function LeetCodeGraph() {
     const todayStr = formatLocalDate(new Date());
 
     const getColorLevel = (scoreObj, dateStr) => {
-        if (!scoreObj) return dateStr > todayStr ? 'level-predict' : 'inactive';
+        if (!scoreObj) return 'inactive';
+        if (dateStr > todayStr) return 'level-predict';
         if (scoreObj.rate === 0) return 'level-0';
         if (scoreObj.rate < 0.25) return 'level-1';
         if (scoreObj.rate < 0.5) return 'level-2';
@@ -122,7 +123,7 @@ export default function LeetCodeGraph() {
                                     if (!day) return <div key={dIdx} className="leetcode-cell empty"></div>;
                                     const dateStr = formatLocalDate(day);
                                     const scoreObj = dataTracker[dateStr];
-                                    const colorClass = dateStr > todayStr ? 'future' : getColorLevel(scoreObj, dateStr);
+                                    const colorClass = getColorLevel(scoreObj, dateStr);
                                     
                                     return (
                                         <div key={dIdx} className="leetcode-cell-wrapper">
@@ -179,13 +180,19 @@ export default function LeetCodeGraph() {
                             </div>
                         </>
                     ) : (
-                        <div>Default Profile Fallback</div>
+                        <div>No profile scheduled</div>
                     )}
                 </div>
             )}
             <style>{`
-                .leetcode-cell.future { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); }
-                .leetcode-cell.level-predict { background: rgba(99, 102, 241, 0.1); border: 1px dashed rgba(99, 102, 241, 0.3); }
+                .leetcode-cell.level-predict { 
+                    background: rgba(99, 102, 241, 0.08); 
+                    border: 1px dashed rgba(99, 102, 241, 0.3); 
+                }
+                .leetcode-cell.inactive { 
+                    background: rgba(255, 255, 255, 0.02); 
+                    border: 1px solid rgba(255, 255, 255, 0.05); 
+                }
             `}</style>
         </div>
     );
