@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { habitApi } from '../api';
+import { habitApi, profileApi } from '../api';
 import { useAuth } from './AuthContext';
 
 const DataContext = createContext(null);
@@ -14,7 +14,8 @@ export function DataProvider({ children }) {
     const lastFetchedAt = useRef(null);
     const isFetching = useRef(false);
 
-    const activeProfile = profiles.find(p => p._id === profile?.activeProfileId) || null;
+    // FIX: Compare as strings to handle ObjectId vs plain string mismatch
+    const activeProfile = profiles.find(p => p._id?.toString() === profile?.activeProfileId?.toString()) || null;
 
     const fetchHabits = useCallback(async (force = false) => {
         if (!user?.uid) return;
@@ -40,12 +41,12 @@ export function DataProvider({ children }) {
     const fetchProfiles = useCallback(async () => {
         if (!user?.uid) return;
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/profiles?userId=${user.uid}`);
-            if (res.ok) {
-                const data = await res.json();
-                setProfiles(data);
-            }
-        } catch (e) { console.error('Error fetching profiles', e); }
+            // FIX: Use profileApi (axios) instead of raw fetch for consistency
+            const { data } = await profileApi.getAll(user.uid);
+            setProfiles(Array.isArray(data) ? data : []);
+        } catch (e) {
+            console.error('Error fetching profiles', e);
+        }
     }, [user?.uid]);
 
     // Fetch immediately when user logs in
@@ -60,6 +61,13 @@ export function DataProvider({ children }) {
             lastFetchedAt.current = null;
         }
     }, [user?.uid, fetchHabits, fetchProfiles]);
+
+    // Re-sync profiles whenever the auth profile updates (e.g. after activation)
+    useEffect(() => {
+        if (user?.uid && profile?.profileConfirmed) {
+            fetchProfiles();
+        }
+    }, [profile?.activeProfileId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Keep Render backend alive — ping every 4 minutes to prevent cold start
     useEffect(() => {
