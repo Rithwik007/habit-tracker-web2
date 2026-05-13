@@ -67,8 +67,6 @@ export default function ProgressPage() {
 
     if (habitsLoading || loadingAll) return <div className="loading-screen">🔥 Calculating Streaks...</div>;
 
-    const profileHistory = profile?.profileHistory || [];
-
     const habitStreaks = (Array.isArray(habits) ? habits : []).map(h => {
         const { currentStreak, longestStreak } = calculateStreakForHabit(h, profileHistory, h.completions);
         return {
