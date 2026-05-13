@@ -6,19 +6,24 @@ import Goal from '../models/Goal.js';
 
 const router = express.Router();
 
-const requireAdmin = (req, res, next) => {
-  const adminUid = process.env.ADMIN_UID;
-  if (!adminUid) {
-    console.error('ADMIN_UID not configured in environment variables.');
-    return res.status(500).json({ message: 'Server misconfiguration' });
+const ADMIN_EMAIL = 'rithwikracharla@gmail.com';
+
+const requireAdmin = async (req, res, next) => {
+  try {
+    const clientUid = req.headers['x-admin-uid'];
+    if (!clientUid) {
+      return res.status(403).json({ message: 'Forbidden: Admin access required (No UID)' });
+    }
+    
+    const user = await User.findOne({ firebaseId: clientUid });
+    if (!user || user.email !== ADMIN_EMAIL) {
+      return res.status(403).json({ message: 'Forbidden: Admin access required (Invalid Admin)' });
+    }
+    
+    next();
+  } catch (err) {
+    res.status(500).json({ message: 'Internal server error during admin check' });
   }
-  
-  const clientUid = req.headers['x-admin-uid'];
-  if (!clientUid || clientUid !== adminUid) {
-    return res.status(403).json({ message: 'Forbidden: Admin access required' });
-  }
-  
-  next();
 };
 
 router.use(requireAdmin);
