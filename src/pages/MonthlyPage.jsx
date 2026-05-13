@@ -9,9 +9,36 @@ import { getActiveProfileOnDate } from '../utils/profileAnalytics';
 
 export default function MonthlyPage() {
     const { user, profile } = useAuth();
-    const { habits, habitsLoading, refreshHabits, setHabits, profiles } = useData();
+    const { habits, habitsLoading, refreshHabits, setHabits, profiles, activeProfile } = useData();
     const [currentDate, setCurrentDate] = useState(new Date());
     const todayStr = useMidnightRefresh(() => setCurrentDate(new Date()));
+    const history = profile?.profileHistory || [];
+
+    const getEffectiveProfileId = (dateStr) => {
+        // 1. Check actual history first
+        const histId = getActiveProfileOnDate(dateStr, history);
+        
+        // If it's a future date, or the history says it's active but we have a scheduled end date coming up
+        if (dateStr >= todayStr) {
+            // Check if any profile is specifically scheduled for this date
+            const scheduled = [...profiles].filter(p => !p.isDefault && p.startDate)
+                .sort((a, b) => a.startDate.localeCompare(b.startDate));
+            
+            for (const p of scheduled) {
+                if (dateStr >= p.startDate && (!p.endDate || dateStr <= p.endDate)) {
+                    return p._id;
+                }
+            }
+            
+            // If the CURRENTLY active profile has an end date, and dateStr is after it, return default
+            const currentActive = profiles.find(p => p._id === activeProfile?._id);
+            if (currentActive && currentActive.endDate && dateStr > currentActive.endDate) {
+                return profiles.find(p => p.isDefault)?._id;
+            }
+        }
+
+        return histId || profiles.find(p => p.isDefault)?._id;
+    };
 
     const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
@@ -83,11 +110,12 @@ export default function MonthlyPage() {
                                     const prevDateStr = formatLocalDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), d - 1));
                                     
                                     const history = profile?.profileHistory || [];
-                                    const activeProfileId = getActiveProfileOnDate(dateStr, history);
-                                    const prevActiveProfileId = getActiveProfileOnDate(prevDateStr, history);
+                                    const activeProfileId = getEffectiveProfileId(dateStr);
+                                    const prevActiveProfileId = getEffectiveProfileId(prevDateStr);
                                     
                                     const isSwitchDate = activeProfileId && activeProfileId !== prevActiveProfileId;
-                                    const profileName = isSwitchDate ? profiles.find(p => p._id === activeProfileId)?.name : null;
+                                    const activeP = profiles.find(p => p._id === activeProfileId);
+                                    const profileName = isSwitchDate ? activeP?.name : null;
 
                                     return (
                                         <th key={d} style={{ position: 'relative' }}>
@@ -124,13 +152,14 @@ export default function MonthlyPage() {
                                             const isFuture = dateStr > todayStr;
                                             
                                             // Profile context logic
-                                            const activeProfileId = getActiveProfileOnDate(dateStr, profile?.profileHistory || []);
+                                            const activeProfileIdOnDate = getEffectiveProfileId(dateStr);
+                                            const isHabitInActiveProfile = habit.profileId === activeProfileIdOnDate;
 
                                             return (
                                                 <td key={d} style={{ position: 'relative' }}>
                                                     <div
                                                         className={`grid-cell${isDone ? ' done' : ''}${isToday ? ' today' : ''}${isFuture ? ' future' : ''}`}
-                                                        style={!isDone && activeProfileId ? { background: 'rgba(255, 255, 255, 0.03)' } : {}}
+                                                        style={!isDone && isHabitInActiveProfile ? { background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)' } : {}}
                                                         onClick={() => !isFuture && toggleCell(habit._id, dateStr)}
                                                     >
                                                         {isDone && (

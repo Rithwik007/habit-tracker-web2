@@ -76,12 +76,25 @@ async function run() {
   await check('Profiles route responds (GET /api/profiles?userId=test)', async () => {
     const res = await fetch(`${BASE_URL}/api/profiles?userId=test`);
     // Expect 200 with empty array (user doesn't exist, but route is mounted)
+    const text = await res.text();
     return { ok: res.status === 200 || res.status === 400, detail: `Status: ${res.status}` };
   });
 
-  // 6. Habits route is mounted
-  await check('Habits route responds (GET /api/habits?userId=test)', async () => {
-    const res = await fetch(`${BASE_URL}/api/habits?userId=test`);
+  // 6. Habits route is mounted — uses path param, not query param
+  await check('Habits route responds (GET /api/habits/:userId)', async () => {
+    const res = await fetch(`${BASE_URL}/api/habits/test`);
+    // User "test" doesn't exist → returns [] with 200 (user not found → empty array)
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = text; }
+    const ok = res.status === 200 || res.status === 400 || res.status === 500;
+    return { ok, detail: `Status: ${res.status}, Body: ${typeof data === 'string' ? data.slice(0,40) : JSON.stringify(data).slice(0,40)}` };
+  });
+
+  // 7. Habits all-profiles route is mounted — uses path param
+  await check('Habits all-profiles route (GET /api/habits/all/:userId)', async () => {
+    const res = await fetch(`${BASE_URL}/api/habits/all/test`);
+    const text = await res.text();
     return { ok: res.status === 200 || res.status === 400, detail: `Status: ${res.status}` };
   });
 

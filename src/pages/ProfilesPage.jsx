@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { profileApi, habitApi } from '../api';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DEFAULT_HABITS } from '../constants/habitPresets';
 
 const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
 
@@ -80,6 +81,9 @@ export default function ProfilesPage() {
     const [formOpen, setFormOpen] = useState(false);
     const [defaultHabits, setDefaultHabits] = useState([]);
     const [selectedDefaultHabits, setSelectedDefaultHabits] = useState([]);
+    const [selectedPresetHabits, setSelectedPresetHabits] = useState([]);
+    const [customHabits, setCustomHabits] = useState([]);
+    const [customHabitInput, setCustomHabitInput] = useState('');
     const [habitsLoaded, setHabitsLoaded] = useState(false);
 
     useEffect(() => {
@@ -111,6 +115,9 @@ const resetForm = () => {
         setFormOpen(false);
         setDefaultHabits([]);
         setSelectedDefaultHabits([]);
+        setSelectedPresetHabits([]);
+        setCustomHabits([]);
+        setCustomHabitInput('');
         setHabitsLoaded(false);
     };
 
@@ -142,9 +149,16 @@ const resetForm = () => {
                     autoRevertToDefault: autoRevert
                 });
                 profileId = created.data._id;
-                // seed selected habits if any
-                if (selectedDefaultHabits.length > 0) {
-                    await profileApi.seedHabits(profileId, user.uid, selectedDefaultHabits);
+                
+                // Merge all selected habits: from default profile + presets + custom ones
+                const allToSeed = [
+                    ...selectedDefaultHabits.map(h => ({ name: h.name, icon: h.icon, color: h.color })),
+                    ...selectedPresetHabits,
+                    ...customHabits
+                ];
+
+                if (allToSeed.length > 0) {
+                    await profileApi.seedHabits(profileId, user.uid, allToSeed);
                 }
             }
             await refreshProfiles();
@@ -279,19 +293,22 @@ const resetForm = () => {
                                         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>Automatically switch back to Default profile when End Date passes</div>
                                     </div>
                                 </div>
-                                {/* Habit seeding UI – only on create */}
+                                { /* Habit seeding UI – only on create */ }
                                 {!editingId && (
-                                    <div style={{ gridColumn: '1 / -1' }}>
-                                        <label style={{ marginBottom: '8px', display: 'block', fontWeight: 500 }}>Copy habits from Default profile</label>
+                                    <div style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
+                                        {/* 1. From Default Profile */}
+                                        <label style={{ marginBottom: '8px', display: 'block', fontWeight: 600, fontSize: '0.9rem' }}>
+                                            📦 From Default Profile
+                                        </label>
                                         {!habitsLoaded ? (
-                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px' }}>
                                                 <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
                                                 Loading habits…
                                             </div>
                                         ) : defaultHabits.length === 0 ? (
-                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No habits in Default profile to copy.</div>
+                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>No habits in Default profile to copy.</div>
                                         ) : (
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
                                                 {defaultHabits.map(h => (
                                                     <button
                                                         type="button"
@@ -307,15 +324,130 @@ const resetForm = () => {
                                                         style={{
                                                             padding: '6px 12px',
                                                             borderRadius: '20px',
-                                                            background: selectedDefaultHabits.find(s => s._id === h._id) ? 'var(--primary)' : 'rgba(255,255,255,0.06)',
+                                                            background: selectedDefaultHabits.find(s => s._id === h._id) ? 'var(--primary)' : 'rgba(255,255,255,0.04)',
                                                             color: selectedDefaultHabits.find(s => s._id === h._id) ? 'white' : 'var(--text-dim)',
-                                                            border: selectedDefaultHabits.find(s => s._id === h._id) ? '1px solid var(--primary)' : '1px solid var(--border)',
+                                                            border: `1px solid ${selectedDefaultHabits.find(s => s._id === h._id) ? 'var(--primary)' : 'var(--border)'}`,
                                                             cursor: 'pointer',
-                                                            fontSize: '0.78rem'
+                                                            fontSize: '0.75rem',
+                                                            transition: 'all 0.2s'
                                                         }}
                                                     >
                                                         {h.icon} {h.name}
                                                     </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* 2. Suggested Disciplines */}
+                                        <label style={{ marginBottom: '8px', display: 'block', fontWeight: 600, fontSize: '0.9rem' }}>
+                                            🎯 Suggested Disciplines
+                                        </label>
+                                        <div style={{ 
+                                            display: 'flex', 
+                                            flexWrap: 'wrap', 
+                                            gap: '8px', 
+                                            maxHeight: '150px', 
+                                            overflowY: 'auto', 
+                                            padding: '8px',
+                                            background: 'rgba(255,255,255,0.02)',
+                                            borderRadius: '8px',
+                                            border: '1px solid var(--border)',
+                                            marginBottom: '16px'
+                                        }}>
+                                            {DEFAULT_HABITS.map(h => (
+                                                <button
+                                                    type="button"
+                                                    key={h.name}
+                                                    onClick={() => {
+                                                        const exists = selectedPresetHabits.find(s => s.name === h.name);
+                                                        if (exists) {
+                                                            setSelectedPresetHabits(prev => prev.filter(s => s.name !== h.name));
+                                                        } else {
+                                                            setSelectedPresetHabits(prev => [...prev, h]);
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        padding: '6px 12px',
+                                                        borderRadius: '20px',
+                                                        background: selectedPresetHabits.find(s => s.name === h.name) ? 'var(--primary)' : 'rgba(255,255,255,0.04)',
+                                                        color: selectedPresetHabits.find(s => s.name === h.name) ? 'white' : 'var(--text-dim)',
+                                                        border: `1px solid ${selectedPresetHabits.find(s => s.name === h.name) ? 'var(--primary)' : 'var(--border)'}`,
+                                                        cursor: 'pointer',
+                                                        fontSize: '0.75rem',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    {h.icon} {h.name}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* 3. Custom Habits */}
+                                        <label style={{ marginBottom: '8px', display: 'block', fontWeight: 600, fontSize: '0.9rem' }}>
+                                            ✍️ Add Custom Discipline
+                                        </label>
+                                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                                            <input
+                                                type="text"
+                                                className="input-field"
+                                                style={{ flex: 1, margin: 0 }}
+                                                value={customHabitInput}
+                                                onChange={e => setCustomHabitInput(e.target.value)}
+                                                placeholder="e.g. Morning Meditation"
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        if (customHabitInput.trim()) {
+                                                            const newHabit = { name: customHabitInput.trim(), icon: '⭐', color: '#6366F1' };
+                                                            if (!customHabits.find(h => h.name.toLowerCase() === newHabit.name.toLowerCase())) {
+                                                                setCustomHabits(prev => [...prev, newHabit]);
+                                                            }
+                                                            setCustomHabitInput('');
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                            <button 
+                                                type="button" 
+                                                className="btn-primary"
+                                                style={{ padding: '0 16px' }}
+                                                onClick={() => {
+                                                    if (customHabitInput.trim()) {
+                                                        const newHabit = { name: customHabitInput.trim(), icon: '⭐', color: '#6366F1' };
+                                                        if (!customHabits.find(h => h.name.toLowerCase() === newHabit.name.toLowerCase())) {
+                                                            setCustomHabits(prev => [...prev, newHabit]);
+                                                        }
+                                                        setCustomHabitInput('');
+                                                    }
+                                                }}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+
+                                        {customHabits.length > 0 && (
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                                                {customHabits.map(h => (
+                                                    <div 
+                                                        key={h.name}
+                                                        style={{
+                                                            padding: '6px 12px',
+                                                            borderRadius: '6px',
+                                                            background: 'rgba(99,102,241,0.1)',
+                                                            border: '1px solid var(--primary)',
+                                                            fontSize: '0.75rem',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '8px',
+                                                            color: 'var(--primary-light)'
+                                                        }}
+                                                    >
+                                                        {h.name}
+                                                        <span 
+                                                            style={{ cursor: 'pointer', opacity: 0.6 }}
+                                                            onClick={() => setCustomHabits(prev => prev.filter(c => c.name !== h.name))}
+                                                        >✕</span>
+                                                    </div>
                                                 ))}
                                             </div>
                                         )}
