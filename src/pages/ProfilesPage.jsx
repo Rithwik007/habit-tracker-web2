@@ -80,18 +80,25 @@ export default function ProfilesPage() {
     const [formOpen, setFormOpen] = useState(false);
     const [defaultHabits, setDefaultHabits] = useState([]);
     const [selectedDefaultHabits, setSelectedDefaultHabits] = useState([]);
+    const [habitsLoaded, setHabitsLoaded] = useState(false);
 
     useEffect(() => {
         if (!formOpen || editingId) return;
         const defaultProfile = profiles.find(p => p.isDefault);
-        if (!defaultProfile) return;
-        habitApi.getAll(user.uid)
+        if (!defaultProfile) {
+            setHabitsLoaded(true);
+            return;
+        }
+        setHabitsLoaded(false);
+        // Use getAllAcrossProfiles so we get Default habits even if it's not the active profile
+        habitApi.getAllAcrossProfiles(user.uid)
             .then(res => {
                 const all = res.data || [];
                 const defHabits = all.filter(h => String(h.profileId) === String(defaultProfile._id));
                 setDefaultHabits(defHabits);
             })
-            .catch(() => setDefaultHabits([]));
+            .catch(() => setDefaultHabits([]))
+            .finally(() => setHabitsLoaded(true));
     }, [formOpen, profiles, user?.uid, editingId]);
 
 const resetForm = () => {
@@ -104,6 +111,7 @@ const resetForm = () => {
         setFormOpen(false);
         setDefaultHabits([]);
         setSelectedDefaultHabits([]);
+        setHabitsLoaded(false);
     };
 
     const handleCreateOrUpdate = async (e) => {
@@ -275,8 +283,13 @@ const resetForm = () => {
                                 {!editingId && (
                                     <div style={{ gridColumn: '1 / -1' }}>
                                         <label style={{ marginBottom: '8px', display: 'block', fontWeight: 500 }}>Copy habits from Default profile</label>
-                                        {defaultHabits.length === 0 ? (
-                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading habits...</div>
+                                        {!habitsLoaded ? (
+                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                                                Loading habits…
+                                            </div>
+                                        ) : defaultHabits.length === 0 ? (
+                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No habits in Default profile to copy.</div>
                                         ) : (
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                                 {defaultHabits.map(h => (
@@ -364,6 +377,7 @@ const resetForm = () => {
                     transition: box-shadow 0.2s, border-color 0.2s;
                     position: relative;
                 }
+                @keyframes spin { to { transform: rotate(360deg); } }
                 .profile-card--active {
                     border-color: rgba(99,102,241,0.5);
                     box-shadow: 0 0 0 1px rgba(99,102,241,0.15), 0 4px 24px rgba(99,102,241,0.1);
