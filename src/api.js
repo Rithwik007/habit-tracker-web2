@@ -8,11 +8,39 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' }
 });
 
+let authStateResolved = false;
+let authStatePromise = null;
+
+if (typeof window !== 'undefined') {
+  authStatePromise = new Promise((resolve) => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      unsubscribe();
+      authStateResolved = true;
+      resolve(user);
+    });
+  });
+}
+
+async function getAuthToken() {
+  if (auth.currentUser) {
+    return auth.currentUser.getIdToken();
+  }
+  if (!authStateResolved && authStatePromise) {
+    const user = await authStatePromise;
+    if (user) {
+      return user.getIdToken();
+    }
+  }
+  return null;
+}
+
 api.interceptors.request.use(async (config) => {
-  if (typeof window !== 'undefined' && navigator.onLine && auth.currentUser) {
+  if (typeof window !== 'undefined' && navigator.onLine) {
     try {
-      const token = await auth.currentUser.getIdToken();
-      config.headers.Authorization = `Bearer ${token}`;
+      const token = await getAuthToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     } catch (e) {
       console.warn('[OfflineSync] Request interceptor auth token fetch failed:', e);
     }
