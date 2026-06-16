@@ -48,8 +48,8 @@ export const verifyToken = (req, res, next) => {
 // Middleware to verify that the logged-in user matches the resource owner
 export const verifyUser = (req, res, next) => {
   verifyToken(req, res, () => {
-    const tokenUid = req.user.uid;
-    const targetUserId = req.params.userId || req.body.userId || req.query.userId || req.body.firebaseId;
+    const tokenUid = req.user?.uid;
+    const targetUserId = req.params?.userId || req.body?.userId || req.query?.userId || req.body?.firebaseId;
     
     if (targetUserId && tokenUid !== targetUserId) {
       return res.status(403).json({ message: 'Forbidden: User identity mismatch' });
