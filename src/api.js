@@ -11,6 +11,12 @@ const api = axios.create({
 
 let isSyncing = false;
 
+function generateObjectId() {
+  const timestamp = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
+  const random = Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  return timestamp + random;
+}
+
 export async function syncOfflineQueue() {
   if (isSyncing) return;
   const queue = JSON.parse(localStorage.getItem('offline_sync_queue') || '[]');
@@ -38,7 +44,11 @@ export async function syncOfflineQueue() {
     }
   }
   
-  localStorage.setItem('offline_sync_queue', JSON.stringify(remaining));
+  try {
+    localStorage.setItem('offline_sync_queue', JSON.stringify(remaining));
+  } catch (e) {
+    console.error('[OfflineSync] Failed to update offline queue in localStorage:', e);
+  }
   isSyncing = false;
   
   if (remaining.length === 0) {
@@ -87,7 +97,7 @@ function optimisticUpdateCache(method, url, payload) {
         if (index !== -1) {
           notes[index].content = content;
         } else {
-          notes.push({ _id: `temp-${Date.now()}`, date, content, userId });
+          notes.push({ _id: payload._id || `temp-${Date.now()}`, date, content, userId });
         }
         localStorage.setItem(cacheKeyAll, JSON.stringify(notes));
       }
@@ -123,7 +133,7 @@ function optimisticUpdateCache(method, url, payload) {
       const cacheKeyAll = `api_cache_/goals/${userId}/${date}`;
       const goals = JSON.parse(localStorage.getItem(cacheKeyAll) || '[]');
       goals.push({
-        _id: `temp-${Date.now()}`,
+        _id: payload._id || `temp-${Date.now()}`,
         userId,
         text,
         time,
@@ -208,8 +218,12 @@ api.interceptors.response.use(
   response => {
     const { config, data } = response;
     if (config.method.toLowerCase() === 'get') {
-      const cacheKey = `api_cache_${config.url}`;
-      localStorage.setItem(cacheKey, JSON.stringify(data));
+      try {
+        const cacheKey = `api_cache_${config.url}`;
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+      } catch (e) {
+        console.warn('[OfflineSync] Local storage quota full, skipped GET caching:', e);
+      }
     }
     return response;
   },
@@ -247,7 +261,12 @@ api.interceptors.response.use(
         data: payload,
         timestamp: Date.now()
       });
-      localStorage.setItem('offline_sync_queue', JSON.stringify(queue));
+      
+      try {
+        localStorage.setItem('offline_sync_queue', JSON.stringify(queue));
+      } catch (e) {
+        console.error('[OfflineSync] Failed to queue mutation due to quota limits:', e);
+      }
 
       optimisticUpdateCache(method, config.url, payload);
 
@@ -255,7 +274,7 @@ api.interceptors.response.use(
       if (method === 'post') {
         mockData = {
           ...payload,
-          _id: `temp-${Date.now()}`,
+          _id: payload?._id || `temp-${Date.now()}`,
           isOfflineMock: true
         };
       }
@@ -280,7 +299,7 @@ if (typeof window !== 'undefined') {
 export const habitApi = {
   getAll: (userId) => api.get(`/habits/${userId}`),
   getAllAcrossProfiles: (userId) => api.get(`/habits/all/${userId}`),
-  create: (habitData) => api.post('/habits', habitData),
+  create: (habitData) => api.post('/habits', { _id: generateObjectId(), ...habitData }),
   update: (id, habitData) => api.put(`/habits/${id}`, habitData),
   delete: (id) => api.delete(`/habits/${id}`),
   toggleCompletion: (id, date, value) => api.post(`/habits/${id}/toggle`, { date, value })
@@ -317,14 +336,14 @@ export const adminApi = {
 export const goalApi = {
   getAll: (userId, date) => api.get(`/goals/${userId}/${date}`),
   getHistory: (userId) => api.get(`/goals/history/${userId}`),
-  create: (goalData) => api.post('/goals', goalData),
+  create: (goalData) => api.post('/goals', { _id: generateObjectId(), ...goalData }),
   toggle: (id) => api.put(`/goals/${id}/toggle`),
   delete: (id) => api.delete(`/goals/${id}`)
 };
 
 export const profileApi = {
   getAll: (userId) => api.get(`/profiles?userId=${userId}`),
-  create: (profileData) => api.post('/profiles', profileData),
+  create: (profileData) => api.post('/profiles', { _id: generateObjectId(), ...profileData }),
   update: (id, profileData) => api.patch(`/profiles/${id}`, profileData),
   delete: (id) => api.delete(`/profiles/${id}`),
   activate: (id, userId) => api.post(`/profiles/${id}/activate`, { userId }),
