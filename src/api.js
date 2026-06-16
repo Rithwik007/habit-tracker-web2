@@ -12,13 +12,25 @@ let authStateResolved = false;
 let authStatePromise = null;
 
 if (typeof window !== 'undefined') {
-  authStatePromise = new Promise((resolve) => {
+  const initPromise = new Promise((resolve) => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       unsubscribe();
       authStateResolved = true;
       resolve(user);
     });
   });
+
+  const timeoutPromise = new Promise((resolve) => {
+    setTimeout(() => {
+      if (!authStateResolved) {
+        console.warn('[OfflineSync] Firebase Auth state resolution timed out (5s)');
+        authStateResolved = true;
+        resolve(null);
+      }
+    }, 5000);
+  });
+
+  authStatePromise = Promise.race([initPromise, timeoutPromise]);
 }
 
 async function getAuthToken() {
