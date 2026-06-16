@@ -40,7 +40,10 @@ export const verifyToken = (req, res, next) => {
     }
     
     // Save decoded token payload to req.user (contains uid)
-    req.user = decoded;
+    req.user = {
+      ...decoded,
+      uid: decoded.user_id || decoded.sub
+    };
     next();
   });
 };
