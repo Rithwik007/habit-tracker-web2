@@ -18,6 +18,9 @@ function getKey(header, callback) {
 
 // Middleware to verify Firebase JWT tokens
 export const verifyToken = (req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Authorization header is missing or invalid' });

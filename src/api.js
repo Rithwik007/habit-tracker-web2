@@ -365,8 +365,7 @@ api.interceptors.response.use(
         console.log(`[OfflineSync] Serving GET cache for: ${config.url}`);
         return Promise.resolve({ data: JSON.parse(cached) });
       }
-      const emptyFallback = config.url.includes('/habits') || config.url.includes('/goals') || config.url.includes('/notes') || config.url.includes('/profiles') ? [] : null;
-      return Promise.resolve({ data: emptyFallback });
+      return Promise.reject(error);
     }
 
     // Mutation requests (POST, PUT, DELETE, PATCH): Queue locally
