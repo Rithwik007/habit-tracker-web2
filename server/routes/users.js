@@ -2,6 +2,7 @@ import express from 'express';
 import User from '../models/User.js';
 import Habit from '../models/Habit.js';
 import Goal from '../models/Goal.js';
+import HabitProfile from '../models/HabitProfile.js';
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -51,6 +52,50 @@ router.post('/profile', async (req, res) => {
       },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
+
+    // Create a default HabitProfile if one doesn't exist for the user,
+    // and link it as their activeProfileId.
+    let defaultProfile = await HabitProfile.findOne({ userId: firebaseId, isDefault: true });
+    if (!defaultProfile) {
+      defaultProfile = await HabitProfile.create({
+        userId: firebaseId,
+        name: 'Default',
+        isDefault: true
+      });
+      
+      const createdDate = user.createdAt || new Date();
+      const creationStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(createdDate);
+
+      user = await User.findOneAndUpdate(
+        { firebaseId },
+        {
+          $set: { activeProfileId: defaultProfile._id },
+          $push: { profileHistory: { profileId: defaultProfile._id, activatedAt: creationStr, deactivatedAt: null } }
+        },
+        { new: true }
+      );
+      console.log(`[Users API] Created Default profile for user ${firebaseId}`);
+    } else if (!user.activeProfileId) {
+      const createdDate = user.createdAt || new Date();
+      const creationStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(createdDate);
+
+      user = await User.findOneAndUpdate(
+        { firebaseId },
+        {
+          $set: { activeProfileId: defaultProfile._id },
+          $push: { profileHistory: { profileId: defaultProfile._id, activatedAt: creationStr, deactivatedAt: null } }
+        },
+        { new: true }
+      );
+      console.log(`[Users API] Linked existing Default profile to user ${firebaseId}`);
+    }
+
+    // Ensure orphaned habits are linked to this default profile
+    await Habit.updateMany(
+      { userId: firebaseId, profileId: { $exists: false } },
+      { $set: { profileId: defaultProfile._id } }
+    );
+
     res.json(user);
   } catch (err) {
     console.error('Profile sync error:', err.message);

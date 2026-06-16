@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import jwksClient from 'jwks-rsa';
 
 const client = jwksClient({
-  jwksUri: 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken-system@system.gserviceaccount.com'
+  jwksUri: 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'
 });
 
 function getKey(header, callback) {
