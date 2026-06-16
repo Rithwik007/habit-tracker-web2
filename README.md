@@ -94,4 +94,4 @@ Push notifications are handled via `web-push` and a VAPID key pair. The service 
 This project was originally prototyped on Supabase (PostgreSQL) and has since been migrated to MongoDB. `server/migrate-from-supabase.js` is a one-time migration script kept for reference; it is not part of the running application. The `@supabase/supabase-js` package may still be listed as a dependency from this migration — confirm it's no longer needed before removing it.
 
 ---
-*Maintained by Rithwik Racharla, with AI-assisted development.*
+*Maintained by Rithwik Racharla*
