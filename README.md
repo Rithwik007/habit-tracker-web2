@@ -80,12 +80,15 @@ Models live in `server/models/`:
 
 ## 🔔 Notifications
 
-Push notifications are handled via `web-push` and a VAPID key pair. The service worker (`public/sw.js`) listens for `push` events and displays notifications, and handles `notificationclick` to focus or open the app. Reminder logic (standard reminder time, overdue nagging, custom messages) is configured per-habit in the Notification Settings Panel.
+Push notifications are handled via `web-push` and a VAPID key pair. The service worker (`public/sw.js`) listens for `push` events and displays notifications, and handles `notificationclick` to focus or open the app. Reminder logic (standard reminder time, overdue nagging, custom messages) is configured per-habit in the Notification Settings Panel. With the recent updates, incoming notifications render the high-resolution app icon (`/icon-192.png`).
 
 ## 📱 PWA / Offline Support
 
-- `public/manifest.json` defines app metadata, icons, and display mode for installability.
-- `public/sw.js` caches static assets for offline use and handles push/notification events.
+- `public/manifest.json` defines app metadata, custom dark theme/background configurations (`#0f1117`), and references real high-resolution PNG icons (`icon-192.png`, `icon-512.png`).
+- `public/sw.js` implements a robust caching strategy:
+  - **Static Pre-caching**: Pre-caches shell resources (`/`, `/index.html`, `/manifest.json`, and app icons) upon service worker installation.
+  - **Cache-First Runtime Caching**: Intercepts fetch requests for static assets, returning cached versions immediately, and caching clones of new successful responses.
+  - **SPA Navigation Fallback**: Automatically serves the cached `/index.html` shell when requests for other client-side routes (e.g. `/notes`) fail offline.
 - On Android (Chrome), use the ⋮ menu → "Install app" / "Add to Home Screen".
 - On iOS (Safari), use Share → "Add to Home Screen" (manual step; Apple does not show an automatic install prompt).
 
