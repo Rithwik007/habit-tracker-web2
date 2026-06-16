@@ -59,6 +59,18 @@ export async function syncOfflineQueue() {
         const msg = err.response?.data?.message || err.message || 'Validation error';
         const detailMessage = `Sync failed: ${msg}`;
         window.dispatchEvent(new CustomEvent('offline-sync-error', { detail: { message: detailMessage } }));
+        
+        try {
+          const failedList = JSON.parse(localStorage.getItem('failed_sync_history') || '[]');
+          failedList.push({
+            ...item,
+            error: msg,
+            failedAt: new Date().toISOString()
+          });
+          localStorage.setItem('failed_sync_history', JSON.stringify(failedList));
+        } catch (e) {
+          console.error('[OfflineSync] Failed to log failure to sync history:', e);
+        }
       }
     }
   }
