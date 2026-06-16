@@ -1,7 +1,7 @@
 // Service Worker for Habit Mastery
 // Handles offline caching strategy and push notifications
 
-const CACHE_NAME = 'habit-mastery-cache-v1';
+const CACHE_NAME = 'habit-mastery-cache-v2';
 const OFFLINE_URL = '/index.html';
 const STATIC_ASSETS = [
   '/',
@@ -51,6 +51,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const isNavigation = request.mode === 'navigate' || 
+                        url.pathname === '/' || 
+                        url.pathname === '/index.html';
+
+  // For navigation/HTML requests, use Network-First strategy to prevent caching old bundle index.html
+  if (isNavigation) {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(request).then((cachedResponse) => {
+            return cachedResponse || caches.match(OFFLINE_URL);
+          });
+        })
+    );
+    return;
+  }
+
+  // For static assets, use Cache-First strategy
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -66,11 +93,6 @@ self.addEventListener('fetch', (event) => {
             });
           }
           return networkResponse;
-        })
-        .catch(() => {
-          if (request.mode === 'navigate') {
-            return caches.match(OFFLINE_URL);
-          }
         });
     })
   );
