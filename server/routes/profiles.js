@@ -49,6 +49,9 @@ router.patch('/:id', async (req, res) => {
     // Validate dates with existing profile data if only one is provided
     const profile = await HabitProfile.findById(req.params.id);
     if (!profile) return res.status(404).json({ message: 'Profile not found' });
+    if (profile.userId !== req.user.uid) {
+      return res.status(403).json({ message: 'Forbidden: You do not own this profile' });
+    }
     
     const finalStartDate = startDate !== undefined ? startDate : profile.startDate;
     const finalEndDate = endDate !== undefined ? endDate : profile.endDate;
@@ -79,6 +82,9 @@ router.delete('/:id', async (req, res) => {
   try {
     const profile = await HabitProfile.findById(req.params.id);
     if (!profile) return res.status(404).json({ message: 'Profile not found' });
+    if (profile.userId !== req.user.uid) {
+      return res.status(403).json({ message: 'Forbidden: You do not own this profile' });
+    }
     
     if (profile.isDefault) {
       return res.status(403).json({ message: 'Cannot delete default profile' });

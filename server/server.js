@@ -53,14 +53,16 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch(err => console.error('MongoDB connection error:', err));
 
+import { verifyUser } from './middleware/auth.js';
+
 app.get('/', (req, res) => res.send('Habit Tracker API is running...'));
-app.use('/api/habits', habitRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/notes', noteRoutes);
-app.use('/api/moods', moodRoutes);
+app.use('/api/habits', verifyUser, habitRoutes);
+app.use('/api/users', verifyUser, userRoutes);
+app.use('/api/notes', verifyUser, noteRoutes);
+app.use('/api/moods', verifyUser, moodRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/goals', goalRoutes);
-app.use('/api/profiles', profileRoutes);
+app.use('/api/goals', verifyUser, goalRoutes);
+app.use('/api/profiles', verifyUser, profileRoutes);
 app.use('/api', cronRoutes); // Exposes /api/cron-notify and /api/ping
 
 // Start internal background jobs (also runs every minute if server stays awake)

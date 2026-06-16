@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const ToastContext = createContext();
@@ -13,6 +13,24 @@ export function ToastProvider({ children }) {
             setToasts(prev => prev.filter(t => t.id !== id));
         }, 3000);
     }, []);
+
+    useEffect(() => {
+        const handleSyncError = (e) => {
+            const errorMsg = e.detail?.message || 'Some offline updates failed to sync.';
+            addToast(errorMsg, 'error');
+        };
+        const handleSyncSuccess = () => {
+            addToast('Offline changes successfully synchronized!');
+        };
+        
+        window.addEventListener('offline-sync-error', handleSyncError);
+        window.addEventListener('offline-sync-completed', handleSyncSuccess);
+        
+        return () => {
+            window.removeEventListener('offline-sync-error', handleSyncError);
+            window.removeEventListener('offline-sync-completed', handleSyncSuccess);
+        };
+    }, [addToast]);
 
     return (
         <ToastContext.Provider value={{ addToast }}>

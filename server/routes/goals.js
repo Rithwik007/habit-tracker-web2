@@ -40,6 +40,9 @@ router.put('/:id/toggle', async (req, res) => {
   try {
     const goal = await Goal.findById(req.params.id);
     if (!goal) return res.status(404).json({ message: 'Goal not found' });
+    if (goal.userId !== req.user.uid) {
+      return res.status(403).json({ message: 'Forbidden: You do not own this goal' });
+    }
     
     goal.completed = !goal.completed;
     await goal.save();
@@ -52,6 +55,12 @@ router.put('/:id/toggle', async (req, res) => {
 // Delete a goal
 router.delete('/:id', async (req, res) => {
   try {
+    const goal = await Goal.findById(req.params.id);
+    if (!goal) return res.status(404).json({ message: 'Goal not found' });
+    if (goal.userId !== req.user.uid) {
+      return res.status(403).json({ message: 'Forbidden: You do not own this goal' });
+    }
+
     await Goal.findByIdAndDelete(req.params.id);
     res.json({ message: 'Goal deleted' });
   } catch (err) {

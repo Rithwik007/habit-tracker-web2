@@ -52,12 +52,17 @@ router.post('/', async (req, res) => {
 // Update a habit — use $set to never replace the full document
 router.put('/:id', async (req, res) => {
   try {
+    const habit = await Habit.findById(req.params.id);
+    if (!habit) return res.status(404).json({ message: 'Habit not found' });
+    if (habit.userId !== req.user.uid) {
+      return res.status(403).json({ message: 'Forbidden: You do not own this habit' });
+    }
+
     const updatedHabit = await Habit.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },
       { new: true, runValidators: true }
     );
-    if (!updatedHabit) return res.status(404).json({ message: 'Habit not found' });
     res.json(updatedHabit);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -67,6 +72,12 @@ router.put('/:id', async (req, res) => {
 // Delete a habit
 router.delete('/:id', async (req, res) => {
   try {
+    const habit = await Habit.findById(req.params.id);
+    if (!habit) return res.status(404).json({ message: 'Habit not found' });
+    if (habit.userId !== req.user.uid) {
+      return res.status(403).json({ message: 'Forbidden: You do not own this habit' });
+    }
+
     await Habit.findByIdAndDelete(req.params.id);
     res.json({ message: 'Habit deleted' });
   } catch (err) {
@@ -80,6 +91,9 @@ router.post('/:id/toggle', async (req, res) => {
   try {
     const habit = await Habit.findById(req.params.id);
     if (!habit) return res.status(404).json({ message: 'Habit not found' });
+    if (habit.userId !== req.user.uid) {
+      return res.status(403).json({ message: 'Forbidden: You do not own this habit' });
+    }
 
     // Clean up any corrupted legacy completions that lack a date
     habit.completions = habit.completions.filter(c => c.date);

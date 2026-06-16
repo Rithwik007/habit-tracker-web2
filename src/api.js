@@ -1,10 +1,25 @@
 import axios from 'axios';
+import { auth } from './firebase';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' }
+});
+
+api.interceptors.request.use(async (config) => {
+  if (typeof window !== 'undefined' && navigator.onLine && auth.currentUser) {
+    try {
+      const token = await auth.currentUser.getIdToken();
+      config.headers.Authorization = `Bearer ${token}`;
+    } catch (e) {
+      console.warn('[OfflineSync] Request interceptor auth token fetch failed:', e);
+    }
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 // --- OFFLINE SUPPORT & BACKEND SYNC ENGINE ---
@@ -40,6 +55,10 @@ export async function syncOfflineQueue() {
       const isNetworkError = !err.response || err.code === 'ERR_NETWORK';
       if (isNetworkError) {
         remaining.push(item);
+      } else {
+        const msg = err.response?.data?.message || err.message || 'Validation error';
+        const detailMessage = `Sync failed: ${msg}`;
+        window.dispatchEvent(new CustomEvent('offline-sync-error', { detail: { message: detailMessage } }));
       }
     }
   }
@@ -54,6 +73,56 @@ export async function syncOfflineQueue() {
   if (remaining.length === 0) {
     console.log('[OfflineSync] Offline queue fully synchronized!');
     window.dispatchEvent(new Event('offline-sync-completed'));
+  }
+}
+
+function enqueueAction(action) {
+  let queue = [];
+  try {
+    queue = JSON.parse(localStorage.getItem('offline_sync_queue') || '[]');
+  } catch (e) {
+    console.error('[OfflineSync] Failed to parse offline queue:', e);
+  }
+
+  // 1. Collapse Sequential Habit Toggles
+  if (action.url.includes('/toggle') && action.method.toLowerCase() === 'post') {
+    const existingIndex = queue.findIndex(item => item.url === action.url && item.data?.date === action.data?.date);
+    if (existingIndex !== -1) {
+      queue[existingIndex].data.value = action.data.value;
+      saveQueue(queue);
+      return;
+    }
+  }
+
+  // 2. Collapse Sequential Note Edits
+  if (action.url === '/notes' && action.method.toLowerCase() === 'post') {
+    const existingIndex = queue.findIndex(item => item.url === action.url && item.data?.date === action.data?.date);
+    if (existingIndex !== -1) {
+      queue[existingIndex].data.content = action.data.content;
+      saveQueue(queue);
+      return;
+    }
+  }
+
+  // 3. Collapse Redundant Goal Toggles
+  if (action.url.includes('/goals/') && action.url.includes('/toggle') && action.method.toLowerCase() === 'put') {
+    const existingIndex = queue.findIndex(item => item.url === action.url);
+    if (existingIndex !== -1) {
+      queue.splice(existingIndex, 1);
+      saveQueue(queue);
+      return;
+    }
+  }
+
+  queue.push(action);
+  saveQueue(queue);
+}
+
+function saveQueue(queue) {
+  try {
+    localStorage.setItem('offline_sync_queue', JSON.stringify(queue));
+  } catch (e) {
+    console.error('[OfflineSync] Failed to save queue to localStorage:', e);
   }
 }
 
@@ -254,19 +323,12 @@ api.interceptors.response.use(
       console.log(`[OfflineSync] Queueing offline mutation: ${config.method} ${config.url}`);
       const payload = config.data ? (typeof config.data === 'string' ? JSON.parse(config.data) : config.data) : null;
 
-      const queue = JSON.parse(localStorage.getItem('offline_sync_queue') || '[]');
-      queue.push({
+      enqueueAction({
         method: config.method,
         url: config.url,
         data: payload,
         timestamp: Date.now()
       });
-      
-      try {
-        localStorage.setItem('offline_sync_queue', JSON.stringify(queue));
-      } catch (e) {
-        console.error('[OfflineSync] Failed to queue mutation due to quota limits:', e);
-      }
 
       optimisticUpdateCache(method, config.url, payload);
 
