@@ -75,7 +75,9 @@ export function DataProvider({ children }) {
     useEffect(() => {
         if (!user?.uid) return;
         const interval = setInterval(() => {
-            fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ping`)
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            const pingUrl = baseUrl.endsWith('/api') ? `${baseUrl}/ping` : `${baseUrl}/api/ping`;
+            fetch(pingUrl)
                 .catch(() => {}); // silent ping
         }, 4 * 60 * 1000);
         return () => clearInterval(interval);
