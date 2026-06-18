@@ -66,7 +66,9 @@ export function NotificationProvider({ children }) {
       });
 
       await userApi.updatePushSubscription(user.uid, subscription);
-      console.log('Successfully subscribed to Web Push and saved to backend.');
+      if (import.meta.env.DEV) {
+        console.log('Successfully subscribed to Web Push and saved to backend.');
+      }
     } catch (err) {
       console.error('Failed to subscribe to Web Push:', err);
     }

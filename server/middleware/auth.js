@@ -52,7 +52,13 @@ export const verifyToken = (req, res, next) => {
 export const verifyUser = (req, res, next) => {
   verifyToken(req, res, () => {
     const tokenUid = req.user?.uid;
-    const targetUserId = req.params?.userId || req.body?.userId || req.query?.userId || req.body?.firebaseId;
+    const targetUserId = 
+      req.params?.userId || 
+      req.params?.firebaseId || 
+      req.body?.userId || 
+      req.query?.userId || 
+      req.body?.firebaseId || 
+      req.query?.firebaseId;
     
     if (targetUserId && tokenUid !== targetUserId) {
       return res.status(403).json({ message: 'Forbidden: User identity mismatch' });

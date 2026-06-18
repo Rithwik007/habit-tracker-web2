@@ -1,16 +1,7 @@
 import express from 'express';
-import mongoose from 'mongoose';
+import Mood from '../models/Mood.js';
 
 const router = express.Router();
-
-const MoodSchema = new mongoose.Schema({
-  userId: { type: String, required: true },
-  date: { type: String, required: true },
-  score: { type: Number, min: 1, max: 5, required: true },
-  updatedAt: { type: Date, default: Date.now }
-});
-
-const Mood = mongoose.models.Mood || mongoose.model('Mood', MoodSchema);
 
 // Get mood for a specific date
 router.get('/:userId/:date', async (req, res) => {

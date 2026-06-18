@@ -17,19 +17,47 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+const allowedOrigins = [
+  'https://habit-tracker-web2.vercel.app',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error('CORS Policy Blocked'), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' })); // 10mb for base64 profile pics
 
 import HabitProfile from './models/HabitProfile.js';
 import User from './models/User.js';
 import Habit from './models/Habit.js';
+import Mood from './models/Mood.js';
+import Note from './models/Note.js';
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB Atlas');
     
     // Ensure all indexes are synchronized
-    await Promise.all([User.syncIndexes(), Habit.syncIndexes(), HabitProfile.syncIndexes()]);
+    try {
+      await Promise.all([
+        User.syncIndexes(),
+        Habit.syncIndexes(),
+        HabitProfile.syncIndexes(),
+        Mood.syncIndexes(),
+        Note.syncIndexes()
+      ]);
+      console.log('Database indexes synchronized successfully');
+    } catch (indexErr) {
+      console.error('Error synchronizing database indexes:', indexErr);
+    }
     
     // --- ONE-TIME MIGRATION: LEGACY NOTIF PREFS TO HABIT MODEL ---
     try {
@@ -70,4 +98,15 @@ startCronJobs();
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+});
+
+// Global process error handlers to log and prevent silent crashes
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Fatal Error] Unhandled Promise Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[Fatal Error] Uncaught Exception thrown:', error);
+  console.error('[Fatal Error] Exiting process gracefully due to uncaught exception...');
+  process.exit(1);
 });

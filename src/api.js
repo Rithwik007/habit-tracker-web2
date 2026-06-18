@@ -78,38 +78,82 @@ export async function syncOfflineQueue() {
   if (queue.length === 0) return;
 
   isSyncing = true;
-  console.log(`[OfflineSync] Syncing ${queue.length} items to database...`);
+  if (import.meta.env.DEV) {
+    console.log(`[OfflineSync] Syncing ${queue.length} items to database...`);
+  }
   
   const remaining = [];
+  let hasFailures = false;
+  let authFailed = false;
   
   for (const item of queue) {
+    if (authFailed) {
+      remaining.push(item);
+      continue;
+    }
     try {
       await api({
         method: item.method,
         url: item.url,
         data: item.data
       });
-      console.log(`[OfflineSync] Synced item successfully: ${item.method} ${item.url}`);
+      if (import.meta.env.DEV) {
+        console.log(`[OfflineSync] Synced item successfully: ${item.method} ${item.url}`);
+      }
     } catch (err) {
       console.error(`[OfflineSync] Failed to sync item:`, item, err);
       const isNetworkError = !err.response || err.code === 'ERR_NETWORK';
       if (isNetworkError) {
         remaining.push(item);
       } else {
-        const msg = err.response?.data?.message || err.message || 'Validation error';
-        const detailMessage = `Sync failed: ${msg}`;
-        window.dispatchEvent(new CustomEvent('offline-sync-error', { detail: { message: detailMessage } }));
+        const status = err.response?.status;
+        const isAuthError = status === 401 || status === 403;
         
-        try {
-          const failedList = JSON.parse(localStorage.getItem('failed_sync_history') || '[]');
-          failedList.push({
-            ...item,
-            error: msg,
-            failedAt: new Date().toISOString()
-          });
-          localStorage.setItem('failed_sync_history', JSON.stringify(failedList));
-        } catch (e) {
-          console.error('[OfflineSync] Failed to log failure to sync history:', e);
+        if (isAuthError) {
+          authFailed = true;
+          remaining.push(item);
+          if (import.meta.env.DEV) {
+            console.log('[OfflineSync] Auth token expired or invalid. Pausing sync queue.');
+          }
+          window.dispatchEvent(new Event('offline-sync-auth-expired'));
+        } else {
+          hasFailures = true;
+          const msg = err.response?.data?.message || err.message || 'Validation error';
+          const detailMessage = `Sync failed: ${msg}`;
+          window.dispatchEvent(new CustomEvent('offline-sync-error', { detail: { message: detailMessage } }));
+          
+          try {
+            const url = item.url;
+            const urlRoot = url.split('/')[1];
+            if (urlRoot) {
+              for (let i = localStorage.length - 1; i >= 0; i--) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('api_cache_/')) {
+                  const path = key.substring(10);
+                  if (path.startsWith(`/${urlRoot}`)) {
+                    localStorage.removeItem(key);
+                    if (import.meta.env.DEV) {
+                      console.log(`[OfflineSync] Invalidated cache key due to sync failure: ${key}`);
+                    }
+                  }
+                }
+              }
+            }
+          } catch (cacheErr) {
+            console.error('[OfflineSync] Failed to invalidate cache:', cacheErr);
+          }
+          
+          try {
+            const failedList = JSON.parse(localStorage.getItem('failed_sync_history') || '[]');
+            failedList.push({
+              ...item,
+              error: msg,
+              failedAt: new Date().toISOString()
+            });
+            localStorage.setItem('failed_sync_history', JSON.stringify(failedList));
+          } catch (e) {
+            console.error('[OfflineSync] Failed to log failure to sync history:', e);
+          }
         }
       }
     }
@@ -123,8 +167,14 @@ export async function syncOfflineQueue() {
   isSyncing = false;
   
   if (remaining.length === 0) {
-    console.log('[OfflineSync] Offline queue fully synchronized!');
+    if (import.meta.env.DEV) {
+      console.log('[OfflineSync] Offline queue fully synchronized!');
+    }
     window.dispatchEvent(new Event('offline-sync-completed'));
+  }
+  
+  if (hasFailures) {
+    window.dispatchEvent(new Event('offline-sync-refresh'));
   }
 }
 
@@ -362,7 +412,9 @@ api.interceptors.response.use(
       const cacheKey = `api_cache_${config.url}`;
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
-        console.log(`[OfflineSync] Serving GET cache for: ${config.url}`);
+        if (import.meta.env.DEV) {
+          console.log(`[OfflineSync] Serving GET cache for: ${config.url}`);
+        }
         return Promise.resolve({ data: JSON.parse(cached) });
       }
       return Promise.reject(error);
@@ -371,7 +423,9 @@ api.interceptors.response.use(
     // Mutation requests (POST, PUT, DELETE, PATCH): Queue locally
     const isMutation = ['post', 'put', 'delete', 'patch'].includes(method);
     if (isMutation) {
-      console.log(`[OfflineSync] Queueing offline mutation: ${config.method} ${config.url}`);
+      if (import.meta.env.DEV) {
+        console.log(`[OfflineSync] Queueing offline mutation: ${config.method} ${config.url}`);
+      }
       const payload = config.data ? (typeof config.data === 'string' ? JSON.parse(config.data) : config.data) : null;
 
       enqueueAction({
@@ -400,7 +454,9 @@ api.interceptors.response.use(
 
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
-    console.log('[OfflineSync] Online event. Triggering sync...');
+    if (import.meta.env.DEV) {
+      console.log('[OfflineSync] Online event. Triggering sync...');
+    }
     syncOfflineQueue();
   });
   

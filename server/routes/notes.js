@@ -1,17 +1,7 @@
 import express from 'express';
-import mongoose from 'mongoose';
+import Note from '../models/Note.js';
 
 const router = express.Router();
-
-const NoteSchema = new mongoose.Schema({
-  userId: { type: String, required: true },
-  date: { type: String, required: true },
-  content: { type: String, default: '' },
-  updatedAt: { type: Date, default: Date.now }
-});
-
-// Guard against model re-compilation on hot reload
-const Note = mongoose.models.Note || mongoose.model('Note', NoteSchema);
 
 // Get all notes for a user
 router.get('/:userId', async (req, res) => {

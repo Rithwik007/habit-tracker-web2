@@ -3,6 +3,8 @@ import User from '../models/User.js';
 import Habit from '../models/Habit.js';
 import Goal from '../models/Goal.js';
 import HabitProfile from '../models/HabitProfile.js';
+import Note from '../models/Note.js';
+import Mood from '../models/Mood.js';
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -179,30 +181,13 @@ router.delete('/:firebaseId', async (req, res) => {
     // Delete all habits for this user
     await Habit.deleteMany({ userId: firebaseId });
     
-    // Note model uses mongoose.models cache since we redefine it in notes.js
-    // We should safely access it or redefine it.
-    const NoteSchema = new mongoose.Schema({
-      userId: { type: String, required: true },
-      date: { type: String, required: true },
-      content: { type: String, default: '' },
-      updatedAt: { type: Date, default: Date.now }
-    });
-    const Note = mongoose.models.Note || mongoose.model('Note', NoteSchema);
-    
     // Delete all notes for this user
     await Note.deleteMany({ userId: firebaseId });
     
     // Delete all goals for this user
     await Goal.deleteMany({ userId: firebaseId });
     
-    // Delete all moods for this user (Mood model defined inline like in moods.js)
-    const MoodSchema = new mongoose.Schema({
-      userId: { type: String, required: true },
-      date: { type: String, required: true },
-      score: { type: Number, min: 1, max: 5, required: true },
-      updatedAt: { type: Date, default: Date.now }
-    });
-    const Mood = mongoose.models.Mood || mongoose.model('Mood', MoodSchema);
+    // Delete all moods for this user
     await Mood.deleteMany({ userId: firebaseId });
     
     res.json({ message: 'User and all associated data permanently deleted.' });

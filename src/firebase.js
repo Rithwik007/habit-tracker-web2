@@ -3,13 +3,13 @@ import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCtaz9CXsJNm0AH_TspydSa6bOX9nHmuEE",
-  authDomain: "habit-tracker-7c785.firebaseapp.com",
-  projectId: "habit-tracker-7c785",
-  storageBucket: "habit-tracker-7c785.firebasestorage.app",
-  messagingSenderId: "1097004099907",
-  appId: "1:1097004099907:web:45a8092e5d4e9203b467f6",
-  measurementId: "G-SL25D5LQX6"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);

@@ -27,10 +27,10 @@ if (process.env.VITE_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
  * Also serves as a keep-alive ping to prevent Render cold starts.
  */
 router.get('/cron-notify', async (req, res) => {
-  // Optional: protect with a secret key to prevent abuse
+  const cronSecret = process.env.CRON_SECRET;
   const secret = req.headers['x-cron-secret'] || req.query.secret;
-  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
-    return res.status(401).json({ message: 'Unauthorized' });
+  if (!cronSecret || secret !== cronSecret) {
+    return res.status(401).json({ message: 'Unauthorized: Missing or invalid cron secret' });
   }
 
   try {

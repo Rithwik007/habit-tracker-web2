@@ -44,13 +44,18 @@ export default function NotesPage() {
 
     useEffect(() => { fetchNotes(); }, [fetchNotes]);
 
+    // Force refresh note lists when a sync error occurs
+    useEffect(() => {
+        window.addEventListener('offline-sync-refresh', fetchNotes);
+        return () => window.removeEventListener('offline-sync-refresh', fetchNotes);
+    }, [fetchNotes]);
+
     const handleSave = async () => {
         if (!content.trim()) return;
         if (!user?.uid) { addToast('Not logged in', 'error'); return; }
         setSaving(true);
         try {
-            const res = await noteApi.save(user.uid, selectedDate, content);
-            console.log('Note saved response:', res);
+            await noteApi.save(user.uid, selectedDate, content);
             addToast('Note saved!');
             fetchNotes();
         } catch (e) {

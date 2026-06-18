@@ -27,7 +27,9 @@ export function DataProvider({ children }) {
         isFetching.current = true;
         try {
             const { data } = await habitApi.getAll(user.uid);
-            console.log(`[DataContext] Fetched ${data?.length || 0} habits for user ${user.uid}`);
+            if (import.meta.env.DEV) {
+                console.log(`[DataContext] Fetched ${data?.length || 0} habits for user ${user.uid}`);
+            }
             setHabits(Array.isArray(data) ? data : []);
             lastFetchedAt.current = Date.now();
         } catch (e) {
@@ -78,6 +80,18 @@ export function DataProvider({ children }) {
         }, 4 * 60 * 1000);
         return () => clearInterval(interval);
     }, [user?.uid]);
+
+    // Force pull clean data from DB on synchronization validation errors
+    useEffect(() => {
+        const handleSyncRefresh = () => {
+            if (user?.uid) {
+                lastFetchedAt.current = null; // reset throttle
+                fetchProfiles().then(() => fetchHabits(true));
+            }
+        };
+        window.addEventListener('offline-sync-refresh', handleSyncRefresh);
+        return () => window.removeEventListener('offline-sync-refresh', handleSyncRefresh);
+    }, [user?.uid, fetchProfiles, fetchHabits]);
 
     // Force refresh (call after toggle, add, delete)
     const refreshHabits = useCallback(() => fetchHabits(true), [fetchHabits]);

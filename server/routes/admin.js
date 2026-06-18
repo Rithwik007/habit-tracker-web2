@@ -3,6 +3,9 @@ import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Habit from '../models/Habit.js';
 import Goal from '../models/Goal.js';
+import Note from '../models/Note.js';
+import Mood from '../models/Mood.js';
+import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -10,12 +13,12 @@ const ADMIN_EMAIL = 'rithwikracharla@gmail.com';
 
 const requireAdmin = async (req, res, next) => {
   try {
-    const clientUid = req.headers['x-admin-uid'];
-    if (!clientUid) {
-      return res.status(403).json({ message: 'Forbidden: Admin access required (No UID)' });
+    const tokenUid = req.user?.uid;
+    if (!tokenUid) {
+      return res.status(403).json({ message: 'Forbidden: Admin access required (Unauthenticated)' });
     }
     
-    const user = await User.findOne({ firebaseId: clientUid });
+    const user = await User.findOne({ firebaseId: tokenUid });
     if (!user || user.email !== ADMIN_EMAIL) {
       return res.status(403).json({ message: 'Forbidden: Admin access required (Invalid Admin)' });
     }
@@ -26,6 +29,7 @@ const requireAdmin = async (req, res, next) => {
   }
 };
 
+router.use(verifyToken);
 router.use(requireAdmin);
 
 // GET all users (admin only - no server-side auth check, handled by frontend)
@@ -71,13 +75,26 @@ router.delete('/user/:uid', async (req, res) => {
     // Delete user profile
     await User.deleteOne({ firebaseId: uid });
 
-    // Notes and Moods use inline schemas — safely access via model cache
-    const Note = mongoose.models.Note;
-    const Mood = mongoose.models.Mood;
-    if (Note) await Note.deleteMany({ userId: uid });
-    if (Mood) await Mood.deleteMany({ userId: uid });
+    // Delete all notes
+    await Note.deleteMany({ userId: uid });
+    // Delete all moods
+    await Mood.deleteMany({ userId: uid });
 
     res.json({ message: 'User and all associated data deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET current database indexes (for verification)
+router.get('/indexes', async (req, res) => {
+  try {
+    const moodIndexes = await Mood.listIndexes();
+    const noteIndexes = await Note.listIndexes();
+    res.json({
+      mood: moodIndexes,
+      note: noteIndexes
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
