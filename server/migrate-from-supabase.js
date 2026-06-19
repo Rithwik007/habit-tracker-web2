@@ -28,8 +28,12 @@ const HabitSchema = new mongoose.Schema({
   color: { type: String, default: '#6366f1' },
   targetValue: { type: Number, default: 1 },
   unit: { type: String, default: 'times' },
-  frequency: { type: String, default: 'daily' },
-  activeDays: { type: [Number], default: [0,1,2,3,4,5,6] },
+  frequency: {
+    type: { type: String, enum: ['daily', 'specific_days', 'times_per_week', 'every_n_days'], default: 'daily' },
+    days: { type: [Number], default: [] },
+    timesPerWeek: { type: Number, default: 1 },
+    everyNDays: { type: Number, default: 2 }
+  },
   completions: [{ date: String, value: Number }],
   note: String,       // daily note stored per habit optionally
   createdAt: { type: Date, default: Date.now }

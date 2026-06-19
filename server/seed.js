@@ -20,8 +20,12 @@ const HabitSchema = new mongoose.Schema({
   color: { type: String, default: '#3B82F6' },
   targetValue: { type: Number, default: 1 },
   unit: { type: String, default: 'times' },
-  frequency: { type: String, default: 'daily' },
-  activeDays: { type: [Number], default: [0, 1, 2, 3, 4, 5, 6] },
+  frequency: {
+    type: { type: String, enum: ['daily', 'specific_days', 'times_per_week', 'every_n_days'], default: 'daily' },
+    days: { type: [Number], default: [] },
+    timesPerWeek: { type: Number, default: 1 },
+    everyNDays: { type: Number, default: 2 }
+  },
   completions: [],
   createdAt: { type: Date, default: Date.now }
 });
@@ -39,7 +43,13 @@ async function seed() {
         const habits = DEFAULT_HABITS.map(name => ({
             userId: YOUR_FIREBASE_UID,
             name,
-            completions: []
+            completions: [],
+            frequency: {
+                type: 'daily',
+                days: [],
+                timesPerWeek: 1,
+                everyNDays: 2
+            }
         }));
 
         await Habit.insertMany(habits);
