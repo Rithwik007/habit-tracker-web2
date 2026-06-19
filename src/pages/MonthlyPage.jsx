@@ -5,7 +5,7 @@ import useMidnightRefresh, { formatLocalDate } from '../hooks/useMidnightRefresh
 import LeetCodeGraph from '../components/LeetCodeGraph';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { getActiveProfileOnDate } from '../utils/profileAnalytics';
+import { getActiveProfileOnDate, isHabitDueOnDate } from '../utils/profileAnalytics';
 
 export default function MonthlyPage() {
     const { user, profile } = useAuth();
@@ -116,12 +116,44 @@ export default function MonthlyPage() {
                                             const isDone = (habit.completions || []).some(c => c.date === dm.dStr);
                                             const isFuture = dm.dStr > todayStr;
                                             const isHabitActive = habit.profileId === dm.activePId;
+                                            const isScheduled = isHabitActive && isHabitDueOnDate(habit, dm.dStr, habit.completions || []);
+
+                                            let cellClass = 'grid-cell';
+                                            let cellStyle = {};
+
+                                            if (isDone) {
+                                                cellClass += ' done';
+                                            } else if (isFuture) {
+                                                cellClass += ' future';
+                                                if (!isScheduled) {
+                                                    cellStyle = { background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'default', opacity: 0.3 };
+                                                } else {
+                                                    cellStyle = { background: 'rgba(99, 102, 241, 0.04)', border: '1px dashed rgba(99, 102, 241, 0.15)', cursor: 'default' };
+                                                }
+                                            } else {
+                                                if (dm.dStr === todayStr) {
+                                                    cellClass += ' today';
+                                                }
+                                                
+                                                if (!isScheduled) {
+                                                    // Unscheduled = Grey (transparent background, thin border, neutral color)
+                                                    cellStyle = { background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.08)', opacity: 0.5 };
+                                                } else {
+                                                    // Scheduled but not done
+                                                    if (dm.dStr === todayStr) {
+                                                        cellStyle = { background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)' };
+                                                    } else {
+                                                        // Missed = Light Red background & red border
+                                                        cellStyle = { background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.4)' };
+                                                    }
+                                                }
+                                            }
 
                                             return (
                                                 <td key={dm.day}>
                                                     <div
-                                                        className={`grid-cell${isDone ? ' done' : ''}${dm.dStr === todayStr ? ' today' : ''}${isFuture ? ' future' : ''}`}
-                                                        style={!isDone && isHabitActive ? { background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.2)' } : {}}
+                                                        className={cellClass}
+                                                        style={cellStyle}
                                                         onClick={() => !isFuture && toggleCell(habit._id, dm.dStr)}
                                                     >
                                                         {isDone && (

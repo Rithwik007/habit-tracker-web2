@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { motion } from 'framer-motion';
+import { isHabitDueOnDate } from '../utils/profileAnalytics';
 
 const MOODS = [
     { score: 1, emoji: '😫', label: 'Terrible' },
@@ -218,8 +219,9 @@ export default function HomePage() {
 
     if (habitsLoading) return <div className="loading-screen">⏳ Loading...</div>;
 
-    const completed = (Array.isArray(habits) ? habits : []).filter(h => logs[h._id]).length;
-    const pct = habits?.length > 0 ? Math.round((completed / habits.length) * 100) : 0;
+    const dueHabits = (Array.isArray(habits) ? habits : []).filter(h => isHabitDueOnDate(h, today, h.completions || []));
+    const completed = dueHabits.filter(h => logs[h._id]).length;
+    const pct = dueHabits.length > 0 ? Math.round((completed / dueHabits.length) * 100) : 0;
 
     return (
         <div className="fade-in">
@@ -234,11 +236,11 @@ export default function HomePage() {
                 <motion.div className="kpi-card" variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}>
                     <span className="kpi-label">Today's Score</span>
                     <span className="kpi-value">{pct}%</span>
-                    <span className="kpi-sub">{completed} / {habits.length} habits</span>
+                    <span className="kpi-sub">{completed} / {dueHabits.length} habits</span>
                 </motion.div>
                 <motion.div className="kpi-card" variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}>
                     <span className="kpi-label">Remaining</span>
-                    <span className="kpi-value">{habits.length - completed}</span>
+                    <span className="kpi-value">{dueHabits.length - completed}</span>
                     <span className="kpi-sub">disciplines left</span>
                 </motion.div>
                 <motion.div className="kpi-card" variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}>
@@ -382,9 +384,10 @@ export default function HomePage() {
                                 addCustomHabit(el.value); el.value = '';
                             }}>+ Add</button>
                         </div>
-                        <div className="empty-state">
-                        No disciplines tracked for today.
                     </div>
+                ) : dueHabits.length === 0 ? (
+                    <div className="empty-state" style={{ padding: '40px 0' }}>
+                        No disciplines scheduled for today.
                     </div>
                 ) : (
                     <motion.div
@@ -393,7 +396,7 @@ export default function HomePage() {
                         animate="show"
                         variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
                     >
-                        {habits.map(habit => {
+                        {dueHabits.map(habit => {
                             const done = !!logs[habit._id];
                             return (
                                 <motion.div
