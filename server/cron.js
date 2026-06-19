@@ -105,6 +105,40 @@ const startCronJobs = () => {
           const isCompletedToday = habit.completions?.some(c => c.date === todayStr);
           if (isCompletedToday) continue;
 
+          // Check if habit is scheduled for today
+          let isScheduledToday = true;
+          const freq = habit.frequency || { type: 'daily' };
+          const type = freq.type || 'daily';
+          
+          if (type === 'specific_days') {
+            const days = freq.days || [];
+            const date = new Date(todayStr + 'T12:00:00');
+            isScheduledToday = days.includes(date.getDay());
+          } else if (type === 'every_n_days') {
+            const everyN = freq.everyNDays || 2;
+            const startStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(habit.createdAt || Date.now()));
+            const d1 = new Date(startStr + 'T12:00:00');
+            const d2 = new Date(todayStr + 'T12:00:00');
+            const diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+            isScheduledToday = diffDays >= 0 && diffDays % everyN === 0;
+          } else if (type === 'times_per_week') {
+            // Count completions in current ISO week (Mon-Sun)
+            const date = new Date(todayStr + 'T12:00:00');
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(date.setDate(diff));
+            const mondayStr = [monday.getFullYear(), String(monday.getMonth() + 1).padStart(2, '0'), String(monday.getDate()).padStart(2, '0')].join('-');
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            const sundayStr = [sunday.getFullYear(), String(sunday.getMonth() + 1).padStart(2, '0'), String(sunday.getDate()).padStart(2, '0')].join('-');
+            
+            const weeklyCompletions = (habit.completions || []).filter(c => c.date >= mondayStr && c.date <= sundayStr).length;
+            const target = freq.timesPerWeek || 1;
+            isScheduledToday = weeklyCompletions < target;
+          }
+          
+          if (!isScheduledToday) continue;
+
           let shouldNotify = false;
           let messageTag = `habit-${habit._id}`;
 
