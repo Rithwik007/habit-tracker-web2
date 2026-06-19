@@ -58,6 +58,38 @@ mongoose.connect(process.env.MONGODB_URI)
     } catch (indexErr) {
       console.error('Error synchronizing database indexes:', indexErr);
     }
+
+    // --- ONE-TIME MIGRATION: LEGACY STRING FREQUENCY TO OBJECT MIGRATION ---
+    try {
+      const db = mongoose.connection.db;
+      const legacyCount = await db.collection('habits').countDocuments({ frequency: { $type: 'string' } });
+      if (legacyCount > 0) {
+        console.log(`[Migration] Found ${legacyCount} legacy habits to migrate.`);
+        const cursor = db.collection('habits').find({ frequency: { $type: 'string' } });
+        const habitsToMigrate = await cursor.toArray();
+        for (const h of habitsToMigrate) {
+          const oldFreq = h.frequency || 'daily';
+          const activeDays = h.activeDays || [0, 1, 2, 3, 4, 5, 6];
+          await db.collection('habits').updateOne(
+            { _id: h._id },
+            {
+              $set: {
+                frequency: {
+                  type: oldFreq,
+                  days: oldFreq === 'specific_days' ? activeDays : [],
+                  timesPerWeek: 1,
+                  everyNDays: 2
+                }
+              },
+              $unset: { activeDays: 1 }
+            }
+          );
+        }
+        console.log('[Migration] Legacy habit frequencies migrated successfully.');
+      }
+    } catch (migErr) {
+      console.error('[Migration] Legacy frequency migration failed:', migErr);
+    }
     
     // --- ONE-TIME MIGRATION: LEGACY NOTIF PREFS TO HABIT MODEL ---
     try {
