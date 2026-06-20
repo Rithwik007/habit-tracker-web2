@@ -16,28 +16,57 @@ export default function MonthlyPage() {
 
     const toggleCell = async (habitId, dateStr) => {
         const habit = habits.find(h => h._id === habitId);
-        const alreadyDone = habit?.completions?.some(c => c.date === dateStr);
-        const nextState = alreadyDone ? 0 : 1;
+        if (!habit) return;
+        const alreadyDone = habit.completions?.some(c => c.date === dateStr);
 
-        setHabits(prev => prev.map(h => {
-            if (h._id !== habitId) return h;
-            const completions = nextState
-                ? [...(h.completions || []), { date: dateStr, value: 1 }]
-                : (h.completions || []).filter(c => c.date !== dateStr);
-            return { ...h, completions };
-        }));
-
-        try {
-            await habitApi.toggleCompletion(habitId, dateStr, nextState);
-        } catch (e) {
-            console.error('Toggle error:', e);
+        if (alreadyDone) {
+            // Uncheck it
             setHabits(prev => prev.map(h => {
                 if (h._id !== habitId) return h;
-                const completions = alreadyDone
-                    ? [...(h.completions || []), { date: dateStr, value: 1 }]
-                    : (h.completions || []).filter(c => c.date !== dateStr);
+                const completions = (h.completions || []).filter(c => c.date !== dateStr);
                 return { ...h, completions };
             }));
+
+            try {
+                await habitApi.toggleCompletion(habitId, dateStr, null, false);
+            } catch (e) {
+                console.error('Toggle error:', e);
+                setHabits(prev => prev.map(h => {
+                    if (h._id !== habitId) return h;
+                    const oldComp = habit.completions?.find(c => c.date === dateStr) || { date: dateStr, value: 1 };
+                    return { ...h, completions: [...(h.completions || []).filter(c => c.date !== dateStr), oldComp] };
+                }));
+            }
+        } else {
+            // Check it/save value
+            let finalValue = 1;
+            if (habit.tracksValue) {
+                const response = window.prompt(`Enter numeric value for "${habit.name}" (${habit.valueUnit || 'value'}):`);
+                if (response === null) return; // User cancelled
+                const parsed = Number(response.trim());
+                if (response.trim() === '' || isNaN(parsed)) {
+                    alert('Please enter a valid numeric value.');
+                    return;
+                }
+                finalValue = parsed;
+            }
+
+            setHabits(prev => prev.map(h => {
+                if (h._id !== habitId) return h;
+                const completions = [...(h.completions || []), { date: dateStr, value: finalValue }];
+                return { ...h, completions };
+            }));
+
+            try {
+                await habitApi.toggleCompletion(habitId, dateStr, finalValue, true);
+            } catch (e) {
+                console.error('Toggle error:', e);
+                setHabits(prev => prev.map(h => {
+                    if (h._id !== habitId) return h;
+                    const completions = (h.completions || []).filter(c => c.date !== dateStr);
+                    return { ...h, completions };
+                }));
+            }
         }
     };
 
@@ -149,11 +178,25 @@ export default function MonthlyPage() {
                                                 }
                                             }
 
+                                            let cellTitle = '';
+                                            if (isDone) {
+                                                if (habit.tracksValue) {
+                                                    const comp = (habit.completions || []).find(c => c.date === dm.dStr);
+                                                    const val = comp ? comp.value : '';
+                                                    cellTitle = `${val} ${habit.valueUnit || ''}`.trim();
+                                                } else {
+                                                    cellTitle = 'Completed';
+                                                }
+                                            } else if (isScheduled && !isFuture) {
+                                                cellTitle = 'Missed';
+                                            }
+
                                             return (
                                                 <td key={dm.day}>
                                                     <div
                                                         className={cellClass}
                                                         style={cellStyle}
+                                                        title={cellTitle}
                                                         onClick={() => !isFuture && toggleCell(habit._id, dm.dStr)}
                                                     >
                                                         {isDone && (
