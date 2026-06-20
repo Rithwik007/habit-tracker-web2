@@ -92,6 +92,27 @@ export default function HomePage() {
     const [error, setError] = useState(null);
     const { addToast } = useToast();
     const today = useMidnightRefresh();
+    const [valueInputs, setValueInputs] = useState({});
+    const [pendingValue, setPendingValue] = useState({});
+
+    // Initialize inputs and pending state
+    useEffect(() => {
+        const inputs = {};
+        (Array.isArray(habits) ? habits : []).forEach(habit => {
+            if (habit.tracksValue) {
+                const completion = Array.isArray(habit.completions)
+                    ? habit.completions.find(c => c.date === today)
+                    : null;
+                if (completion) {
+                    inputs[habit._id] = completion.value !== null ? completion.value.toString() : '';
+                } else {
+                    const draft = localStorage.getItem(`draft_val_${habit._id}_${today}`);
+                    inputs[habit._id] = draft !== null ? draft : '';
+                }
+            }
+        });
+        setValueInputs(inputs);
+    }, [habits, today]);
 
     // Build today's logs from cached habits
     useEffect(() => {
@@ -120,35 +141,109 @@ export default function HomePage() {
             .catch(() => setHistoryGoals([]));
     }, [user?.uid, today]);
 
+    const submitHabitValue = async (habit, value) => {
+        const habitId = habit._id;
+        // Optimistic update
+        setLogs(prev => ({ ...prev, [habitId]: true }));
+        setPendingValue(prev => ({ ...prev, [habitId]: false }));
+        setHabits(prev => prev.map(h => {
+            if (h._id !== habitId) return h;
+            const existingCompletions = (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today);
+            return { ...h, completions: [...existingCompletions, { date: today, value }] };
+        }));
+        
+        // Also save draft to localStorage so that if unchecked, it's there
+        localStorage.setItem(`draft_val_${habitId}_${today}`, value.toString());
+
+        try {
+            await habitApi.toggleCompletion(habitId, today, value, true);
+            addToast(`${habit.name}: logged ${value} ${habit.valueUnit || ''}`);
+        } catch (e) {
+            addToast('Failed to save value', 'error');
+            // Revert
+            setLogs(prev => ({ ...prev, [habitId]: false }));
+            refreshHabits();
+        }
+    };
+
     const toggleHabit = async (habit) => {
         const habitId = habit._id;
         const current = !!logs[habitId];
         const next = !current;
 
-        // Optimistic update: logs (for today's view) + habits.completions (for monthly/analytics/progress/graph)
-        setLogs(prev => ({ ...prev, [habitId]: next }));
-        setHabits(prev => prev.map(h => {
-            if (h._id !== habitId) return h;
-            const completions = next
-                ? [...(Array.isArray(h.completions) ? h.completions : []), { date: today, value: 1 }]
-                : (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today);
-            return { ...h, completions };
-        }));
+        if (habit.tracksValue) {
+            if (current) {
+                // It was checked. We are unchecking it.
+                // 1. Save current value as draft in localStorage
+                const currentValue = valueInputs[habitId] || '';
+                if (currentValue !== '') {
+                    localStorage.setItem(`draft_val_${habitId}_${today}`, currentValue);
+                }
+                
+                // 2. Clear pending state just in case
+                setPendingValue(prev => ({ ...prev, [habitId]: false }));
 
-        try {
-            await habitApi.toggleCompletion(habitId, today, next ? 1 : 0);
-            if (next) addToast(habit.name); // toast already prepends ✅ icon
-        } catch (e) {
-            addToast('Failed to save progress', 'error');
-            // Revert both states on error
-            setLogs(prev => ({ ...prev, [habitId]: current }));
+                // 3. Optimistic update
+                setLogs(prev => ({ ...prev, [habitId]: false }));
+                setHabits(prev => prev.map(h => {
+                    if (h._id !== habitId) return h;
+                    const completions = (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today);
+                    return { ...h, completions };
+                }));
+
+                try {
+                    await habitApi.toggleCompletion(habitId, today, null, false);
+                    addToast('Unchecked ' + habit.name);
+                } catch (e) {
+                    addToast('Failed to save progress', 'error');
+                    // Revert
+                    setLogs(prev => ({ ...prev, [habitId]: true }));
+                    refreshHabits();
+                }
+            } else {
+                // It was not checked. User clicked checkbox/row.
+                // Check if they already have a value in the input.
+                const valStr = valueInputs[habitId] || '';
+                if (valStr.trim() !== '') {
+                    // There is a draft/input value! Complete it with this value.
+                    const val = Number(valStr);
+                    if (!isNaN(val)) {
+                        await submitHabitValue(habit, val);
+                    } else {
+                        // Focus and mark pending
+                        setPendingValue(prev => ({ ...prev, [habitId]: true }));
+                    }
+                } else {
+                    // No value entered yet. Mark as pending and expand input.
+                    setPendingValue(prev => ({ ...prev, [habitId]: true }));
+                }
+            }
+        } else {
+            // Standard habit toggling
+            setLogs(prev => ({ ...prev, [habitId]: next }));
             setHabits(prev => prev.map(h => {
                 if (h._id !== habitId) return h;
-                const completions = current
+                const completions = next
                     ? [...(Array.isArray(h.completions) ? h.completions : []), { date: today, value: 1 }]
                     : (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today);
                 return { ...h, completions };
             }));
+
+            try {
+                await habitApi.toggleCompletion(habitId, today, next ? 1 : 0, next);
+                if (next) addToast(habit.name);
+            } catch (e) {
+                addToast('Failed to save progress', 'error');
+                // Revert
+                setLogs(prev => ({ ...prev, [habitId]: current }));
+                setHabits(prev => prev.map(h => {
+                    if (h._id !== habitId) return h;
+                    const completions = current
+                        ? [...(Array.isArray(h.completions) ? h.completions : []), { date: today, value: 1 }]
+                        : (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today);
+                    return { ...h, completions };
+                }));
+            }
         }
     };
 
@@ -398,30 +493,116 @@ export default function HomePage() {
                     >
                         {dueHabits.map(habit => {
                             const done = !!logs[habit._id];
+                            const isPending = !!pendingValue[habit._id];
+                            const tracksVal = habit.tracksValue;
+                            const inputValue = valueInputs[habit._id] || '';
+                            
                             return (
                                 <motion.div
                                     key={habit._id}
                                     variants={{ hidden: { opacity: 0, x: -20 }, show: { opacity: 1, x: 0 } }}
-                                    className={`habit-item${done ? ' completed' : ''}`}
+                                    className={`habit-item${done ? ' completed' : ''}${isPending ? ' pending-value' : ''}`}
                                     onClick={() => toggleHabit(habit)}
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'stretch',
+                                        padding: '12px 16px',
+                                        border: isPending ? '2px dashed var(--primary-light)' : undefined,
+                                        gap: tracksVal ? '12px' : '0'
+                                    }}
                                     whileHover={{ scale: 1.01 }}
                                     whileTap={{ scale: 0.98 }}
                                 >
-                                    <div className="habit-info">
-                                        <span className="habit-name">{habit.name}</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                        <div className="habit-info">
+                                            <span className="habit-name">{habit.name}</span>
+                                        </div>
+                                        <div 
+                                            className="check-circle"
+                                            style={{
+                                                border: isPending ? '2px dashed var(--primary-light)' : undefined
+                                            }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleHabit(habit);
+                                            }}
+                                        >
+                                            {done && (
+                                                <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                    <motion.polyline
+                                                        points="20 6 9 17 4 12"
+                                                        initial={{ pathLength: 0 }}
+                                                        animate={{ pathLength: 1 }}
+                                                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                                                    />
+                                                </svg>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="check-circle">
-                                        {done && (
-                                            <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                <motion.polyline
-                                                    points="20 6 9 17 4 12"
-                                                    initial={{ pathLength: 0 }}
-                                                    animate={{ pathLength: 1 }}
-                                                    transition={{ duration: 0.3, ease: 'easeOut' }}
-                                                />
-                                            </svg>
-                                        )}
-                                    </div>
+                                    
+                                    {tracksVal && (
+                                        <div 
+                                            style={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: '8px', 
+                                                width: '100%', 
+                                                paddingTop: '8px', 
+                                                borderTop: '1px solid rgba(255,255,255,0.05)',
+                                                justifyContent: 'flex-start'
+                                            }}
+                                            onClick={e => e.stopPropagation()}
+                                        >
+                                            <input
+                                                type="number"
+                                                placeholder={`Enter ${habit.valueUnit || 'value'}...`}
+                                                className="notif-time-input"
+                                                style={{ 
+                                                    width: '120px', 
+                                                    padding: '6px 8px', 
+                                                    fontSize: '0.85rem',
+                                                    height: 'auto',
+                                                    margin: 0
+                                                }}
+                                                value={inputValue}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    setValueInputs(prev => ({ ...prev, [habit._id]: val }));
+                                                }}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') {
+                                                        const numVal = Number(inputValue);
+                                                        if (!isNaN(numVal) && inputValue.trim() !== '') {
+                                                            submitHabitValue(habit, numVal);
+                                                        } else {
+                                                            addToast('Please enter a valid numeric value', 'error');
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                            {habit.valueUnit && <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>{habit.valueUnit}</span>}
+                                            <button 
+                                                className="add-btn" 
+                                                style={{ 
+                                                    padding: '6px 12px', 
+                                                    fontSize: '0.8rem', 
+                                                    height: 'auto',
+                                                    margin: 0
+                                                }}
+                                                onClick={() => {
+                                                    const numVal = Number(inputValue);
+                                                    if (!isNaN(numVal) && inputValue.trim() !== '') {
+                                                        submitHabitValue(habit, numVal);
+                                                    } else {
+                                                        addToast('Please enter a valid numeric value', 'error');
+                                                    }
+                                                }}
+                                            >
+                                                Save
+                                            </button>
+                                        </div>
+                                    )}
                                 </motion.div>
                             );
                         })}

@@ -191,6 +191,7 @@ function enqueueAction(action) {
     const existingIndex = queue.findIndex(item => item.url === action.url && item.data?.date === action.data?.date);
     if (existingIndex !== -1) {
       queue[existingIndex].data.value = action.data.value;
+      queue[existingIndex].data.completed = action.data.completed;
       saveQueue(queue);
       return;
     }
@@ -234,7 +235,7 @@ function optimisticUpdateCache(method, url, payload) {
     if (url.includes('/habits/') && url.includes('/toggle')) {
       const parts = url.split('/habits/');
       const habitId = parts[1].split('/')[0];
-      const { date, value } = payload;
+      const { date, value, completed } = payload;
       
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -243,9 +244,26 @@ function optimisticUpdateCache(method, url, payload) {
           if (Array.isArray(habits)) {
             const updated = habits.map(h => {
               if (h._id !== habitId) return h;
-              const completions = value === 1
-                ? [...(h.completions || []), { date, value: 1 }]
-                : (h.completions || []).filter(c => c.date !== date);
+              
+              const isExplicitUncheck = completed === false || (h.tracksValue === false && value === 0);
+              let completions = h.completions || [];
+              if (isExplicitUncheck) {
+                completions = completions.filter(c => c.date !== date);
+              } else {
+                const completionIndex = completions.findIndex(c => c.date === date);
+                let finalValue = value;
+                if (h.tracksValue) {
+                  finalValue = value === undefined || value === null ? 0 : Number(value);
+                } else {
+                  finalValue = value === undefined || value === null ? 1 : Number(value);
+                }
+                
+                if (completionIndex > -1) {
+                  completions = completions.map((c, idx) => idx === completionIndex ? { ...c, value: finalValue } : c);
+                } else {
+                  completions = [...completions, { date, value: finalValue }];
+                }
+              }
               return { ...h, completions };
             });
             localStorage.setItem(key, JSON.stringify(updated));
@@ -471,7 +489,7 @@ export const habitApi = {
   create: (habitData) => api.post('/habits', { _id: generateObjectId(), ...habitData }),
   update: (id, habitData) => api.put(`/habits/${id}`, habitData),
   delete: (id) => api.delete(`/habits/${id}`),
-  toggleCompletion: (id, date, value) => api.post(`/habits/${id}/toggle`, { date, value })
+  toggleCompletion: (id, date, value, completed) => api.post(`/habits/${id}/toggle`, { date, value, completed })
 };
 
 export const userApi = {
