@@ -14,9 +14,11 @@ const HabitSchema = new mongoose.Schema({
     timesPerWeek: { type: Number, default: 1 },
     everyNDays: { type: Number, default: 2 }
   },
+  tracksValue: { type: Boolean, default: false },
+  valueUnit: { type: String, default: '' },
   completions: [{
     date: { type: String, required: true },
-    value: { type: Number, default: 1 }
+    value: { type: Number, default: null }
   }],
   reminderMessage: { type: String, default: '' },
   reminderEnabled: { type: Boolean, default: false },

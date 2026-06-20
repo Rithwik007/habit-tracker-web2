@@ -87,7 +87,7 @@ router.delete('/:id', async (req, res) => {
 
 // Toggle completion
 router.post('/:id/toggle', async (req, res) => {
-  const { date, value } = req.body;
+  const { date, value, completed } = req.body;
   try {
     const habit = await Habit.findById(req.params.id);
     if (!habit) return res.status(404).json({ message: 'Habit not found' });
@@ -99,13 +99,33 @@ router.post('/:id/toggle', async (req, res) => {
     habit.completions = habit.completions.filter(c => c.date);
 
     const completionIndex = habit.completions.findIndex(c => c.date === date);
-    if (completionIndex > -1) {
-      habit.completions[completionIndex].value = value;
-      if (value === 0) {
+    const isExplicitUncheck = completed === false || (habit.tracksValue === false && value === 0);
+
+    if (isExplicitUncheck) {
+      if (completionIndex > -1) {
         habit.completions.splice(completionIndex, 1);
       }
-    } else if (value > 0) {
-      habit.completions.push({ date, value });
+    } else {
+      // This is a check/save value action
+      let finalValue = value;
+      if (habit.tracksValue) {
+        if (value === undefined || value === null || isNaN(Number(value))) {
+          return res.status(400).json({ message: 'Numeric value is required for this habit.' });
+        }
+        finalValue = Number(value);
+      } else {
+        if (value === undefined || value === null) {
+          finalValue = 1;
+        } else {
+          finalValue = Number(value);
+        }
+      }
+
+      if (completionIndex > -1) {
+        habit.completions[completionIndex].value = finalValue;
+      } else {
+        habit.completions.push({ date, value: finalValue });
+      }
     }
 
     await habit.save();
