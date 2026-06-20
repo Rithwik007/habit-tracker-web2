@@ -21,11 +21,19 @@ export default function ManageHabitsPage() {
     const [freqTimesPerWeek, setFreqTimesPerWeek] = useState(3);
     const [freqEveryNDays, setFreqEveryNDays] = useState(2);
 
+    // Add value-tracking state for creating new habit
+    const [tracksValue, setTracksValue] = useState(false);
+    const [valueUnit, setValueUnit] = useState('');
+
     // Add frequency state for editing habit
     const [editFreqType, setEditFreqType] = useState('daily');
     const [editFreqDays, setEditFreqDays] = useState([]);
     const [editFreqTimesPerWeek, setEditFreqTimesPerWeek] = useState(1);
     const [editFreqEveryNDays, setEditFreqEveryNDays] = useState(2);
+
+    // Add value-tracking state for editing habit
+    const [editTracksValue, setEditTracksValue] = useState(false);
+    const [editValueUnit, setEditValueUnit] = useState('');
 
     const { addToast } = useToast();
 
@@ -39,12 +47,20 @@ export default function ManageHabitsPage() {
                 timesPerWeek: freqType === 'times_per_week' ? freqTimesPerWeek : 1,
                 everyNDays: freqType === 'every_n_days' ? freqEveryNDays : 2
             };
-            await habitApi.create({ name, userId: user.uid, frequency });
+            await habitApi.create({ 
+                name, 
+                userId: user.uid, 
+                frequency, 
+                tracksValue, 
+                valueUnit: tracksValue ? valueUnit.trim() : '' 
+            });
             setNewHabit('');
             setFreqType('daily');
             setFreqDays([1, 2, 3, 4, 5]);
             setFreqTimesPerWeek(3);
             setFreqEveryNDays(2);
+            setTracksValue(false);
+            setValueUnit('');
             addToast('Habit added!');
             refreshHabits();
         } catch (e) {
@@ -74,7 +90,12 @@ export default function ManageHabitsPage() {
                 timesPerWeek: editFreqType === 'times_per_week' ? editFreqTimesPerWeek : 1,
                 everyNDays: editFreqType === 'every_n_days' ? editFreqEveryNDays : 2
             };
-            await habitApi.update(id, { name: editValue.trim(), frequency });
+            await habitApi.update(id, { 
+                name: editValue.trim(), 
+                frequency, 
+                tracksValue: editTracksValue, 
+                valueUnit: editTracksValue ? editValueUnit.trim() : '' 
+            });
             setEditingId(null);
             refreshHabits();
             addToast('Habit updated!');
@@ -195,6 +216,36 @@ export default function ManageHabitsPage() {
                                 </div>
                             </div>
                         )}
+
+                        {/* Value Tracking Section */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <input
+                                    type="checkbox"
+                                    id="tracks-value-checkbox"
+                                    checked={tracksValue}
+                                    onChange={e => setTracksValue(e.target.checked)}
+                                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                />
+                                <label htmlFor="tracks-value-checkbox" style={{ fontSize: '0.85rem', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 500 }}>
+                                    Track a numeric value with this habit? (e.g. water intake, running distance)
+                                </label>
+                            </div>
+                            
+                            {tracksValue && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '24px' }} className="fade-in">
+                                    <label style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 500 }}>Unit Label</label>
+                                    <input
+                                        type="text"
+                                        className="notif-time-input"
+                                        style={{ width: '180px', padding: '8px' }}
+                                        placeholder="e.g. glasses, miles, pages"
+                                        value={valueUnit}
+                                        onChange={e => setValueUnit(e.target.value)}
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -304,6 +355,36 @@ export default function ManageHabitsPage() {
                                                     </div>
                                                 </div>
                                             )}
+
+                                            {/* Edit Value Tracking Toggle */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '8px', borderTop: '1px solid var(--border)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`edit-tracks-value-${habit._id}`}
+                                                        checked={editTracksValue}
+                                                        onChange={e => setEditTracksValue(e.target.checked)}
+                                                        style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                                                    />
+                                                    <label htmlFor={`edit-tracks-value-${habit._id}`} style={{ fontSize: '0.8rem', color: 'var(--text-main)', cursor: 'pointer' }}>
+                                                        Track a numeric value?
+                                                    </label>
+                                                </div>
+                                                
+                                                {editTracksValue && (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '22px' }} className="fade-in">
+                                                        <label style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Unit Label</label>
+                                                        <input
+                                                            type="text"
+                                                            className="notif-time-input"
+                                                            style={{ width: '150px', padding: '6px', fontSize: '0.8rem' }}
+                                                            placeholder="e.g. glasses, miles"
+                                                            value={editValueUnit}
+                                                            onChange={e => setEditValueUnit(e.target.value)}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (
@@ -325,6 +406,7 @@ export default function ManageHabitsPage() {
                                                 }
                                                 return 'Daily';
                                             })()}
+                                            {habit.tracksValue && ` • Tracks value (${habit.valueUnit || 'no unit'})`}
                                         </span>
                                     </div>
                                 )}
@@ -342,6 +424,8 @@ export default function ManageHabitsPage() {
                                             setEditFreqDays(freq.days || []);
                                             setEditFreqTimesPerWeek(freq.timesPerWeek || 1);
                                             setEditFreqEveryNDays(freq.everyNDays || 2);
+                                            setEditTracksValue(habit.tracksValue || false);
+                                            setEditValueUnit(habit.valueUnit || '');
                                         }}>Edit</button>
                                 )}
                                 <button className="delete-btn" onClick={() => deleteHabit(habit._id)}>Remove</button>
