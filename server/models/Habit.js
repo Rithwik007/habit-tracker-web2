@@ -18,7 +18,8 @@ const HabitSchema = new mongoose.Schema({
   valueUnit: { type: String, default: '' },
   completions: [{
     date: { type: String, required: true },
-    value: { type: Number, default: null }
+    value: { type: Number, default: null },
+    status: { type: String, enum: ['completed', 'skipped'], default: 'completed' }
   }],
   reminderMessage: { type: String, default: '' },
   reminderEnabled: { type: Boolean, default: false },

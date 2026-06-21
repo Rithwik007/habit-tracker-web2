@@ -192,6 +192,7 @@ function enqueueAction(action) {
     if (existingIndex !== -1) {
       queue[existingIndex].data.value = action.data.value;
       queue[existingIndex].data.completed = action.data.completed;
+      queue[existingIndex].data.status = action.data.status;
       saveQueue(queue);
       return;
     }
@@ -235,7 +236,7 @@ function optimisticUpdateCache(method, url, payload) {
     if (url.includes('/habits/') && url.includes('/toggle')) {
       const parts = url.split('/habits/');
       const habitId = parts[1].split('/')[0];
-      const { date, value, completed } = payload;
+      const { date, value, completed, status } = payload;
       
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -246,9 +247,18 @@ function optimisticUpdateCache(method, url, payload) {
               if (h._id !== habitId) return h;
               
               const isExplicitUncheck = completed === false || (h.tracksValue === false && value === 0);
+              const isSkip = status === 'skipped';
               let completions = h.completions || [];
+
               if (isExplicitUncheck) {
                 completions = completions.filter(c => c.date !== date);
+              } else if (isSkip) {
+                const completionIndex = completions.findIndex(c => c.date === date);
+                if (completionIndex > -1) {
+                  completions = completions.map((c, idx) => idx === completionIndex ? { ...c, value: null, status: 'skipped' } : c);
+                } else {
+                  completions = [...completions, { date, value: null, status: 'skipped' }];
+                }
               } else {
                 const completionIndex = completions.findIndex(c => c.date === date);
                 let finalValue = value;
@@ -259,9 +269,9 @@ function optimisticUpdateCache(method, url, payload) {
                 }
                 
                 if (completionIndex > -1) {
-                  completions = completions.map((c, idx) => idx === completionIndex ? { ...c, value: finalValue } : c);
+                  completions = completions.map((c, idx) => idx === completionIndex ? { ...c, value: finalValue, status: 'completed' } : c);
                 } else {
-                  completions = [...completions, { date, value: finalValue }];
+                  completions = [...completions, { date, value: finalValue, status: 'completed' }];
                 }
               }
               return { ...h, completions };
@@ -489,7 +499,7 @@ export const habitApi = {
   create: (habitData) => api.post('/habits', { _id: generateObjectId(), ...habitData }),
   update: (id, habitData) => api.put(`/habits/${id}`, habitData),
   delete: (id) => api.delete(`/habits/${id}`),
-  toggleCompletion: (id, date, value, completed) => api.post(`/habits/${id}/toggle`, { date, value, completed })
+  toggleCompletion: (id, date, value, completed, status = 'completed') => api.post(`/habits/${id}/toggle`, { date, value, completed, status })
 };
 
 export const userApi = {

@@ -87,7 +87,7 @@ router.delete('/:id', async (req, res) => {
 
 // Toggle completion
 router.post('/:id/toggle', async (req, res) => {
-  const { date, value, completed } = req.body;
+  const { date, value, completed, status } = req.body;
   try {
     const habit = await Habit.findById(req.params.id);
     if (!habit) return res.status(404).json({ message: 'Habit not found' });
@@ -100,13 +100,23 @@ router.post('/:id/toggle', async (req, res) => {
 
     const completionIndex = habit.completions.findIndex(c => c.date === date);
     const isExplicitUncheck = completed === false || (habit.tracksValue === false && value === 0);
+    const isSkip = status === 'skipped';
 
     if (isExplicitUncheck) {
+      // Remove entry — same as before
       if (completionIndex > -1) {
         habit.completions.splice(completionIndex, 1);
       }
+    } else if (isSkip) {
+      // Write/upsert a skip record — bypasses tracksValue validation entirely
+      if (completionIndex > -1) {
+        habit.completions[completionIndex].status = 'skipped';
+        habit.completions[completionIndex].value = null;
+      } else {
+        habit.completions.push({ date, value: null, status: 'skipped' });
+      }
     } else {
-      // This is a check/save value action
+      // Normal completion — existing tracksValue validation unchanged
       let finalValue = value;
       if (habit.tracksValue) {
         if (value === undefined || value === null || isNaN(Number(value))) {
@@ -123,8 +133,9 @@ router.post('/:id/toggle', async (req, res) => {
 
       if (completionIndex > -1) {
         habit.completions[completionIndex].value = finalValue;
+        habit.completions[completionIndex].status = 'completed';
       } else {
-        habit.completions.push({ date, value: finalValue });
+        habit.completions.push({ date, value: finalValue, status: 'completed' });
       }
     }
 
