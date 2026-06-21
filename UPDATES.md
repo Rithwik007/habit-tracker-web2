@@ -2,7 +2,26 @@
 
 This file tracks the latest features and improvements added to the Habit Mastery platform.
 
-## Latest Updates (April 29, 2026)
+## Latest Updates (June 20, 2026)
+
+### 📅 Flexible Habit Frequency Scheduling
+- **Custom Schedules**: Habits can now be scheduled for specific days of the week (e.g., Mon/Wed/Fri), a specific number of times per week (e.g., 3x a week), or every N days (e.g., every 2 days).
+- **Smart Daily Checklist**: The homepage dashboard now intelligently filters habits, only showing the ones due today based on their unique frequency schedule.
+- **Dynamic Monthly Grid**: The monthly history view accurately reflects scheduled days versus off-days, correctly interpreting hits, misses, and excused days.
+
+### 🔢 Optional Numeric Value Tracking
+- **Quantifiable Habits**: You can now opt-in to track specific numeric values for habits (e.g., "drank 6 glasses of water", "ran 2 miles", "read 15 pages") with custom units.
+- **Inline Value Entry**: The daily checklist provides an inline input for numeric habits, and it forces a value entry before successfully marking the habit as complete.
+- **Draft Persistence**: Unfinished numeric entries are auto-saved locally to prevent data loss on page reloads or if you accidentally uncheck a habit.
+- **Rich History Tooltips**: Hovering over a completed day on the Monthly Grid reveals the exact numeric value logged for that day.
+
+### ⏭️ Neutral "Skip" State
+- **Deliberate Days Off**: You can now mark a habit as "Skipped" using the new slash-circle (⊘) button, representing a sick day or planned rest without penalty.
+- **Streak Protection**: Skips are treated as neutral off-days. Skipping a day does not count toward your success rate, but importantly, it will **not break your current streak**.
+- **Accurate Analytics**: Skipped days are excluded from both the total completed and the total expected calculations, ensuring your daily scores and heatmaps reflect your actual intent.
+- **3-State Monthly Grid**: Toggling a cell on the Monthly Tracker now cycles through Completed (Green ✅) → Skipped (Amber ⊘) → Unchecked.
+
+## Previous Updates (April 29, 2026)
 
 ### 🔔 Advanced Notification System (Major Update)
 - **Consolidated Notification Panel**: All habit-specific notification settings have been moved into a single, intuitive panel at the bottom of the "Manage Disciplines" page.
@@ -21,14 +40,3 @@ This file tracks the latest features and improvements added to the Habit Mastery
 
 ### ⚙️ Management & UX Improvements
 - **"Full Reset" Default Habits**: The "Reload Default Set" button now performs a clean reset—it deletes all existing habits first to ensure the default list is perfectly loaded.
-- **Confirmation Safety**: Added confirmation popups for critical actions like habit deletion and resetting the habit list.
-- **UI Consolidation**: Cleaned up the "Active Trackers" list to focus solely on habit naming and removal, moving all complex notification logic to the dedicated panel.
-
-### 🛠️ Bug Fixes & Backend
-- **Device Tracking Fix**: Ensured notifications are delivered to the most recently active/logged-in device.
-- **Completion Filtering**: The notification engine now strictly ignores habits that have already been checked off for the day.
-- **ReferenceError Fix**: Resolved a state management issue in the Notification Panel that caused an application crash.
-- **Schema Updates**: Upgraded MongoDB schemas for Users and Habits to support the new nagging and system reminder data.
-
----
-*Maintained by AI Coding Assistant*
