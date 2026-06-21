@@ -21,6 +21,8 @@ This file tracks the latest features and improvements added to the Habit Mastery
 - **Accurate Analytics**: Skipped days are excluded from both the total completed and the total expected calculations, ensuring your daily scores and heatmaps reflect your actual intent.
 - **3-State Monthly Grid**: Toggling a cell on the Monthly Tracker now cycles through Completed (Green ✅) → Skipped (Amber ⊘) → Unchecked.
 
+> **Developer Constraint Note (Average/Target Feature):** When building any future "all-time average" or "target value" features, any calculation doing `sum(values) / count(completions)` **MUST** explicitly filter for `status === 'completed'` first. Skip records write `value: null` to the database and must be excluded entirely, otherwise the denominator will be artificially inflated and the average will be incorrect.
+
 ## Previous Updates (April 29, 2026)
 
 ### 🔔 Advanced Notification System (Major Update)
