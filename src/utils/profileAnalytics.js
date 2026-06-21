@@ -21,9 +21,16 @@ export function getActiveProfileOnDate(dateStr, profileHistory, profiles = []) {
         return isAfterStart && isBeforeEnd;
     });
     
-    if (entry) return entry.profileId;
+    // FIX: If the date is before the earliest entry in profileHistory,
+    // assume the profile of the earliest entry was active.
+    if (profileHistory.length > 0) {
+        const earliestEntry = profileHistory.reduce((min, h) => h.activatedAt < min.activatedAt ? h : min, profileHistory[0]);
+        if (dateStr < earliestEntry.activatedAt) {
+            return earliestEntry.profileId;
+        }
+    }
 
-    // PREDICTION LOGIC for future dates or gaps
+    return null;
     if (dateStr >= todayStr && profiles.length > 0) {
         // Check for specifically scheduled profiles first
         const scheduled = profiles.filter(p => !p.isDefault && p.startDate)
@@ -161,6 +168,10 @@ export function calculateStreakForHabit(habit, profileHistory, completions) {
     
     const firstActivation = profileEntries.reduce((min, h) => h.activatedAt < min ? h.activatedAt : min, profileEntries[0].activatedAt);
 
+    // Determine the limit date (minimum of firstActivation and the oldest completion date)
+    const oldestCompletion = completedDates.reduce((min, c) => c < min ? c : min, todayStr);
+    const limitDateStr = oldestCompletion < firstActivation ? oldestCompletion : firstActivation;
+
     if (type === 'times_per_week') {
         // Week-granularity streak — only count completed records toward weekly target
         const weeklyCompletions = {};
@@ -171,12 +182,10 @@ export function calculateStreakForHabit(habit, profileHistory, completions) {
             }
         }
         
-        const todayMon = getMondayOfDateString(todayStr);
-        const firstActMon = getMondayOfDateString(firstActivation);
-
-        let cursorDate = new Date(todayMon + 'T12:00:00');
+        const firstActMon = getMondayOfDateString(limitDateStr);
         const endLimit = new Date(firstActMon + 'T12:00:00');
-
+        let cursorDate = new Date(getMondayOfDateString(todayStr) + 'T12:00:00');
+        
         let currentStreak = 0;
         let longestStreak = 0;
         let tempStreak = 0;
@@ -188,6 +197,7 @@ export function calculateStreakForHabit(habit, profileHistory, completions) {
             const completedCount = weeklyCompletions[monStr] || 0;
             const isTargetMet = completedCount >= targetCount;
 
+            const todayMon = getMondayOfDateString(todayStr);
             if (monStr === todayMon) {
                 if (isTargetMet) {
                     tempStreak++;
@@ -217,11 +227,12 @@ export function calculateStreakForHabit(habit, profileHistory, completions) {
         let longestStreak = 0;
         let tempStreak = 0;
 
+        // Start counting backwards from today
         let cursorDate = new Date(todayStr + 'T12:00:00');
-        const firstActivationDate = new Date(firstActivation + 'T12:00:00');
+        const limitDate = new Date(limitDateStr + 'T12:00:00');
         let isCurrentStreakActive = true;
 
-        while (cursorDate >= firstActivationDate) {
+        while (cursorDate >= limitDate) {
             const dStr = formatLocalDate(cursorDate);
             
             if (isHabitActiveOnDate(habit, dStr, profileHistory)) {
