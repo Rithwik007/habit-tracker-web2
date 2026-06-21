@@ -21,6 +21,15 @@ This file tracks the latest features and improvements added to the Habit Mastery
 - **Accurate Analytics**: Skipped days are excluded from both the total completed and the total expected calculations, ensuring your daily scores and heatmaps reflect your actual intent.
 - **3-State Monthly Grid**: Toggling a cell on the Monthly Tracker now cycles through Completed (Green ✅) → Skipped (Amber ⊘) → Unchecked.
 
+#### Skip Feature Implementation Steps (Technical Changelog)
+To flawlessly implement the skip feature across the stack without breaking legacy data, the following changes were made:
+1. **Database & Schema Level**: Added support for a `status` payload (`'completed'` vs `'skipped'`) in the completions array, defaulting to `'completed'` for backward compatibility. Added a validation bypass in the backend `/toggle` API so "skipped" entries for habits requiring numeric values (`tracksValue: true`) are accepted without throwing validation errors.
+2. **Frontend State & Caching**: Upgraded the `toggleCompletion` Redux action to instantly handle the optimistic UI for the new 3-state cycle (preventing network lag from freezing the UI). Configured the offline sync queue to correctly propagate the `status` payload to the backend when re-establishing connectivity.
+3. **Analytics & Math Engine**: Deeply refactored `profileAnalytics.js`. We mathematically separated the raw dates into `completedSet` and `skippedSet`. Rewrote the streak loops to dynamically step over `skippedSet` dates as "bridges" (+0 to streak, no break) while counting `completedSet` dates (+1 to streak), effectively protecting multi-day streaks across skipped days.
+4. **UI Components**: 
+   - *Daily Checklist (`HabitItem.jsx`)*: Injected the amber slash-circle (⊘) button, hiding it by default and revealing on hover. Applied conditional amber dashed borders and strikethrough styling when active. 
+   - *Monthly Grid (`MonthlyTracker.jsx`)*: Transitioned the static binary toggle into a dynamic 3-way cycle handler, mapping UI clicks to the API accurately.
+
 > **Developer Constraint Note (Average/Target Feature):** When building any future "all-time average" or "target value" features, any calculation doing `sum(values) / count(completions)` **MUST** explicitly filter for `status === 'completed'` first. Skip records write `value: null` to the database and must be excluded entirely, otherwise the denominator will be artificially inflated and the average will be incorrect.
 
 ## Previous Updates (April 29, 2026)
