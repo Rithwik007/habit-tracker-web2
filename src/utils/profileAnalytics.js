@@ -48,8 +48,9 @@ export function getDailyConsistencyScore(dateStr, profileHistory, allHabits, all
     const habitsForProfile = allHabits.filter(h => h.profileId === activeProfileId);
     if (habitsForProfile.length === 0) return null;
 
+    // Only count status === 'completed' records, not skipped
     const completedThatDay = allCompletions.filter(c => 
-        c.date === dateStr && habitsForProfile.some(h => h._id === c.habitId)
+        c.date === dateStr && c.status !== 'skipped' && habitsForProfile.some(h => h._id === c.habitId)
     );
 
     return {
@@ -133,8 +134,18 @@ export function isHabitDueOnDate(habit, dateStr, completions) {
 export function calculateStreakForHabit(habit, profileHistory, completions) {
     if (!profileHistory || profileHistory.length === 0) return { currentStreak: 0, longestStreak: 0 };
     
-    const uniqueDates = [...new Set((completions || []).map(c => c.date).filter(Boolean))].sort((a, b) => b.localeCompare(a));
-    const completionsSet = new Set(uniqueDates);
+    // Split into completedSet (status='completed') and skippedSet (status='skipped')
+    // Skipped days are neutral: no increment, no break.
+    const completedDates = (completions || [])
+        .filter(c => c.date && (c.status === 'completed' || !c.status)) // legacy records without status default to completed
+        .map(c => c.date);
+    const skippedDates = (completions || [])
+        .filter(c => c.date && c.status === 'skipped')
+        .map(c => c.date);
+
+    const uniqueCompletedDates = [...new Set(completedDates)].sort((a, b) => b.localeCompare(a));
+    const completedSet = new Set(uniqueCompletedDates);
+    const skippedSet = new Set(skippedDates);
 
     let freq = habit.frequency || { type: 'daily' };
     if (typeof freq === 'string') {
@@ -151,8 +162,9 @@ export function calculateStreakForHabit(habit, profileHistory, completions) {
     const firstActivation = profileEntries.reduce((min, h) => h.activatedAt < min ? h.activatedAt : min, profileEntries[0].activatedAt);
 
     if (type === 'times_per_week') {
+        // Week-granularity streak — only count completed records toward weekly target
         const weeklyCompletions = {};
-        for (const dStr of uniqueDates) {
+        for (const dStr of uniqueCompletedDates) {
             if (isHabitActiveOnDate(habit, dStr, profileHistory)) {
                 const mon = getMondayOfDateString(dStr);
                 weeklyCompletions[mon] = (weeklyCompletions[mon] || 0) + 1;
@@ -200,6 +212,7 @@ export function calculateStreakForHabit(habit, profileHistory, completions) {
         return { currentStreak, longestStreak };
     } else {
         // Handles daily, specific_days, every_n_days
+        // Skipped days: neither increment nor break the streak (treated as neutral off-days)
         let currentStreak = 0;
         let longestStreak = 0;
         let tempStreak = 0;
@@ -214,10 +227,14 @@ export function calculateStreakForHabit(habit, profileHistory, completions) {
             if (isHabitActiveOnDate(habit, dStr, profileHistory)) {
                 const isScheduled = isHabitDueOnDate(habit, dStr, completions);
                 if (isScheduled) {
-                    if (completionsSet.has(dStr)) {
+                    if (completedSet.has(dStr)) {
+                        // Completed: count it
                         tempStreak++;
                         if (isCurrentStreakActive) currentStreak++;
+                    } else if (skippedSet.has(dStr)) {
+                        // Skipped: neutral — no increment, no break
                     } else {
+                        // Missed: break streak (except today which gets a grace day)
                         if (dStr !== todayStr) {
                             isCurrentStreakActive = false;
                             tempStreak = 0;
@@ -248,8 +265,9 @@ export function calculateBatchConsistency(profileHistory, allHabits, allCompleti
         return acc;
     }, {});
 
-    // Index completions by date
+    // Index completions by date — EXCLUDE skipped records (they are not completions)
     const completionsByDate = allCompletions.reduce((acc, c) => {
+        if (c.status === 'skipped') return acc; // skips don't count toward heatmap score
         if (!acc[c.date]) acc[c.date] = new Set();
         acc[c.date].add(c.habitId.toString());
         return acc;

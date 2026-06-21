@@ -35,7 +35,12 @@ export default function LeetCodeGraph() {
     }, [user?.uid]);
 
     const allCompletions = useMemo(() => {
-        return allHabits.flatMap(h => (h.completions || []).map(c => ({ habitId: h._id, date: c.date })));
+        // Exclude skipped records — they don't count toward the heatmap score
+        return allHabits.flatMap(h => 
+            (h.completions || [])
+                .filter(c => c.status !== 'skipped')
+                .map(c => ({ habitId: h._id, date: c.date, status: c.status || 'completed' }))
+        );
     }, [allHabits]);
 
     const dataTracker = useMemo(() => {
