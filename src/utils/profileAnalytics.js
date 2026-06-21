@@ -30,7 +30,9 @@ export function getActiveProfileOnDate(dateStr, profileHistory, profiles = []) {
         }
     }
 
-    return null;
+    if (entry) return entry.profileId;
+
+    // PREDICTION LOGIC for future dates or gaps
     if (dateStr >= todayStr && profiles.length > 0) {
         // Check for specifically scheduled profiles first
         const scheduled = profiles.filter(p => !p.isDefault && p.startDate)
