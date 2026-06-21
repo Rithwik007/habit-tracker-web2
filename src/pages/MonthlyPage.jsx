@@ -17,54 +17,67 @@ export default function MonthlyPage() {
     const toggleCell = async (habitId, dateStr) => {
         const habit = habits.find(h => h._id === habitId);
         if (!habit) return;
-        const alreadyDone = habit.completions?.some(c => c.date === dateStr);
+        const todayComp = habit.completions?.find(c => c.date === dateStr);
+        const currentStatus = todayComp?.status || (todayComp ? 'completed' : null);
 
-        if (alreadyDone) {
-            // Uncheck it
-            setHabits(prev => prev.map(h => {
-                if (h._id !== habitId) return h;
-                const completions = (h.completions || []).filter(c => c.date !== dateStr);
-                return { ...h, completions };
-            }));
-
-            try {
-                await habitApi.toggleCompletion(habitId, dateStr, null, false);
-            } catch (e) {
-                console.error('Toggle error:', e);
-                setHabits(prev => prev.map(h => {
-                    if (h._id !== habitId) return h;
-                    const oldComp = habit.completions?.find(c => c.date === dateStr) || { date: dateStr, value: 1 };
-                    return { ...h, completions: [...(h.completions || []).filter(c => c.date !== dateStr), oldComp] };
-                }));
-            }
-        } else {
-            // Check it/save value
-            let finalValue = 1;
-            if (habit.tracksValue) {
+        // 3-state cycle: null → completed → skipped → null
+        if (currentStatus === null || currentStatus === undefined) {
+            // Was unchecked: mark completed
+            const finalValue = habit.tracksValue ? (() => {
                 const response = window.prompt(`Enter numeric value for "${habit.name}" (${habit.valueUnit || 'value'}):`);
-                if (response === null) return; // User cancelled
+                if (response === null) return null;
                 const parsed = Number(response.trim());
-                if (response.trim() === '' || isNaN(parsed)) {
-                    alert('Please enter a valid numeric value.');
-                    return;
-                }
-                finalValue = parsed;
-            }
+                if (response.trim() === '' || isNaN(parsed)) { alert('Please enter a valid numeric value.'); return null; }
+                return parsed;
+            })() : 1;
+            if (finalValue === null) return; // cancelled
 
             setHabits(prev => prev.map(h => {
                 if (h._id !== habitId) return h;
-                const completions = [...(h.completions || []), { date: dateStr, value: finalValue }];
+                const completions = [...(h.completions || []).filter(c => c.date !== dateStr), { date: dateStr, value: finalValue, status: 'completed' }];
                 return { ...h, completions };
             }));
-
             try {
-                await habitApi.toggleCompletion(habitId, dateStr, finalValue, true);
+                await habitApi.toggleCompletion(habitId, dateStr, finalValue, true, 'completed');
             } catch (e) {
                 console.error('Toggle error:', e);
                 setHabits(prev => prev.map(h => {
                     if (h._id !== habitId) return h;
                     const completions = (h.completions || []).filter(c => c.date !== dateStr);
                     return { ...h, completions };
+                }));
+            }
+        } else if (currentStatus === 'completed') {
+            // Was completed: mark skipped
+            setHabits(prev => prev.map(h => {
+                if (h._id !== habitId) return h;
+                const completions = [...(h.completions || []).filter(c => c.date !== dateStr), { date: dateStr, value: null, status: 'skipped' }];
+                return { ...h, completions };
+            }));
+            try {
+                await habitApi.toggleCompletion(habitId, dateStr, null, true, 'skipped');
+            } catch (e) {
+                console.error('Toggle error:', e);
+                setHabits(prev => prev.map(h => {
+                    if (h._id !== habitId) return h;
+                    const oldComp = todayComp || { date: dateStr, value: 1, status: 'completed' };
+                    return { ...h, completions: [...(h.completions || []).filter(c => c.date !== dateStr), oldComp] };
+                }));
+            }
+        } else {
+            // Was skipped: uncheck (remove)
+            setHabits(prev => prev.map(h => {
+                if (h._id !== habitId) return h;
+                const completions = (h.completions || []).filter(c => c.date !== dateStr);
+                return { ...h, completions };
+            }));
+            try {
+                await habitApi.toggleCompletion(habitId, dateStr, null, false);
+            } catch (e) {
+                console.error('Toggle error:', e);
+                setHabits(prev => prev.map(h => {
+                    if (h._id !== habitId) return h;
+                    return { ...h, completions: [...(h.completions || []).filter(c => c.date !== dateStr), todayComp] };
                 }));
             }
         }
@@ -133,16 +146,19 @@ export default function MonthlyPage() {
                         </thead>
                         <motion.tbody initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.03 } } }}>
                             {habits.map(habit => {
+                                // Month count: only status='completed', not skips
                                 const habitMonthCount = (habit.completions || []).filter(c => {
                                     const [y, m] = (c.date || '').split('-');
-                                    return Number(y) === currentDate.getFullYear() && (Number(m) - 1) === currentDate.getMonth();
+                                    return Number(y) === currentDate.getFullYear() && (Number(m) - 1) === currentDate.getMonth() && c.status !== 'skipped';
                                 }).length;
 
                                 return (
                                     <motion.tr key={habit._id} variants={{ hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0 } }}>
                                         <td className="habit-name-cell">{habit.name}</td>
                                         {dayMeta.map(dm => {
-                                            const isDone = (habit.completions || []).some(c => c.date === dm.dStr);
+                                            const comp = (habit.completions || []).find(c => c.date === dm.dStr);
+                                            const isCompleted = !!comp && comp.status !== 'skipped';
+                                            const isSkipped = !!comp && comp.status === 'skipped';
                                             const isFuture = dm.dStr > todayStr;
                                             const isHabitActive = habit.profileId === dm.activePId;
                                             const isScheduled = isHabitActive && isHabitDueOnDate(habit, dm.dStr, habit.completions || []);
@@ -150,8 +166,16 @@ export default function MonthlyPage() {
                                             let cellClass = 'grid-cell';
                                             let cellStyle = {};
 
-                                            if (isDone) {
+                                            if (isCompleted) {
                                                 cellClass += ' done';
+                                            } else if (isSkipped) {
+                                                // Amber/gold dashed — distinct from completed, missed, and unscheduled
+                                                cellStyle = {
+                                                    background: 'rgba(245, 158, 11, 0.1)',
+                                                    border: '1px dashed rgba(245, 158, 11, 0.55)',
+                                                    color: '#f59e0b',
+                                                    opacity: 0.85
+                                                };
                                             } else if (isFuture) {
                                                 cellClass += ' future';
                                                 if (!isScheduled) {
@@ -165,23 +189,24 @@ export default function MonthlyPage() {
                                                 }
                                                 
                                                 if (!isScheduled) {
-                                                    // Unscheduled = Grey (transparent background, thin border, neutral color)
+                                                    // Unscheduled = Ghost
                                                     cellStyle = { background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.08)', opacity: 0.5 };
                                                 } else {
                                                     // Scheduled but not done
                                                     if (dm.dStr === todayStr) {
                                                         cellStyle = { background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)' };
                                                     } else {
-                                                        // Missed = Light Red background & red border
+                                                        // Missed = Light Red
                                                         cellStyle = { background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.4)' };
                                                     }
                                                 }
                                             }
 
                                             let cellTitle = '';
-                                            if (isDone) {
+                                            if (isSkipped) {
+                                                cellTitle = 'Skipped';
+                                            } else if (isCompleted) {
                                                 if (habit.tracksValue) {
-                                                    const comp = (habit.completions || []).find(c => c.date === dm.dStr);
                                                     const val = comp ? comp.value : '';
                                                     cellTitle = `${val} ${habit.valueUnit || ''}`.trim();
                                                 } else {
@@ -199,9 +224,15 @@ export default function MonthlyPage() {
                                                         title={cellTitle}
                                                         onClick={() => !isFuture && toggleCell(habit._id, dm.dStr)}
                                                     >
-                                                        {isDone && (
+                                                        {isCompleted && (
                                                             <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
                                                                 <polyline points="20 6 9 17 4 12" />
+                                                            </svg>
+                                                        )}
+                                                        {isSkipped && (
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                                                                <circle cx="12" cy="12" r="10"/>
+                                                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
                                                             </svg>
                                                         )}
                                                     </div>
