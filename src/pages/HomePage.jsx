@@ -384,11 +384,11 @@ export default function HomePage() {
                 <motion.div className="kpi-card" variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}>
                     <span className="kpi-label">Today's Score</span>
                     <span className="kpi-value">{pct}%</span>
-                    <span className="kpi-sub">{completed} / {dueHabits.length} habits</span>
+                    <span className="kpi-sub">{completed} / {effectiveDueHabits.length} habits</span>
                 </motion.div>
                 <motion.div className="kpi-card" variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}>
                     <span className="kpi-label">Remaining</span>
-                    <span className="kpi-value">{dueHabits.length - completed}</span>
+                    <span className="kpi-value">{effectiveDueHabits.length - completed}</span>
                     <span className="kpi-sub">disciplines left</span>
                 </motion.div>
                 <motion.div className="kpi-card" variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}>
