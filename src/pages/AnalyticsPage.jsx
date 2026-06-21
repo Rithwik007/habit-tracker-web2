@@ -31,7 +31,7 @@ export default function AnalyticsPage() {
         if (selectedYear === currentYear && selectedMonth === currentMonth && d > currentDate) break;
         const dateStr = formatLocalDate(d);
         const completedCount = (Array.isArray(habits) ? habits : []).filter(h =>
-            (Array.isArray(h.completions) ? h.completions : []).some(c => c.date === dateStr)
+            (Array.isArray(h.completions) ? h.completions : []).some(c => c.date === dateStr && c.status !== 'skipped')
         ).length;
         const pct = habits.length > 0 ? Math.round((completedCount / habits.length) * 100) : 0;
         dailyData.push({

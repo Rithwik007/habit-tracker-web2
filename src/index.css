@@ -600,6 +600,54 @@ body {
   color: var(--success);
 }
 
+/* ---- Skipped habit state ---- */
+.habit-item.skipped {
+  opacity: 0.75;
+  cursor: default;
+}
+
+.habit-item.skipped .habit-name {
+  text-decoration: line-through;
+  color: var(--text-dim);
+}
+
+.habit-item.skipped::before {
+  background: #f59e0b;
+  opacity: 0.6;
+}
+
+/* ---- Skip button ---- */
+.skip-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+  padding: 4px;
+  margin-right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.habit-item:hover .skip-btn {
+  opacity: 0.5;
+}
+
+.skip-btn:hover,
+.skip-btn.active {
+  opacity: 1 !important;
+  color: #f59e0b;
+}
+
+.habit-item.skipped .skip-btn {
+  opacity: 1;
+  color: #f59e0b;
+}
+
 .habit-info {
   display: flex;
   flex-direction: column;

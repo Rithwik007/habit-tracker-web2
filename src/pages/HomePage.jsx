@@ -115,11 +115,15 @@ export default function HomePage() {
     }, [habits, today]);
 
     // Build today's logs from cached habits
+    // logs[habitId] = 'completed' | 'skipped' | undefined
     useEffect(() => {
         const logsMap = {};
         (Array.isArray(habits) ? habits : []).forEach(habit => {
-            if (Array.isArray(habit.completions) && habit.completions.some(c => c.date === today)) {
-                logsMap[habit._id] = true;
+            if (Array.isArray(habit.completions)) {
+                const todayComp = habit.completions.find(c => c.date === today);
+                if (todayComp) {
+                    logsMap[habit._id] = todayComp.status === 'skipped' ? 'skipped' : 'completed';
+                }
             }
         });
         setLogs(logsMap);
@@ -168,11 +172,12 @@ export default function HomePage() {
 
     const toggleHabit = async (habit) => {
         const habitId = habit._id;
-        const current = !!logs[habitId];
-        const next = !current;
+        const current = logs[habitId]; // 'completed' | 'skipped' | undefined
+        const isDone = current === 'completed';
+        const isSkipped = current === 'skipped';
 
         if (habit.tracksValue) {
-            if (current) {
+            if (isDone) {
                 // It was checked. We are unchecking it.
                 // 1. Save current value as draft in localStorage
                 const currentValue = valueInputs[habitId] || '';
@@ -184,7 +189,7 @@ export default function HomePage() {
                 setPendingValue(prev => ({ ...prev, [habitId]: false }));
 
                 // 3. Optimistic update
-                setLogs(prev => ({ ...prev, [habitId]: false }));
+                setLogs(prev => ({ ...prev, [habitId]: undefined }));
                 setHabits(prev => prev.map(h => {
                     if (h._id !== habitId) return h;
                     const completions = (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today);
@@ -197,11 +202,11 @@ export default function HomePage() {
                 } catch (e) {
                     addToast('Failed to save progress', 'error');
                     // Revert
-                    setLogs(prev => ({ ...prev, [habitId]: true }));
+                    setLogs(prev => ({ ...prev, [habitId]: 'completed' }));
                     refreshHabits();
                 }
             } else {
-                // It was not checked. User clicked checkbox/row.
+                // It was not checked (or skipped). User clicked checkbox/row.
                 // Check if they already have a value in the input.
                 const valStr = valueInputs[habitId] || '';
                 if (valStr.trim() !== '') {
@@ -219,30 +224,76 @@ export default function HomePage() {
                 }
             }
         } else {
-            // Standard habit toggling
+            // Standard habit: cycle unchecked -> completed -> unchecked
+            // (skip is a separate button; clicking check-circle when skipped = complete)
+            const next = isDone ? undefined : 'completed';
             setLogs(prev => ({ ...prev, [habitId]: next }));
             setHabits(prev => prev.map(h => {
                 if (h._id !== habitId) return h;
-                const completions = next
-                    ? [...(Array.isArray(h.completions) ? h.completions : []), { date: today, value: 1 }]
+                const completions = next === 'completed'
+                    ? [...(Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today), { date: today, value: 1, status: 'completed' }]
                     : (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today);
                 return { ...h, completions };
             }));
 
             try {
-                await habitApi.toggleCompletion(habitId, today, next ? 1 : 0, next);
-                if (next) addToast(habit.name);
+                if (next === 'completed') {
+                    await habitApi.toggleCompletion(habitId, today, 1, true, 'completed');
+                    addToast(habit.name);
+                } else {
+                    await habitApi.toggleCompletion(habitId, today, null, false);
+                }
             } catch (e) {
                 addToast('Failed to save progress', 'error');
                 // Revert
                 setLogs(prev => ({ ...prev, [habitId]: current }));
                 setHabits(prev => prev.map(h => {
                     if (h._id !== habitId) return h;
-                    const completions = current
-                        ? [...(Array.isArray(h.completions) ? h.completions : []), { date: today, value: 1 }]
+                    const completions = current === 'completed'
+                        ? [...(Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today), { date: today, value: 1, status: 'completed' }]
                         : (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today);
                     return { ...h, completions };
                 }));
+            }
+        }
+    };
+
+    const skipHabit = async (habit) => {
+        const habitId = habit._id;
+        const current = logs[habitId];
+        const isAlreadySkipped = current === 'skipped';
+
+        if (isAlreadySkipped) {
+            // Un-skip: remove the completion record entirely
+            setLogs(prev => ({ ...prev, [habitId]: undefined }));
+            setHabits(prev => prev.map(h => {
+                if (h._id !== habitId) return h;
+                const completions = (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today);
+                return { ...h, completions };
+            }));
+            try {
+                await habitApi.toggleCompletion(habitId, today, null, false);
+            } catch (e) {
+                addToast('Failed to unskip', 'error');
+                setLogs(prev => ({ ...prev, [habitId]: 'skipped' }));
+                refreshHabits();
+            }
+        } else {
+            // Skip it (from any state — completed or unchecked)
+            setLogs(prev => ({ ...prev, [habitId]: 'skipped' }));
+            setPendingValue(prev => ({ ...prev, [habitId]: false })); // clear any pending value state
+            setHabits(prev => prev.map(h => {
+                if (h._id !== habitId) return h;
+                const existingWithoutToday = (Array.isArray(h.completions) ? h.completions : []).filter(c => c.date !== today);
+                return { ...h, completions: [...existingWithoutToday, { date: today, value: null, status: 'skipped' }] };
+            }));
+            try {
+                await habitApi.toggleCompletion(habitId, today, null, true, 'skipped');
+                addToast(`Skipped ${habit.name}`);
+            } catch (e) {
+                addToast('Failed to skip', 'error');
+                setLogs(prev => ({ ...prev, [habitId]: current }));
+                refreshHabits();
             }
         }
     };
@@ -315,8 +366,10 @@ export default function HomePage() {
     if (habitsLoading) return <div className="loading-screen">⏳ Loading...</div>;
 
     const dueHabits = (Array.isArray(habits) ? habits : []).filter(h => isHabitDueOnDate(h, today, h.completions || []));
-    const completed = dueHabits.filter(h => logs[h._id]).length;
-    const pct = dueHabits.length > 0 ? Math.round((completed / dueHabits.length) * 100) : 0;
+    // Exclude skipped habits from both numerator and denominator — same treatment as unscheduled habits
+    const effectiveDueHabits = dueHabits.filter(h => logs[h._id] !== 'skipped');
+    const completed = effectiveDueHabits.filter(h => logs[h._id] === 'completed').length;
+    const pct = effectiveDueHabits.length > 0 ? Math.round((completed / effectiveDueHabits.length) * 100) : 0;
 
     return (
         <div className="fade-in">
@@ -492,7 +545,8 @@ export default function HomePage() {
                         variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
                     >
                         {dueHabits.map(habit => {
-                            const done = !!logs[habit._id];
+                            const done = logs[habit._id] === 'completed';
+                            const isSkipped = logs[habit._id] === 'skipped';
                             const isPending = !!pendingValue[habit._id];
                             const tracksVal = habit.tracksValue;
                             const inputValue = valueInputs[habit._id] || '';
@@ -501,14 +555,15 @@ export default function HomePage() {
                                 <motion.div
                                     key={habit._id}
                                     variants={{ hidden: { opacity: 0, x: -20 }, show: { opacity: 1, x: 0 } }}
-                                    className={`habit-item${done ? ' completed' : ''}${isPending ? ' pending-value' : ''}`}
-                                    onClick={() => toggleHabit(habit)}
+                                    className={`habit-item${done ? ' completed' : ''}${isPending ? ' pending-value' : ''}${isSkipped ? ' skipped' : ''}`}
+                                    onClick={() => !isSkipped && toggleHabit(habit)}
                                     style={{
                                         display: 'flex',
                                         flexDirection: 'column',
                                         alignItems: 'stretch',
                                         padding: '12px 16px',
-                                        border: isPending ? '2px dashed var(--primary-light)' : undefined,
+                                        border: isPending ? '2px dashed var(--primary-light)' : isSkipped ? '1px dashed rgba(245, 158, 11, 0.5)' : undefined,
+                                        background: isSkipped ? 'rgba(245, 158, 11, 0.05)' : undefined,
                                         gap: tracksVal ? '12px' : '0'
                                     }}
                                     whileHover={{ scale: 1.01 }}
@@ -518,30 +573,47 @@ export default function HomePage() {
                                         <div className="habit-info">
                                             <span className="habit-name">{habit.name}</span>
                                         </div>
-                                        <div 
-                                            className="check-circle"
-                                            style={{
-                                                border: isPending ? '2px dashed var(--primary-light)' : undefined
-                                            }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleHabit(habit);
-                                            }}
-                                        >
-                                            {done && (
-                                                <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                    <motion.polyline
-                                                        points="20 6 9 17 4 12"
-                                                        initial={{ pathLength: 0 }}
-                                                        animate={{ pathLength: 1 }}
-                                                        transition={{ duration: 0.3, ease: 'easeOut' }}
-                                                    />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            {/* Skip button — subtle, reveals on hover */}
+                                            <button
+                                                className={`skip-btn${isSkipped ? ' active' : ''}`}
+                                                title={isSkipped ? 'Un-skip' : 'Skip today'}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    skipHabit(habit);
+                                                }}
+                                            >
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <circle cx="12" cy="12" r="10"/>
+                                                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
                                                 </svg>
-                                            )}
+                                            </button>
+                                            <div 
+                                                className="check-circle"
+                                                style={{
+                                                    border: isPending ? '2px dashed var(--primary-light)' : undefined,
+                                                    opacity: isSkipped ? 0.35 : 1
+                                                }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleHabit(habit);
+                                                }}
+                                            >
+                                                {done && (
+                                                    <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                        <motion.polyline
+                                                            points="20 6 9 17 4 12"
+                                                            initial={{ pathLength: 0 }}
+                                                            animate={{ pathLength: 1 }}
+                                                            transition={{ duration: 0.3, ease: 'easeOut' }}
+                                                        />
+                                                    </svg>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                     
-                                    {tracksVal && (
+                                    {tracksVal && !isSkipped && (
                                         <div 
                                             style={{ 
                                                 display: 'flex', 
