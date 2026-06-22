@@ -1,7 +1,7 @@
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { formatLocalDate } from '../hooks/useMidnightRefresh';
-import { calculateStreakForHabit, calculateBatchConsistency } from '../utils/profileAnalytics';
+import { calculateStreakForHabit, calculateBatchConsistency, calculateAverageValue } from '../utils/profileAnalytics';
 import { useState, useEffect, useMemo } from 'react';
 import { habitApi } from '../api';
 import { motion } from 'framer-motion';
@@ -86,7 +86,8 @@ export default function ProgressPage() {
 
     const habitStreaks = (Array.isArray(habits) ? habits : []).map(h => {
         const { currentStreak, longestStreak } = calculateStreakForHabit(h, profileHistory, h.completions);
-        return { ...h, streak: currentStreak, longestStreak };
+        const avgVal = calculateAverageValue(h);
+        return { ...h, streak: currentStreak, longestStreak, avgVal };
     }).sort((a, b) => b.streak - a.streak);
 
     const activeStreaksCount = habitStreaks.filter(h => h.streak > 0).length;
@@ -184,7 +185,7 @@ export default function ProgressPage() {
                                     <div className="streak-fill" style={{ width: `${Math.min((h.streak / (topStreakValue || 1)) * 100, 100)}%` }}></div>
                                 </div>
                             </div>
-                            <span className="streak-count">{h.streak}d</span>
+                            <span className="streak-count">{h.streak}d{h.tracksValue && h.avgVal !== null ? ` · Avg: ${h.avgVal}${h.valueUnit ? ' ' + h.valueUnit : ''}` : ''}</span>
                         </div>
                     ))}
                     {habitStreaks.length === 0 && <div className="empty-msg">No habits in current profile.</div>}

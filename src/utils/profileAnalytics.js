@@ -143,7 +143,7 @@ export function calculateStreakForHabit(habit, profileHistory, completions) {
     // Split into completedSet (status='completed') and skippedSet (status='skipped')
     // Skipped days are neutral: no increment, no break.
     const completedDates = (completions || [])
-        .filter(c => c.date && (c.status === 'completed' || !c.status)) // legacy records without status default to completed
+        .filter(c => c.date && (c.status === 'completed' || c.status === 'partial' || !c.status)) // legacy records without status + partial both count as streak-valid
         .map(c => c.date);
     const skippedDates = (completions || [])
         .filter(c => c.date && c.status === 'skipped')
@@ -321,4 +321,19 @@ export function calculateYearlyStats(selectedYear, profileHistory, allHabits, al
         cursor.setDate(cursor.getDate() + 1);
     }
     return stats;
+}
+
+/**
+ * Calculates the all-time average of logged numeric values for a habit.
+ * Skipped records and null values are excluded.
+ * Display-only — must never feed into streak calculation logic.
+ */
+export function calculateAverageValue(habit) {
+    if (!habit || !habit.tracksValue) return null;
+    const numericCompletions = (habit.completions || []).filter(
+        c => c.status !== 'skipped' && c.value !== null && c.value !== undefined && !isNaN(Number(c.value))
+    );
+    if (numericCompletions.length === 0) return null;
+    const sum = numericCompletions.reduce((acc, c) => acc + Number(c.value), 0);
+    return Math.round((sum / numericCompletions.length) * 10) / 10; // 1 decimal
 }

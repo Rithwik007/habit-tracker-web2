@@ -146,7 +146,7 @@ export default function MonthlyPage() {
                         </thead>
                         <motion.tbody initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.03 } } }}>
                             {habits.map(habit => {
-                                // Month count: only status='completed', not skips
+                                // Month count: status='completed' or 'partial' (partial counts toward streak/display), not skips
                                 const habitMonthCount = (habit.completions || []).filter(c => {
                                     const [y, m] = (c.date || '').split('-');
                                     return Number(y) === currentDate.getFullYear() && (Number(m) - 1) === currentDate.getMonth() && c.status !== 'skipped';
@@ -157,7 +157,8 @@ export default function MonthlyPage() {
                                         <td className="habit-name-cell">{habit.name}</td>
                                         {dayMeta.map(dm => {
                                             const comp = (habit.completions || []).find(c => c.date === dm.dStr);
-                                            const isCompleted = !!comp && comp.status !== 'skipped';
+                                            const isCompleted = !!comp && comp.status !== 'skipped' && comp.status !== 'partial';
+                                            const isPartial = !!comp && comp.status === 'partial';
                                             const isSkipped = !!comp && comp.status === 'skipped';
                                             const isFuture = dm.dStr > todayStr;
                                             const isHabitActive = habit.profileId === dm.activePId;
@@ -168,6 +169,14 @@ export default function MonthlyPage() {
 
                                             if (isCompleted) {
                                                 cellClass += ' done';
+                                            } else if (isPartial) {
+                                                // Warm amber — distinct from green (completed) and orange-dashed (skipped)
+                                                cellStyle = {
+                                                    background: 'rgba(251, 191, 36, 0.18)',
+                                                    border: '1px solid rgba(251, 191, 36, 0.6)',
+                                                    color: '#fbbf24',
+                                                    opacity: 0.95
+                                                };
                                             } else if (isSkipped) {
                                                 // Amber/gold dashed — distinct from completed, missed, and unscheduled
                                                 cellStyle = {
@@ -205,6 +214,12 @@ export default function MonthlyPage() {
                                             let cellTitle = '';
                                             if (isSkipped) {
                                                 cellTitle = 'Skipped';
+                                            } else if (isPartial) {
+                                                const val = comp ? comp.value : '';
+                                                const target = habit.valueTarget;
+                                                cellTitle = target !== null && target !== undefined
+                                                    ? `${val} / ${target}${habit.valueUnit ? ' ' + habit.valueUnit : ''} (partial)`
+                                                    : `${val}${habit.valueUnit ? ' ' + habit.valueUnit : ''} (partial)`;
                                             } else if (isCompleted) {
                                                 if (habit.tracksValue) {
                                                     const val = comp ? comp.value : '';
@@ -227,6 +242,12 @@ export default function MonthlyPage() {
                                                         {isCompleted && (
                                                             <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
                                                                 <polyline points="20 6 9 17 4 12" />
+                                                            </svg>
+                                                        )}
+                                                        {isPartial && (
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                                                                <line x1="5" y1="12" x2="19" y2="12" />
+                                                                <polyline points="13 6 19 12 13 18" />
                                                             </svg>
                                                         )}
                                                         {isSkipped && (

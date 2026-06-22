@@ -131,11 +131,27 @@ router.post('/:id/toggle', async (req, res) => {
         }
       }
 
+      // Determine completion status: partial if numeric value is below target
+      let completionStatus = 'completed';
+      if (habit.tracksValue && habit.valueTarget !== null && habit.valueTarget !== undefined) {
+        const vt = Number(habit.valueTarget);
+        if (!isNaN(vt)) {
+          // Edge: target 0, value 0 → completed. Otherwise value >= target → completed, else partial
+          if (vt === 0 && finalValue === 0) {
+            completionStatus = 'completed';
+          } else if (finalValue >= vt) {
+            completionStatus = 'completed';
+          } else {
+            completionStatus = 'partial';
+          }
+        }
+      }
+
       if (completionIndex > -1) {
         habit.completions[completionIndex].value = finalValue;
-        habit.completions[completionIndex].status = 'completed';
+        habit.completions[completionIndex].status = completionStatus;
       } else {
-        habit.completions.push({ date, value: finalValue, status: 'completed' });
+        habit.completions.push({ date, value: finalValue, status: completionStatus });
       }
     }
 

@@ -5,6 +5,7 @@ import useMidnightRefresh, { formatLocalDate } from '../hooks/useMidnightRefresh
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import NotificationSettingsPanel from '../components/NotificationSettingsPanel';
+import { calculateAverageValue } from '../utils/profileAnalytics';
 
 // Page for managing habits and notification settings
 
@@ -24,6 +25,7 @@ export default function ManageHabitsPage() {
     // Add value-tracking state for creating new habit
     const [tracksValue, setTracksValue] = useState(false);
     const [valueUnit, setValueUnit] = useState('');
+    const [valueTarget, setValueTarget] = useState('');
 
     // Add frequency state for editing habit
     const [editFreqType, setEditFreqType] = useState('daily');
@@ -34,6 +36,7 @@ export default function ManageHabitsPage() {
     // Add value-tracking state for editing habit
     const [editTracksValue, setEditTracksValue] = useState(false);
     const [editValueUnit, setEditValueUnit] = useState('');
+    const [editValueTarget, setEditValueTarget] = useState('');
 
     const { addToast } = useToast();
 
@@ -52,7 +55,8 @@ export default function ManageHabitsPage() {
                 userId: user.uid, 
                 frequency, 
                 tracksValue, 
-                valueUnit: tracksValue ? valueUnit.trim() : '' 
+                valueUnit: tracksValue ? valueUnit.trim() : '',
+                valueTarget: tracksValue && valueTarget.trim() !== '' ? Number(valueTarget) : null
             });
             setNewHabit('');
             setFreqType('daily');
@@ -61,6 +65,7 @@ export default function ManageHabitsPage() {
             setFreqEveryNDays(2);
             setTracksValue(false);
             setValueUnit('');
+            setValueTarget('');
             addToast('Habit added!');
             refreshHabits();
         } catch (e) {
@@ -94,7 +99,8 @@ export default function ManageHabitsPage() {
                 name: editValue.trim(), 
                 frequency, 
                 tracksValue: editTracksValue, 
-                valueUnit: editTracksValue ? editValueUnit.trim() : '' 
+                valueUnit: editTracksValue ? editValueUnit.trim() : '',
+                valueTarget: editTracksValue && editValueTarget.trim() !== '' ? Number(editValueTarget) : null
             });
             setEditingId(null);
             refreshHabits();
@@ -233,16 +239,29 @@ export default function ManageHabitsPage() {
                             </div>
                             
                             {tracksValue && (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '24px' }} className="fade-in">
-                                    <label style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 500 }}>Unit Label</label>
-                                    <input
-                                        type="text"
-                                        className="notif-time-input"
-                                        style={{ width: '180px', padding: '8px' }}
-                                        placeholder="e.g. glasses, miles, pages"
-                                        value={valueUnit}
-                                        onChange={e => setValueUnit(e.target.value)}
-                                    />
+                                <div style={{ display: 'flex', gap: '16px', paddingLeft: '24px', flexWrap: 'wrap' }} className="fade-in">
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <label style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 500 }}>Unit Label</label>
+                                        <input
+                                            type="text"
+                                            className="notif-time-input"
+                                            style={{ width: '180px', padding: '8px' }}
+                                            placeholder="e.g. glasses, miles, pages"
+                                            value={valueUnit}
+                                            onChange={e => setValueUnit(e.target.value)}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <label style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 500 }}>Target Value (optional)</label>
+                                        <input
+                                            type="number"
+                                            className="notif-time-input"
+                                            style={{ width: '180px', padding: '8px' }}
+                                            placeholder="e.g. 8, 30"
+                                            value={valueTarget}
+                                            onChange={e => setValueTarget(e.target.value)}
+                                        />
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -372,16 +391,29 @@ export default function ManageHabitsPage() {
                                                 </div>
                                                 
                                                 {editTracksValue && (
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '22px' }} className="fade-in">
-                                                        <label style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Unit Label</label>
-                                                        <input
-                                                            type="text"
-                                                            className="notif-time-input"
-                                                            style={{ width: '150px', padding: '6px', fontSize: '0.8rem' }}
-                                                            placeholder="e.g. glasses, miles"
-                                                            value={editValueUnit}
-                                                            onChange={e => setEditValueUnit(e.target.value)}
-                                                        />
+                                                    <div style={{ display: 'flex', gap: '12px', paddingLeft: '22px', flexWrap: 'wrap' }} className="fade-in">
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                            <label style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Unit Label</label>
+                                                            <input
+                                                                type="text"
+                                                                className="notif-time-input"
+                                                                style={{ width: '130px', padding: '6px', fontSize: '0.8rem' }}
+                                                                placeholder="e.g. glasses, miles"
+                                                                value={editValueUnit}
+                                                                onChange={e => setEditValueUnit(e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                            <label style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Target Value (optional)</label>
+                                                            <input
+                                                                type="number"
+                                                                className="notif-time-input"
+                                                                style={{ width: '130px', padding: '6px', fontSize: '0.8rem' }}
+                                                                placeholder="e.g. 8, 30"
+                                                                value={editValueTarget}
+                                                                onChange={e => setEditValueTarget(e.target.value)}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -407,6 +439,8 @@ export default function ManageHabitsPage() {
                                                 return 'Daily';
                                             })()}
                                             {habit.tracksValue && ` • Tracks value (${habit.valueUnit || 'no unit'})`}
+                                            {habit.tracksValue && habit.valueTarget !== null && habit.valueTarget !== undefined && ` • Target: ${habit.valueTarget}`}
+                                            {habit.tracksValue && (() => { const avg = calculateAverageValue(habit); return avg !== null ? ` • Avg: ${avg}${habit.valueUnit ? ' ' + habit.valueUnit : ''}` : ''; })()}
                                         </span>
                                     </div>
                                 )}
@@ -426,6 +460,7 @@ export default function ManageHabitsPage() {
                                             setEditFreqEveryNDays(freq.everyNDays || 2);
                                             setEditTracksValue(habit.tracksValue || false);
                                             setEditValueUnit(habit.valueUnit || '');
+                                            setEditValueTarget(habit.valueTarget !== undefined && habit.valueTarget !== null ? habit.valueTarget.toString() : '');
                                         }}>Edit</button>
                                 )}
                                 <button className="delete-btn" onClick={() => deleteHabit(habit._id)}>Remove</button>

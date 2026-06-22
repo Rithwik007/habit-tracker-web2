@@ -616,6 +616,21 @@ body {
   opacity: 0.6;
 }
 
+/* ---- Partial habit state (value logged but below target) ---- */
+.habit-item.partial {
+  background: rgba(251, 191, 36, 0.05);
+  border-color: rgba(251, 191, 36, 0.35) !important;
+}
+
+.habit-item.partial .habit-name {
+  color: #fbbf24;
+}
+
+.habit-item.partial::before {
+  background: #fbbf24;
+  opacity: 0.85;
+}
+
 /* ---- Skip button ---- */
 .skip-btn {
   background: none;

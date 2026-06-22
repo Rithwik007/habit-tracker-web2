@@ -6,7 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { motion } from 'framer-motion';
-import { isHabitDueOnDate } from '../utils/profileAnalytics';
+import { isHabitDueOnDate, calculateAverageValue } from '../utils/profileAnalytics';
 
 const MOODS = [
     { score: 1, emoji: '😫', label: 'Terrible' },
@@ -115,14 +115,14 @@ export default function HomePage() {
     }, [habits, today]);
 
     // Build today's logs from cached habits
-    // logs[habitId] = 'completed' | 'skipped' | undefined
+    // logs[habitId] = 'completed' | 'partial' | 'skipped' | undefined
     useEffect(() => {
         const logsMap = {};
         (Array.isArray(habits) ? habits : []).forEach(habit => {
             if (Array.isArray(habit.completions)) {
                 const todayComp = habit.completions.find(c => c.date === today);
                 if (todayComp) {
-                    logsMap[habit._id] = todayComp.status === 'skipped' ? 'skipped' : 'completed';
+                    logsMap[habit._id] = todayComp.status || 'completed';
                 }
             }
         });
@@ -368,7 +368,8 @@ export default function HomePage() {
     const dueHabits = (Array.isArray(habits) ? habits : []).filter(h => isHabitDueOnDate(h, today, h.completions || []));
     // Exclude skipped habits from both numerator and denominator — same treatment as unscheduled habits
     const effectiveDueHabits = dueHabits.filter(h => logs[h._id] !== 'skipped');
-    const completed = effectiveDueHabits.filter(h => logs[h._id] === 'completed').length;
+    // partial counts toward today's completion score (same as 'completed')
+    const completed = effectiveDueHabits.filter(h => logs[h._id] === 'completed' || logs[h._id] === 'partial').length;
     const pct = effectiveDueHabits.length > 0 ? Math.round((completed / effectiveDueHabits.length) * 100) : 0;
 
     return (
@@ -546,24 +547,28 @@ export default function HomePage() {
                     >
                         {dueHabits.map(habit => {
                             const done = logs[habit._id] === 'completed';
+                            const isPartial = logs[habit._id] === 'partial';
                             const isSkipped = logs[habit._id] === 'skipped';
                             const isPending = !!pendingValue[habit._id];
                             const tracksVal = habit.tracksValue;
                             const inputValue = valueInputs[habit._id] || '';
+                            const avgVal = tracksVal ? calculateAverageValue(habit) : null;
+                            const todayComp = tracksVal ? (habit.completions || []).find(c => c.date === today) : null;
+                            const todayValue = todayComp ? todayComp.value : null;
                             
                             return (
                                 <motion.div
                                     key={habit._id}
                                     variants={{ hidden: { opacity: 0, x: -20 }, show: { opacity: 1, x: 0 } }}
-                                    className={`habit-item${done ? ' completed' : ''}${isPending ? ' pending-value' : ''}${isSkipped ? ' skipped' : ''}`}
+                                    className={`habit-item${done ? ' completed' : ''}${isPartial ? ' partial' : ''}${isPending ? ' pending-value' : ''}${isSkipped ? ' skipped' : ''}`}
                                     onClick={() => !isSkipped && toggleHabit(habit)}
                                     style={{
                                         display: 'flex',
                                         flexDirection: 'column',
                                         alignItems: 'stretch',
                                         padding: '12px 16px',
-                                        border: isPending ? '2px dashed var(--primary-light)' : isSkipped ? '1px dashed rgba(245, 158, 11, 0.5)' : undefined,
-                                        background: isSkipped ? 'rgba(245, 158, 11, 0.05)' : undefined,
+                                        border: isPending ? '2px dashed var(--primary-light)' : isSkipped ? '1px dashed rgba(245, 158, 11, 0.5)' : isPartial ? '1px solid rgba(251, 191, 36, 0.4)' : undefined,
+                                        background: isSkipped ? 'rgba(245, 158, 11, 0.05)' : isPartial ? 'rgba(251, 191, 36, 0.05)' : undefined,
                                         gap: tracksVal ? '12px' : '0'
                                     }}
                                     whileHover={{ scale: 1.01 }}
@@ -572,6 +577,16 @@ export default function HomePage() {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                                         <div className="habit-info">
                                             <span className="habit-name">{habit.name}</span>
+                                            {tracksVal && avgVal !== null && (
+                                                <span className="habit-streak" style={{ color: isPartial ? '#fbbf24' : 'var(--text-dim)' }}>
+                                                    {done || isPartial
+                                                        ? (habit.valueTarget !== null && habit.valueTarget !== undefined
+                                                            ? `${todayValue} / ${habit.valueTarget}${habit.valueUnit ? ' ' + habit.valueUnit : ''}`
+                                                            : `${todayValue}${habit.valueUnit ? ' ' + habit.valueUnit : ''}`)
+                                                        : `Avg: ${avgVal}${habit.valueUnit ? ' ' + habit.valueUnit : ''}`
+                                                    }
+                                                </span>
+                                            )}
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                             {/* Skip button — subtle, reveals on hover */}
@@ -591,16 +606,17 @@ export default function HomePage() {
                                             <div 
                                                 className="check-circle"
                                                 style={{
-                                                    border: isPending ? '2px dashed var(--primary-light)' : undefined,
-                                                    opacity: isSkipped ? 0.35 : 1
+                                                    border: isPending ? '2px dashed var(--primary-light)' : isPartial ? '2px solid #fbbf24' : undefined,
+                                                    opacity: isSkipped ? 0.35 : 1,
+                                                    background: isPartial ? 'rgba(251,191,36,0.12)' : undefined
                                                 }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     toggleHabit(habit);
                                                 }}
                                             >
-                                                {done && (
-                                                    <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                {(done || isPartial) && (
+                                                    <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ color: isPartial ? '#fbbf24' : undefined }}>
                                                         <motion.polyline
                                                             points="20 6 9 17 4 12"
                                                             initial={{ pathLength: 0 }}
