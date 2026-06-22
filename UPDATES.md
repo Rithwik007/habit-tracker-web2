@@ -2,7 +2,7 @@
 
 This file tracks the latest features and improvements added to the Habit Mastery platform.
 
-## Latest Updates (June 20, 2026)
+## Latest Updates (June 22, 2026)
 
 ### 📅 Flexible Habit Frequency Scheduling
 - **Custom Schedules**: Habits can now be scheduled for specific days of the week (e.g., Mon/Wed/Fri), a specific number of times per week (e.g., 3x a week), or every N days (e.g., every 2 days).
@@ -17,18 +17,25 @@ This file tracks the latest features and improvements added to the Habit Mastery
 
 ### ⏭️ Neutral "Skip" State
 - **Deliberate Days Off**: You can now mark a habit as "Skipped" using the new slash-circle (⊘) button, representing a sick day or planned rest without penalty.
-- **Streak Protection**: Skips are treated as neutral off-days. Skipping a day does not count toward your success rate, but importantly, it will **not break your current streak**.
+- **Streak Protection**: Skips are treated as neutral off-days. Skipping a day does not count toward your success rate, but importantly, it will **not break your current streak**. Verified: 5 days completed → 1 day skipped → 1 day completed = streak **6**.
 - **Accurate Analytics**: Skipped days are excluded from both the total completed and the total expected calculations, ensuring your daily scores and heatmaps reflect your actual intent.
 - **3-State Monthly Grid**: Toggling a cell on the Monthly Tracker now cycles through Completed (Green ✅) → Skipped (Amber ⊘) → Unchecked.
 
-#### Skip Feature Implementation Steps (Technical Changelog)
-To flawlessly implement the skip feature across the stack without breaking legacy data, the following changes were made:
-1. **Database & Schema Level**: Added support for a `status` payload (`'completed'` vs `'skipped'`) in the completions array, defaulting to `'completed'` for backward compatibility. Added a validation bypass in the backend `/toggle` API so "skipped" entries for habits requiring numeric values (`tracksValue: true`) are accepted without throwing validation errors.
-2. **Frontend State & Caching**: Upgraded the `toggleCompletion` Redux action to instantly handle the optimistic UI for the new 3-state cycle (preventing network lag from freezing the UI). Configured the offline sync queue to correctly propagate the `status` payload to the backend when re-establishing connectivity.
-3. **Analytics & Math Engine**: Deeply refactored `profileAnalytics.js`. We mathematically separated the raw dates into `completedSet` and `skippedSet`. Rewrote the streak loops to dynamically step over `skippedSet` dates as "bridges" (+0 to streak, no break) while counting `completedSet` dates (+1 to streak), effectively protecting multi-day streaks across skipped days.
-4. **UI Components**: 
-   - *Daily Checklist (`HabitItem.jsx`)*: Injected the amber slash-circle (⊘) button, hiding it by default and revealing on hover. Applied conditional amber dashed borders and strikethrough styling when active. 
-   - *Monthly Grid (`MonthlyTracker.jsx`)*: Transitioned the static binary toggle into a dynamic 3-way cycle handler, mapping UI clicks to the API accurately.
+#### Skip Feature — Technical Changelog
+Full-stack implementation across 5 layers, verified with a production build (1169 modules, 0 errors):
+
+1. **Database & Schema** (`server/models/Habit.js`): Added `status: { enum: ['completed', 'skipped'], default: 'completed' }` to the completions subdocument. Fully backward-compatible — all legacy records without a status field are treated as `'completed'` by the analytics engine.
+
+2. **Backend API** (`server/routes/habits.js`): The `/toggle` route was refactored into 3 explicit branches: `isExplicitUncheck` (removes record), `isSkip` (upserts a `{value: null, status: 'skipped'}` record — bypasses `tracksValue` numeric validation entirely), and normal completion (existing validation unchanged).
+
+3. **Frontend State & Offline Cache** (`src/api.js`): The `optimisticUpdateCache` function mirrors the server's 3-branch logic exactly, so the UI updates instantly without waiting for the network. The offline sync queue propagates the `status` field correctly on reconnect.
+
+4. **Analytics & Streak Engine** (`src/utils/profileAnalytics.js`): Separated raw completion dates into `completedSet` and `skippedSet`. The streak loop steps over `skippedSet` dates as neutral bridges (no increment, no break). Skipped records are excluded from heatmap (`calculateBatchConsistency`), daily score (`getDailyConsistencyScore`), and yearly stats (`calculateYearlyStats`) denominators.
+
+5. **UI Components**:
+   - *Daily Checklist* (`src/pages/HomePage.jsx`): Amber ⊘ skip button hidden by default, reveals on hover, turns solid amber when active. Skipped habit row gets amber dashed border, dimmed opacity, and strikethrough name. `effectiveDueHabits` correctly subtracts skipped habits from the Today's Score denominator.
+   - *Monthly Grid* (`src/pages/MonthlyPage.jsx`): 3-state cell cycle with amber styling for skipped cells and correct revert-on-error for all 3 branches.
+   - *Analytics Chart* (`src/pages/AnalyticsPage.jsx`): **Bugfix** — denominator now subtracts skipped habits per day (`effectiveTotal = habits.length - skippedCount`), matching the `effectiveDueHabits` pattern already proven in `HomePage.jsx`. Previously the numerator excluded skips but the denominator did not, silently under-reporting percentage scores on skip days.
 
 > **Developer Constraint Note (Average/Target Feature):** When building any future "all-time average" or "target value" features, any calculation doing `sum(values) / count(completions)` **MUST** explicitly filter for `status === 'completed'` first. Skip records write `value: null` to the database and must be excluded entirely, otherwise the denominator will be artificially inflated and the average will be incorrect.
 

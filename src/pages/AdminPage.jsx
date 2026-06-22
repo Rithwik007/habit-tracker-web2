@@ -25,7 +25,11 @@ function UserPerformanceChart({ habits, selectedMonth, selectedYear }) {
         const completedCount = (Array.isArray(habits) ? habits : []).filter(h =>
             (Array.isArray(h.completions) ? h.completions : []).some(c => c.date === dateStr && c.status !== 'skipped')
         ).length;
-        const pct = habits.length > 0 ? Math.round((completedCount / habits.length) * 100) : 0;
+        const skippedCount = (Array.isArray(habits) ? habits : []).filter(h =>
+            (Array.isArray(h.completions) ? h.completions : []).some(c => c.date === dateStr && c.status === 'skipped')
+        ).length;
+        const effectiveTotal = habits.length - skippedCount;
+        const pct = effectiveTotal > 0 ? Math.round((completedCount / effectiveTotal) * 100) : 0;
         dailyData.push({
             name: `${i} ${months[selectedMonth]}`,
             completed: completedCount,

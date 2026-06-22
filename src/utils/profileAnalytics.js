@@ -53,10 +53,16 @@ export function getDailyConsistencyScore(dateStr, profileHistory, allHabits, all
         c.date === dateStr && c.status !== 'skipped' && habitsForProfile.some(h => h._id === c.habitId)
     );
 
+    const skippedCount = habitsForProfile.filter(h =>
+        (h.completions || []).some(c => c.date === dateStr && c.status === 'skipped')
+    ).length;
+
+    const effectiveTotal = Math.max(0, habitsForProfile.length - skippedCount);
+
     return {
-        rate: completedThatDay.length / habitsForProfile.length,
+        rate: effectiveTotal > 0 ? completedThatDay.length / effectiveTotal : 0,
         completed: completedThatDay.length,
-        total: habitsForProfile.length,
+        total: effectiveTotal,
         activeProfileId
     };
 }
@@ -296,10 +302,14 @@ export function calculateYearlyStats(selectedYear, profileHistory, allHabits, al
             
             if (scheduledHabits.length > 0) {
                 const doneOnDate = Array.from(completionsByDate[dateStr] || []).filter(hId => scheduledHabits.some(ph => ph._id === hId));
+                const skippedCount = scheduledHabits.filter(h =>
+                    (h.completions || []).some(c => c.date === dateStr && c.status === 'skipped')
+                ).length;
+                const effectiveTotal = Math.max(0, scheduledHabits.length - skippedCount);
                 stats[dateStr] = {
-                    rate: doneOnDate.length / scheduledHabits.length,
+                    rate: effectiveTotal > 0 ? doneOnDate.length / effectiveTotal : 0,
                     completed: doneOnDate.length,
-                    total: scheduledHabits.length,
+                    total: effectiveTotal,
                     activeProfileId
                 };
             } else {

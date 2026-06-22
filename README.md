@@ -6,9 +6,12 @@ A high-performance, dark-themed habit tracking application built with React, Vit
 
 - **Personalized Header**: Greets you as "Hi, Rithwik Racharla" with real-time weather and date/time.
 - **Daily Checklist**: Interactive habit tracking with instant progress updates.
-- **Monthly Grid**: Comprehensive overview of your consistency across the month.
-- **Analytics**: Visualized progress using Line, Bar, and Donut charts (Recharts).
-- **Streaks & Momentum**: Automated streak calculation to keep you motivated.
+- **Skip State**: Mark any habit as ⊘ Skipped — a deliberate rest day. Skips are neutral: they don't count toward your score, don't break your streak, and are visually distinct (amber dashed border, strikethrough name).
+- **Monthly Grid**: 3-state cell cycle (✅ Completed → ⊘ Skipped → Unchecked) with full amber visual treatment for skipped days.
+- **Analytics**: Visualized progress using Line, Bar, and Donut charts (Recharts). Percentage scores correctly exclude skipped habits from both numerator and denominator.
+- **Flexible Frequency**: Schedule habits for specific days of the week, N times per week, or every N days.
+- **Numeric Value Tracking**: Opt-in to log a specific number per completion (e.g. "ran 3.2 miles") with draft persistence.
+- **Streaks & Momentum**: Automated streak calculation with skip-aware bridging logic. Verified: 5 complete → 1 skip → 1 complete = streak 6.
 - **Habit Profiles**: Scheduled habit sets with automatic cron-based switching.
 - **Push Notifications**: Per-habit reminders, overdue nagging, and background system-wide reminders (e.g. water intake).
 - **Manage Habits**: Easily add, delete, or seed default habits.
@@ -74,7 +77,7 @@ A high-performance, dark-themed habit tracking application built with React, Vit
 
 Models live in `server/models/`:
 - `User` — auth identity, push subscription, notification preferences
-- `Habit` — individual habit definitions, linked to a profile
+- `Habit` — individual habit definitions, linked to a profile. Each `completion` subdocument carries `{ date, value, status }` where `status` is `'completed'` (default) or `'skipped'`.
 - `HabitProfile` — named sets of habits with optional scheduling (start/end dates) for auto-switching
 - `Goal` — longer-term goals tied to habits
 

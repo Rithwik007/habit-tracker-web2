@@ -22,7 +22,11 @@ export default function ProgressPage() {
     }, [user?.uid]);
 
     const allCompletions = useMemo(() => {
-        return allHabits.flatMap(h => (h.completions || []).map(c => ({ habitId: h._id, date: c.date })));
+        return allHabits.flatMap(h => 
+            (h.completions || [])
+                .filter(c => c.status !== 'skipped')
+                .map(c => ({ habitId: h._id, date: c.date, status: c.status || 'completed' }))
+        );
     }, [allHabits]);
 
     const profileHistory = profile?.profileHistory || [];
@@ -58,8 +62,14 @@ export default function ProgressPage() {
                     totalDaysActive++;
                     if (pHabits.length > 0) {
                         const completionsOnDate = Array.from(completionsByDate[dStr] || []).filter(hId => pHabits.some(ph => ph._id === hId));
-                        sumRate += completionsOnDate.length / pHabits.length;
-                        activeDaysWithHabits++;
+                        const skippedCount = pHabits.filter(h => 
+                            (h.completions || []).some(c => c.date === dStr && c.status === 'skipped')
+                        ).length;
+                        const effectiveTotal = pHabits.length - skippedCount;
+                        if (effectiveTotal > 0) {
+                            sumRate += completionsOnDate.length / effectiveTotal;
+                            activeDaysWithHabits++;
+                        }
                     }
                 }
                 cursor.setDate(cursor.getDate() + 1);
